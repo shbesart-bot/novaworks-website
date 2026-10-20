@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kidly ausprobieren – Demo</title>
+<meta name="description" content="Kidly Family, Kidly Team und Kidly Admin direkt im Browser ausprobieren – mit erfundenen Daten, ohne Anmeldung.">
+<meta name="robots" content="noindex">
+<style>
+  :root { --blau:#2563eb; --tief:#0f172a; --text:#334155; --leise:#64748b; --flaeche:#f8fafc; --karte:#fff; --rand:#e2e8f0; }
+  @media (prefers-color-scheme: dark) { :root { --tief:#f1f5f9; --text:#cbd5e1; --leise:#94a3b8; --flaeche:#0b1220; --karte:#111a2e; --rand:#1e293b; } }
+  * { box-sizing:border-box }
+  body { margin:0; font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--flaeche); color:var(--text) }
+  main { max-width:1040px; margin:0 auto; padding:48px 16px 64px }
+  .marke { font-weight:800; color:var(--blau); letter-spacing:-.02em; font-size:20px }
+  h1 { color:var(--tief); font-size:clamp(28px,5vw,44px); line-height:1.1; letter-spacing:-.03em; margin:12px 0 12px }
+  .lead { max-width:640px; font-size:18px; margin:0 0 32px }
+  .raster { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px }
+  a.karte { display:flex; flex-direction:column; gap:10px; background:var(--karte); border:1px solid var(--rand); border-radius:18px; padding:24px; text-decoration:none; color:inherit; transition:transform .15s, box-shadow .15s, border-color .15s }
+  a.karte:hover, a.karte:focus-visible { transform:translateY(-2px); box-shadow:0 12px 30px rgba(37,99,235,.12); border-color:var(--blau); outline:none }
+  .rolle { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--blau) }
+  .karte h2 { margin:0; color:var(--tief); font-size:22px }
+  .karte p { margin:0; color:var(--leise) }
+  .karte ul { margin:4px 0 0; padding-left:18px; color:var(--text); font-size:15px }
+  .los { margin-top:auto; padding-top:8px; font-weight:700; color:var(--blau) }
+  .hinweis { margin-top:32px; padding:16px 18px; border-radius:14px; background:var(--karte); border:1px solid var(--rand); font-size:15px }
+  .hinweis strong { color:var(--tief) }
+  footer { margin-top:32px; font-size:14px; color:var(--leise) }
+  footer a { color:var(--blau) }
+</style>
+</head>
+<body>
+<main>
+  <div class="marke">Kidly</div>
+  <h1>Kidly ausprobieren</h1>
+  <p class="lead">Die Kita-App für Eltern, Team und Leitung – hier direkt im Browser, ohne Anmeldung. Die Demo-Kita „Sonnenblume“ ist erfunden, ebenso alle Kinder und Familien.</p>
+
+  <div class="raster">
+    <a class="karte" href="family/">
+      <span class="rolle">Für Eltern</span>
+      <h2>Kidly Family</h2>
+      <p>So sehen Eltern ihren Kita-Alltag.</p>
+      <ul><li>Nachrichten an die Gruppe</li><li>Krank- und Urlaubsmeldung</li><li>Fotos, Termine, Speiseplan</li><li>Einverständnisse digital</li></ul>
+      <span class="los">Als Elternteil ansehen →</span>
+    </a>
+    <a class="karte" href="team/">
+      <span class="rolle">Für Erzieher:innen</span>
+      <h2>Kidly Team</h2>
+      <p>Die App für den Gruppenalltag.</p>
+      <ul><li>An- und Abmelden der Kinder</li><li>Tagesprotokoll, Beobachtungen</li><li>Team-Chat, Dienstplan</li><li>Arbeitszeit stempeln</li></ul>
+      <span class="los">Als Erzieherin ansehen →</span>
+    </a>
+    <a class="karte" href="admin/">
+      <span class="rolle">Für Leitung &amp; Träger</span>
+      <h2>Kidly Admin</h2>
+      <p>Verwaltung am Computer.</p>
+      <ul><li>Kinder, Gruppen, Personal</li><li>Belegung und Statistik</li><li>Rechnungen und Zuschüsse</li><li>Datenschutz-Werkzeuge</li></ul>
+      <span class="los">Als Kita-Leitung ansehen →</span>
+    </a>
+  </div>
+
+  <div class="hinweis"><strong>Gut zu wissen:</strong> Alles, was Sie in der Demo eintragen, bleibt nur in Ihrem Browser und ist nach dem Neuladen wieder weg. Über die schwarze Leiste unten wechseln Sie zwischen verschiedenen Personen. Kidly Family und Kidly Team sind Handy-Apps – am Computer am besten das Browserfenster schmal ziehen.</div>
+
+  <footer>Kidly ist ein Produkt von <a href="/">NovaWorks IT</a>. <a href="/kidly/">Mehr über Kidly</a></footer>
+</main>
+</body>
+</html>

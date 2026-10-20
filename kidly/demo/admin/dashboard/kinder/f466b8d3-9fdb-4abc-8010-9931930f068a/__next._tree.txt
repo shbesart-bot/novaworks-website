@@ -1,0 +1,6 @@
+:HL["/kidly/demo/admin/_next/static/chunks/0j0bk4by8mnsp.css","style"]
+4:[["children",{"s":"__PAGE__","h":160}]]
+3:[["children",{"s":{"n":"id","t":"d","k":"f466b8d3-9fdb-4abc-8010-9931930f068a","s":[]},"h":65632,"c":"$Q4"}]]
+2:[["children",{"s":"kinder","h":131168,"c":"$Q3"}]]
+1:[["children",{"s":"dashboard","h":131168,"c":"$Q2"}]]
+0:{"b":"PTH-kZ2GlT4Qg9Edg1Hic","t":{"t":{"s":"","h":131152,"c":"$Q1"}}}

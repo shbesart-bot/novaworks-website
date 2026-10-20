@@ -1,0 +1,4 @@
+:HL["/kidly/demo/admin/_next/static/chunks/0j0bk4by8mnsp.css","style"]
+2:[["children",{"s":"__PAGE__","h":160}]]
+1:[["children",{"s":"passwort-vergessen","h":96,"c":"$Q2"}]]
+0:{"b":"PTH-kZ2GlT4Qg9Edg1Hic","t":{"t":{"s":"","h":80,"c":"$Q1"}}}
