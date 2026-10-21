@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WerkFlow – digitale Checklisten und Schichtübergabe für die Produktion | NovaWorks</title>
+  <meta name="description" content="WerkFlow ersetzt Papier in der Produktion: digitale Checklisten pro Maschine und Sorte, Störungsmeldungen mit Foto in Echtzeit, Schichtübergabe mit Bestätigung und lückenloses Protokoll. Von NovaWorks aus Warburg.">
+  <link rel="canonical" href="https://novaworks-it.de/werkflow/">
+  <link rel="icon" href="../assets/werkflow-icon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#f4f7f8">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="de_DE">
+  <meta property="og:site_name" content="NovaWorks">
+  <meta property="og:url" content="https://novaworks-it.de/werkflow/">
+  <meta property="og:title" content="WerkFlow – Schluss mit Zetteln an der Linie">
+  <meta property="og:description" content="Checklisten, Störungsmeldungen und Schichtübergabe digital – direkt an der Maschine.">
+  <meta property="og:image" content="https://novaworks-it.de/og-image.png">
+  <link rel="stylesheet" href="produkt.css">
+  <style>
+    :root{--blue:#1a7f6b;--blue-d:#13604f;--soft:#e1f2ee;--ink:#19324c;--paper:#f4f7f8;--amber:#efa23b;--red:#d9483b}
+    :focus-visible{outline-color:#1a7f6b80}
+    .btn-primary{box-shadow:0 10px 24px #1a7f6b33}
+    .demo-band{background:linear-gradient(120deg,#19324c,#1f4a63 55%,#1a7f6b)}
+    .demo-band p{color:#d7e6ee}
+    .demo-band .btn{color:var(--ink)!important}
+    /* Handy-Ansicht (nachgebaut) */
+    .mock-wrap{display:flex;justify-content:center;align-items:flex-end;gap:18px}
+    .geraet{width:270px;background:#19324c;border-radius:34px;padding:10px;box-shadow:0 30px 70px #19324c38}
+    .geraet .bild{background:#f8fafc;border-radius:26px;overflow:hidden;font-size:.8rem}
+    .g-kopf{background:#19324c;color:#fff;padding:16px 16px 14px}
+    .g-kopf small{display:block;color:#9fb3c7;font-size:.7rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+    .g-kopf b{font-size:1rem}
+    .g-leiste{display:flex;gap:6px;padding:10px 12px 0}
+    .g-leiste span{flex:1;text-align:center;padding:6px 0;border-radius:8px;background:#e6ecf1;font-weight:700;color:#4a5d72;font-size:.7rem}
+    .g-leiste span.an{background:var(--blue);color:#fff}
+    .g-liste{padding:10px 12px 14px;display:grid;gap:7px}
+    .g-punkt{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid #e1e8ef;border-radius:11px;padding:9px 10px;color:#2b3f55}
+    .g-punkt i{width:18px;height:18px;border-radius:6px;flex:none;display:grid;place-items:center;font-style:normal;font-size:.7rem;font-weight:800}
+    .g-punkt i.ok{background:#dff3ec;color:var(--blue)}
+    .g-punkt i.offen{border:2px solid #b8c6d4}
+    .g-punkt i.warn{background:#fdeedd;color:#b86d0c}
+    .g-punkt em{margin-left:auto;white-space:nowrap;font-style:normal;font-size:.68rem;color:#6b7d90}
+    .g-knopf{margin:0 12px 16px;background:var(--red);color:#fff;text-align:center;border-radius:12px;padding:10px;font-weight:800}
+    /* Leitstand (nachgebaut) */
+    .leitstand{background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);overflow:hidden;font-size:.9rem}
+    .ls-kopf{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#19324c;color:#fff;font-weight:700}
+    .ls-kopf span{font-size:.75rem;color:#9fb3c7;font-weight:600}
+    .ls-zeile{display:grid;grid-template-columns:1.1fr 1fr .9fr auto;gap:10px;align-items:center;padding:12px 18px;border-top:1px solid #edf1f5;color:#33475c}
+    .ls-zeile.titel{font-size:.72rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#7b8b9c;border-top:0}
+    .ampel{width:12px;height:12px;border-radius:50%;display:inline-block}
+    .gruen{background:#1f9d6b}.rot{background:var(--red)}.gelb{background:var(--amber)}
+    .balken{height:8px;border-radius:99px;background:#e6ecf1;overflow:hidden}.balken b{display:block;height:100%;background:var(--blue);border-radius:99px}
+    .stand{background:#fff7ea;border:1px solid #f4d9ac;border-radius:18px;padding:20px 22px;color:#5b4320}
+    .stand b{color:#8a5a12}
+    @media(max-width:460px){.brand small{display:none}.top .btn{white-space:nowrap}}
+    @media(max-width:560px){.geraet{width:240px}.ls-zeile{grid-template-columns:1fr 1fr auto}.ls-zeile .opt{display:none}}
+  </style>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"WerkFlow","applicationCategory":"BusinessApplication","operatingSystem":"Android","url":"https://novaworks-it.de/werkflow/","description":"Digitale Checklisten, Störungsmeldungen und Schichtübergabe für die Produktion.","publisher":{"@type":"Organization","name":"NovaWorks","url":"https://novaworks-it.de/"}}</script>
+</head>
+<body>
+<a class="skip" href="#inhalt">Zum Inhalt springen</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="../assets/werkflow-icon.svg" alt="" width="34" height="34">WerkFlow <small>von NovaWorks</small></a>
+    <nav aria-label="WerkFlow">
+      <a href="#funktionen">Funktionen</a>
+      <a href="#nutzen">Nutzen</a>
+      <a href="#einfuehrung">Einführung</a>
+      <a class="btn btn-primary" href="mailto:info@novaworks-it.de?subject=WerkFlow%20Pilot">Pilot anfragen</a>
+    </nav>
+  </div>
+</header>
+
+<main id="inhalt">
+  <section class="hero">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">Für Produktion &amp; Fertigung</span>
+        <h1>Schluss mit Zetteln <em>an der Linie.</em></h1>
+        <p class="lead">WerkFlow bringt Checklisten, Störungsmeldungen und Schichtübergaben auf robuste Handgeräte direkt an der Maschine. Jede Meldung ist sofort sichtbar – sauber getrennt nach Maschine, Schicht und Sorte.</p>
+        <div class="cta">
+          <a class="btn btn-primary" href="mailto:info@novaworks-it.de?subject=WerkFlow%20Pilot">Pilot anfragen <span aria-hidden="true">→</span></a>
+          <a class="btn btn-ghost" href="#funktionen">Funktionen ansehen</a>
+        </div>
+        <div class="trust"><span>Läuft auch ohne WLAN</span><span>Barcode-Scan</span><span>Deutsch, Englisch, Russisch</span></div>
+      </div>
+      <div class="mock-wrap" aria-label="Beispielansicht der WerkFlow-App" role="img">
+        <div class="geraet" aria-hidden="true">
+          <div class="bild">
+            <div class="g-kopf"><small>Linie 3 · Frühschicht</small><b>Checkliste Sorte A-120</b></div>
+            <div class="g-leiste"><span class="an">Checkliste</span><span>Störung</span><span>Übergabe</span></div>
+            <div class="g-liste">
+              <div class="g-punkt"><i class="ok">✓</i>Temperatur Werkzeug<em>182 °C</em></div>
+              <div class="g-punkt"><i class="ok">✓</i>Sichtprüfung Oberfläche<em>i. O.</em></div>
+              <div class="g-punkt"><i class="warn">!</i>Wandstärke<em>außer Toleranz</em></div>
+              <div class="g-punkt"><i class="offen"></i>Etikett scannen<em>Barcode</em></div>
+              <div class="g-punkt"><i class="offen"></i>Muster ablegen</div>
+            </div>
+            <div class="g-knopf">Störung melden</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="white" id="funktionen">
+    <div class="wrap">
+      <p class="kicker">Funktionen</p>
+      <h2>Alles, was heute auf Papier läuft.</h2>
+      <p class="intro">Große Schaltflächen, klare Farben, Hell- und Dunkelmodus für jede Hallenbeleuchtung – gebaut für Handschuhe und Schichtbetrieb.</p>
+      <div class="features">
+        <div class="feature"><b>Maschinen-Anmeldung</b><span>Maschine per Name oder Barcode wählen – alle Einträge laufen danach getrennt pro Maschine.</span></div>
+        <div class="feature"><b>Digitale Checklisten</b><span>Pro Sorte, mit Pflichtfeldern und Toleranzprüfung. „Neue Sorte“ startet direkt die nächste Charge.</span></div>
+        <div class="feature"><b>Störungen in Echtzeit</b><span>Mit Foto oder Video, Zeitraum, Fehlerart (mechanisch/elektrisch) und Ampel-Status.</span></div>
+        <div class="feature"><b>Schichtübergabe</b><span>Früh, Spät, Nacht: offene Punkte übergeben und von beiden Seiten digital bestätigen.</span></div>
+        <div class="feature"><b>Schichtende-Sperre</b><span>Abmelden erst, wenn alle Checklisten erledigt und die Übergabe bestätigt ist.</span></div>
+        <div class="feature"><b>Produktkontrolle</b><span>Messwerte per Barcode-Scan oder Eingabe erfassen, mit Verlauf der letzten Einträge.</span></div>
+        <div class="feature"><b>Lückenloses Protokoll</b><span>Wer hat was wann gemacht – pro Maschine, tageweise im Kalender abrufbar.</span></div>
+        <div class="feature"><b>Rollen</b><span>Einrichter sehen Rüstprüfungen, Schichtarbeiter ihre Prüfpunkte, Teamleitung den Überblick.</span></div>
+        <div class="feature"><b>Rückgängig-Leiste</b><span>Versehentlich falsch gesetzt? Die letzte Aktion lässt sich kurz widerrufen.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="nutzen">
+    <div class="wrap split">
+      <div>
+        <p class="kicker">Überblick für die Leitung</p>
+        <h2>Störungen sehen, wenn sie passieren.</h2>
+        <p class="intro">Nicht erst beim nächsten Rundgang oder am Schichtende. Teamleitung und Schichtleitung sehen auf einen Blick, wo eine Linie steht und wo Hilfe gebraucht wird.</p>
+        <ul class="checks">
+          <li>Kein Einsammeln, Sortieren und Abtippen von Zetteln mehr</li>
+          <li>Nachweise für Reklamationen, Audits und ISO auf Knopfdruck</li>
+          <li>Weniger „das hat mir keiner gesagt“ beim Schichtwechsel</li>
+          <li>Datenbasis für Auswertungen, z. B. Störungen je Maschine</li>
+        </ul>
+      </div>
+      <div class="leitstand" role="img" aria-label="Beispielansicht der Übersicht: Maschinen mit Checklisten-Stand und Störungsstatus">
+        <div class="ls-kopf" aria-hidden="true">Übersicht Halle 2 <span>Frühschicht · live</span></div>
+        <div aria-hidden="true">
+          <div class="ls-zeile titel"><span>Maschine</span><span>Checkliste</span><span class="opt">Sorte</span><span>Status</span></div>
+          <div class="ls-zeile"><span>Linie 1</span><div class="balken"><b style="width:100%"></b></div><span class="opt">B-040</span><span class="ampel gruen"></span></div>
+          <div class="ls-zeile"><span>Linie 2</span><div class="balken"><b style="width:70%"></b></div><span class="opt">A-118</span><span class="ampel gruen"></span></div>
+          <div class="ls-zeile"><span>Linie 3</span><div class="balken"><b style="width:45%"></b></div><span class="opt">A-120</span><span class="ampel rot"></span></div>
+          <div class="ls-zeile"><span>Linie 4</span><div class="balken"><b style="width:85%"></b></div><span class="opt">C-007</span><span class="ampel gelb"></span></div>
+          <div class="ls-zeile"><span>Linie 5</span><div class="balken"><b style="width:20%"></b></div><span class="opt">B-041</span><span class="ampel gruen"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="white" id="einfuehrung">
+    <div class="wrap split">
+      <div>
+        <p class="kicker">Einführung</p>
+        <h2>Erst eine Linie. Dann das Werk.</h2>
+        <p class="intro">WerkFlow wird mit einem Pilot auf einer Linie eingeführt. Wir richten Checklisten, Rollen und Sprachen nach euren Abläufen ein und passen sie an, bevor weitere Linien folgen.</p>
+        <ul class="checks">
+          <li>Eure Checklisten und Prüfpunkte übernehmen wir aus den bisherigen Vorlagen</li>
+          <li>Läuft auf Android-Handscannern und Smartphones, offline-fähig</li>
+          <li>Anbindung an Firmen-Anmeldung (z. B. Microsoft Entra ID) und zentrale Datenhaltung nach Absprache mit eurer IT</li>
+          <li>Betriebsrat und Datenschutz binden wir von Anfang an ein</li>
+        </ul>
+      </div>
+      <div class="stand">
+        <p style="margin:0 0 8px"><b>Aktueller Stand</b></p>
+        <p style="margin:0">Die App ist voll funktionsfähig und auf Testgeräten im Einsatz. Für den Produktivbetrieb kommen eine zentrale Serveranbindung und die Anmeldung über eure Firmen-IT dazu. Dafür suchen wir <b>Pilotbetriebe</b> aus der Fertigung.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="demo-band">
+        <div>
+          <h2>Ein Pilot auf einer Linie.</h2>
+          <p>Wir zeigen dir WerkFlow an einem Beispiel aus deiner Fertigung und besprechen, was für einen Pilot gebraucht wird.</p>
+        </div>
+        <a class="btn" href="mailto:info@novaworks-it.de?subject=WerkFlow%20Pilot">Pilot anfragen</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="white" id="fragen">
+    <div class="wrap" style="max-width:860px">
+      <p class="kicker">Häufige Fragen</p>
+      <h2>Gut zu wissen</h2>
+      <details><summary>Welche Geräte brauchen wir?</summary><p>Android-Handscanner (z. B. mit integriertem Barcode-Scanner) oder robuste Smartphones. Vorhandene Geräte prüfen wir gern vorab.</p></details>
+      <details><summary>Was passiert, wenn das WLAN in der Halle ausfällt?</summary><p>WerkFlow arbeitet auch ohne Verbindung weiter und speichert alles verschlüsselt auf dem Gerät.</p></details>
+      <details><summary>Ist das eine Leistungskontrolle der Mitarbeitenden?</summary><p>Nein, Zweck ist Qualität und Nachverfolgbarkeit. Weil das Protokoll festhält, wer was wann gemacht hat, gehört der Betriebsrat vor dem Pilot an den Tisch. Wer Protokolle löschen darf, ist auf Teamleitung und höher beschränkt.</p></details>
+      <details><summary>Können wir eigene Checklisten anlegen?</summary><p>Ja. Prüfpunkte, Toleranzen, Sorten und Maschinen richten wir zum Start nach euren Vorlagen ein.</p></details>
+      <details><summary>Was kostet WerkFlow?</summary><p>Das hängt von Anzahl der Linien und Geräte sowie der gewünschten Anbindung ab. Schreib uns an <a href="mailto:info@novaworks-it.de?subject=Angebot%20WerkFlow">info@novaworks-it.de</a>, du bekommst ein unverbindliches Angebot für einen Pilot.</p></details>
+    </div>
+  </section>
+
+  <section id="kontakt">
+    <div class="wrap">
+      <div class="kontakt">
+        <div>
+          <p class="kicker">Kontakt</p>
+          <h2>Papier raus aus der Produktion?</h2>
+          <p class="intro" style="margin-bottom:22px">Erzähl uns, wie Checklisten und Übergaben bei euch heute laufen – wir melden uns mit einem Vorschlag für den Pilot.</p>
+          <div class="cta">
+            <a class="btn btn-primary" href="mailto:info@novaworks-it.de?subject=WerkFlow%20Pilot">Pilot anfragen</a>
+            <a class="btn btn-ghost" href="tel:+4917670300429">+49 176 70300429</a>
+          </div>
+        </div>
+        <address>
+          <strong>NovaWorks</strong><br>
+          Am Hang 2<br>
+          34414 Warburg<br>
+          <a href="mailto:info@novaworks-it.de">info@novaworks-it.de</a>
+        </address>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>WerkFlow ist ein Produkt von <a href="../">NovaWorks</a>, Warburg.</span>
+    <nav aria-label="Rechtliches">
+      <a href="../impressum.html">Impressum</a>
+      <a href="../datenschutz.html">Datenschutz</a>
+      <a href="../agb.html">AGB</a>
+    </nav>
+  </div>
+</footer>
+</body>
+</html>
