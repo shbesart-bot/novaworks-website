@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://novaworks-it.de/</loc><lastmod>2026-10-13</lastmod><changefreq>monthly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://novaworks-it.de/</loc><lastmod>2026-10-21</lastmod><changefreq>monthly</changefreq><priority>1.0</priority></url>
   <url><loc>https://novaworks-it.de/impressum.html</loc><lastmod>2026-10-13</lastmod><priority>0.2</priority></url>
   <url><loc>https://novaworks-it.de/datenschutz.html</loc><lastmod>2026-10-13</lastmod><priority>0.2</priority></url>
   <url><loc>https://novaworks-it.de/agb.html</loc><lastmod>2026-08-01</lastmod><priority>0.2</priority></url>
@@ -22,4 +22,18 @@
   <url><loc>https://novaworks-it.de/kidly/ratgeber/dienstplan-kita.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
   <url><loc>https://novaworks-it.de/kidly/ratgeber/essensbestellung-kita.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
   <url><loc>https://novaworks-it.de/kidly/ratgeber/kita-beitraege-abrechnen.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/azubihub/ratgeber/ausbildungsabbruch-vermeiden.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/azubihub/ratgeber/ausbildungsberufe-gastgewerbe.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/azubihub/ratgeber/berichtsheft-schreiben-hotel.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/azubihub/ratgeber/digitales-berichtsheft.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/azubihub/ratgeber/</loc><lastmod>2026-10-21</lastmod><priority>0.7</priority></url>
+  <url><loc>https://novaworks-it.de/azubihub/ratgeber/onboarding-azubis-hotel.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/azubihub/ratgeber/unterweisungen-azubis-gastronomie.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/kontora/ratgeber/aufbewahrungsfristen-belege.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/kontora/ratgeber/e-rechnung-kleinunternehmer.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/kontora/ratgeber/euer-erstellen.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/kontora/ratgeber/</loc><lastmod>2026-10-21</lastmod><priority>0.7</priority></url>
+  <url><loc>https://novaworks-it.de/kontora/ratgeber/kleinunternehmerregelung.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/kontora/ratgeber/rechnung-pflichtangaben.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/kontora/ratgeber/xrechnung-zugferd-unterschied.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
 </urlset>
