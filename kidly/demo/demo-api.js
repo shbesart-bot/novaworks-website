@@ -24,10 +24,13 @@
   // Uhrzeiten bleiben auch über die Zeitumstellung hinweg gleich (07:00 bleibt 07:00)
   var versatz = tage * 864e5 + (heute.getTimezoneOffset() - new Date(D.aufgenommenAm + 'T12:00:00').getTimezoneOffset()) * 6e4;
   var ISO_ZEIT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/, ISO_TAG = /^\d{4}-\d{2}-\d{2}$/;
+  var aufnahmeMs = Date.parse(D.aufgenommenAm + 'T12:00:00Z');
+  function nah(x) { return Math.abs(Date.parse(x.length === 10 ? x + 'T12:00:00Z' : x) - aufnahmeMs) <= 90 * 864e5; }
   function verschiebe(x) {
     if (typeof x === 'string') {
-      if (ISO_ZEIT.test(x)) return new Date(Date.parse(x) + versatz).toISOString();
-      if (ISO_TAG.test(x)) { var d = new Date(x + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + tage); return d.toISOString().slice(0, 10); }
+      // Nur Tage rund um die Aufnahme verschieben (Termine, Einträge) – Geburtstage und Vertragsbeginn bleiben.
+      if (ISO_ZEIT.test(x)) return nah(x) ? new Date(Date.parse(x) + versatz).toISOString() : x;
+      if (ISO_TAG.test(x)) { if (!nah(x)) return x; var d = new Date(x + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + tage); return d.toISOString().slice(0, 10); }
       return x;
     }
     if (Array.isArray(x)) return x.map(verschiebe);
