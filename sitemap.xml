@@ -8,8 +8,8 @@
   <url><loc>https://novaworks-it.de/kidly/support.html</loc><lastmod>2026-10-20</lastmod><priority>0.3</priority></url>
   <url><loc>https://novaworks-it.de/kidly/datenschutz.html</loc><lastmod>2026-10-20</lastmod><priority>0.2</priority></url>
   <url><loc>https://novaworks-it.de/azubihub/</loc><lastmod>2026-10-21</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://novaworks-it.de/guestflow/</loc><lastmod>2026-10-21</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://novaworks-it.de/werkflow/</loc><lastmod>2026-10-21</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://novaworks-it.de/guestflow/</loc><lastmod>2026-10-22</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://novaworks-it.de/werkflow/</loc><lastmod>2026-10-22</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://novaworks-it.de/kontora/</loc><lastmod>2026-10-21</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://novaworks-it.de/kidly/ratgeber/</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
   <url><loc>https://novaworks-it.de/kidly/ratgeber/kita-app-datenschutz.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
@@ -36,4 +36,14 @@
   <url><loc>https://novaworks-it.de/kontora/ratgeber/kleinunternehmerregelung.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
   <url><loc>https://novaworks-it.de/kontora/ratgeber/rechnung-pflichtangaben.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
   <url><loc>https://novaworks-it.de/kontora/ratgeber/xrechnung-zugferd-unterschied.html</loc><lastmod>2026-10-21</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/guestflow/ratgeber/allergenkennzeichnung-restaurant.html</loc><lastmod>2026-10-22</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/guestflow/ratgeber/digitale-gaestemappe.html</loc><lastmod>2026-10-22</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/guestflow/ratgeber/</loc><lastmod>2026-10-22</lastmod><priority>0.7</priority></url>
+  <url><loc>https://novaworks-it.de/guestflow/ratgeber/meldeschein-hotel.html</loc><lastmod>2026-10-22</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/guestflow/ratgeber/weniger-anrufe-rezeption.html</loc><lastmod>2026-10-22</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/werkflow/ratgeber/digitale-checklisten-betriebsrat.html</loc><lastmod>2026-10-22</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/werkflow/ratgeber/</loc><lastmod>2026-10-22</lastmod><priority>0.7</priority></url>
+  <url><loc>https://novaworks-it.de/werkflow/ratgeber/papierlose-fertigung-iso-9001.html</loc><lastmod>2026-10-22</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/werkflow/ratgeber/schichtuebergabe-produktion.html</loc><lastmod>2026-10-22</lastmod><priority>0.6</priority></url>
+  <url><loc>https://novaworks-it.de/werkflow/ratgeber/stoerungsmeldung-digital.html</loc><lastmod>2026-10-22</lastmod><priority>0.6</priority></url>
 </urlset>
