@@ -127,3 +127,4 @@ footer a{color:var(--muted)}
 .text p,.text li{color:#33415a}
 .text .hinweis{background:var(--soft);border-radius:14px;padding:14px 18px;font-size:.95rem}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn{transition:none}.btn:hover{transform:none}}
+.text .demo-band h2{color:#fff;margin:0 0 6px}.text .demo-band p{color:#dbe7ff}.text .demo-band .btn{color:var(--blue)!important}
