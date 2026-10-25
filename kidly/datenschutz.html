@@ -19,15 +19,16 @@
 </header>
 <main id="inhalt" class="wrap text">
   <h1>Datenschutzhinweise der Kidly-Apps</h1>
+  <p class="hinweis"><strong>Vorläufige Information – kein Echtbetrieb:</strong> Kidly befindet sich in technischer Vorbereitung. Die Browser-Demo verwendet ausschließlich erfundene Daten. Die Apps sind derzeit nicht für echte Kinder-, Familien-, Gesundheits- oder Beschäftigtendaten freigegeben. Bitte tragen Sie solche Daten nicht ein. Vor einem Pilot werden Hosting, eingesetzte Dienstleister, tatsächliche Datenflüsse, Löschfristen und Verträge geprüft und diese Hinweise aktualisiert.</p>
   <p>Diese Hinweise gelten für die Apps <strong>Kidly Family</strong> (für Eltern), <strong>Kidly Team</strong> (für das pädagogische Personal) und die Verwaltung <strong>Kidly Admin</strong>. Für den Besuch dieser Website gilt die <a href="../datenschutz.html">Datenschutzerklärung von NovaWorks</a>.</p>
 
   <h2>1. Wer ist verantwortlich?</h2>
   <p>Kidly wird von Kitas und Kita-Trägern eingesetzt. <strong>Verantwortlich</strong> im Sinne der Datenschutz-Grundverordnung (DSGVO) – bei kirchlichen Trägern des KDG bzw. DSG-EKD – für die Daten, die Sie in Kidly sehen und eingeben, ist <strong>Ihre Kita bzw. deren Träger</strong>. Die Kita informiert Sie in ihrer eigenen Datenschutzerklärung ausführlich, zum Beispiel über Rechtsgrundlagen und Speicherfristen. Bitte wenden Sie sich mit Anliegen zu Ihren Daten zuerst an Ihre Kita.</p>
-  <p><strong>NovaWorks</strong> stellt Kidly bereit und betreibt die Technik im Auftrag der Kita (Auftragsverarbeitung nach Art. 28 DSGVO). NovaWorks nutzt die Daten nicht für eigene Zwecke.</p>
+  <p>Für einen späteren Einsatz soll die Kita bzw. der Träger grundsätzlich über Zwecke und wesentliche Mittel der Verarbeitung entscheiden. Ob und in welchem Umfang NovaWorks als Auftragsverarbeiter tätig wird, wird vor dem Pilot vertraglich und anhand der tatsächlichen Verarbeitung festgelegt. Die hierfür vorhandenen Entwürfe sind noch keine abgeschlossenen Verträge.</p>
   <p>NovaWorks, Inhaber Besart Shehu, Am Hang 2, 34414 Warburg · E-Mail: <a href="mailto:info@novaworks-it.de">info@novaworks-it.de</a></p>
 
-  <h2>2. Welche Daten verarbeitet Kidly?</h2>
-  <p>Welche Funktionen eine Kita nutzt, entscheidet die Kita. Möglich sind:</p>
+  <h2>2. Welche Daten sind für einen späteren Einsatz vorgesehen?</h2>
+  <p>Die folgenden Angaben beschreiben geplante Funktionen des Produkts. Sie sind keine Bestätigung, dass diese Verarbeitung derzeit live geschaltet ist. Vor einer Freigabe werden die tatsächlich aktivierten Funktionen, Zwecke und Rechtsgrundlagen mit dem Träger festgehalten:</p>
   <ul>
     <li><strong>Konto:</strong> Name, E-Mail-Adresse, Rolle, Passwort (nur als verschlüsselter Prüfwert), Sprache, optional Zwei-Faktor-Anmeldung.</li>
     <li><strong>Kind und Familie:</strong> Name und Geburtsdatum des Kindes, Gruppe, Eltern und Abholberechtigte, Betreuungszeiten und Verträge.</li>
@@ -54,7 +55,8 @@
   </ul>
   <p>Ihre Anmeldung wird im geschützten Speicher des Geräts abgelegt. Kidly Team speichert für schwaches WLAN einige Daten verschlüsselt auf dem Gerät; sie werden beim Abmelden gelöscht.</p>
 
-  <h2>5. Sicherheit</h2>
+  <h2>5. Sicherheitsstand</h2>
+  <p>Im Quellcode sind Schutzmaßnahmen wie HTTPS, Rollen- und Gruppenzugriff, zusätzliche Verschlüsselung bestimmter Daten und Zugriffsaudits vorgesehen bzw. umgesetzt. Daraus folgt noch keine Freigabe für einen Echtbetrieb: Deployment, Schlüsselverwaltung, Datenbankzugriff, Backups und Wiederherstellung müssen in der konkreten Umgebung geprüft werden. Für den Pilot ist ein dokumentierter Sicherheits- und Wiederherstellungstest erforderlich.</p>
   <ul>
     <li>Verschlüsselte Übertragung (HTTPS/TLS).</li>
     <li>Rollen- und gruppenbezogene Zugriffsrechte: Eltern sehen nur das eigene Kind, das Team nur die eigene Gruppe.</li>
@@ -63,25 +65,18 @@
     <li>Automatische Löschung nach den von der Kita festgelegten Fristen.</li>
   </ul>
 
-  <h2>6. Dienstleister</h2>
-  <p>Für den Betrieb setzt NovaWorks folgende Dienstleister ein, jeweils mit Vertrag zur Auftragsverarbeitung:</p>
-  <ul>
-    <li>Railway Corp. (USA) – Server und Datenbank, Serverstandort in der EU,</li>
-    <li>Vercel Inc. (USA) – Auslieferung der Verwaltung Kidly Admin,</li>
-    <li>Brevo (Sendinblue SAS, Frankreich) – Versand von E-Mails wie Einladungen und Passwort-Links,</li>
-    <li>650 Industries, Inc. „Expo“ (USA) – Zustellung von Benachrichtigungen und App-Updates; Benachrichtigungen werden über Apple bzw. Google an Ihr Gerät weitergeleitet.</li>
-  </ul>
-  <p>Soweit Daten in die USA gelangen können, geschieht das auf Grundlage des EU-US Data Privacy Framework bzw. von EU-Standardvertragsklauseln. Die Apps selbst laden Sie über den App Store von Apple oder Google Play; dafür gelten deren Datenschutzbestimmungen.</p>
+  <h2>6. Dienstleister und Datenübermittlungen</h2>
+  <p>Die endgültige Anbieter- und Unterauftragnehmerliste steht noch nicht fest. Für den geplanten Betrieb werden unter anderem Hosting/Backend, Webhosting, E-Mail-Versand, Push-Zustellung, App-Stores und Zahlungsabwicklung benötigt. Ob und welche Anbieter tatsächlich eingesetzt werden, welche Regionen gelten und welche Übermittlungsgrundlagen erforderlich sind, wird vor dem Pilot dokumentiert. Mit einem Anbieter werden erst dann Daten verarbeitet, wenn die nötigen Verträge, Freigaben und Schutzmaßnahmen geprüft sind. Die Liste und etwaige Drittlandübermittlungen werden hier vor dem Echtbetrieb konkret benannt.</p>
 
   <h2>7. Speicherdauer</h2>
-  <p>Daten werden gelöscht, sobald sie für die Betreuung nicht mehr nötig sind und keine gesetzliche Aufbewahrungspflicht besteht. Kidly löscht automatisch, zum Beispiel Gesundheitsangaben 90 Tage nach Ende des Betreuungsvertrags. Die genauen Fristen nennt Ihre Kita. Endet die Zusammenarbeit einer Kita mit NovaWorks, werden die Daten nach Rückgabe an die Kita gelöscht.</p>
+  <p>Konkrete Speicher- und Löschfristen sind vor dem Pilot zwischen Träger und Anbieter festzulegen und technisch zu verifizieren. Fristen wie die im Produktentwurf vorgesehene Löschung von Gesundheitsangaben sind bis zu dieser Prüfung keine Zusage. Gesetzliche Aufbewahrungspflichten und dokumentierte Weisungen des Trägers sind dabei zu berücksichtigen.</p>
 
   <h2>8. Ihre Rechte</h2>
   <p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch sowie das Recht, erteilte Einwilligungen jederzeit für die Zukunft zu widerrufen. Wenden Sie sich dafür an Ihre Kita; Anfragen an NovaWorks leiten wir an die Kita weiter. Sie können sich außerdem bei einer Datenschutz-Aufsichtsbehörde beschweren. Wie Sie Ihr Konto löschen lassen, steht unter <a href="support.html#konto-loeschen">Konto und Daten löschen</a>.</p>
 
   <h2>9. Kontakt</h2>
   <p>Fragen zu diesen Hinweisen: <a href="mailto:info@novaworks-it.de?subject=Datenschutz%20Kidly">info@novaworks-it.de</a></p>
-  <p class="hinweis">Stand: Oktober 2026</p>
+  <p class="hinweis">Arbeitsstand: 25. Oktober 2026 · Vor einem Pilot mit Echtdaten fachlich und rechtlich prüfen und anhand der tatsächlichen Konfiguration aktualisieren.</p>
 </main>
 <footer><div class="wrap"><span>Kidly ist ein Produkt von <a href="../">NovaWorks</a>, Warburg.</span><nav aria-label="Rechtliches"><a href="./">Über Kidly</a><a href="support.html">Hilfe &amp; Support</a><a href="../impressum.html">Impressum</a></nav></div></footer>
 </body>
