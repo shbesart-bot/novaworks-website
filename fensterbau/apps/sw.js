@@ -1,0 +1,7 @@
+const CACHE='profitar-passfort-v3';
+const APP_FILES=['./profitar.html','./passfort.html','./app-icon.svg','./profitar.webmanifest','./passfort.webmanifest'];
+const CDN_ALLOWLIST=['https://cdn.tailwindcss.com','https://cdnjs.cloudflare.com'];
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(APP_FILES)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('profitar-passfort-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',event=>{const u=new URL(event.request.url);if(event.request.method!=='GET'||u.pathname.startsWith('/api/'))return;if(u.origin!==self.location.origin){if(!CDN_ALLOWLIST.includes(u.origin))return;event.respondWith(fetch(event.request).then(response=>{if(response.ok||response.type==='opaque')caches.open(CACHE).then(cache=>cache.put(event.request,response.clone()));return response}).catch(()=>caches.match(event.request)));return}const fallback=new URL(u.pathname.endsWith('passfort.html')?'passfort.html':'profitar.html',self.registration.scope);event.respondWith(fetch(event.request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(cache=>cache.put(event.request,copy))}return response}).catch(()=>caches.match(event.request).then(hit=>hit||caches.match(fallback))))});
+
