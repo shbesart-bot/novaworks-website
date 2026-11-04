@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#1f2937">
 <title>Fensterpass</title>
 <link rel="icon" href="./icon-passfort.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./fb.css?v=2026-11-04a">
+<link rel="stylesheet" href="./fb.css?v=2026-11-04b">
 <style>
   main { max-width: 640px; }
   .hero { border-radius: 18px; padding: 20px; background: linear-gradient(135deg, #1f2937, #0f172a); color: #f8fafc; }
@@ -44,7 +44,15 @@
       <div><span>Montiert am</span><b>${fmt(D.montage)}</b></div><div><span>System</span><b>${esc(P.modell || '—')}</b></div><div><span>Verglasung</span><b>${esc(P.glas || '—')}</b></div>
       <div><span>Farbe</span><b>${esc(P.farbe || '—')}</b></div><div><span>Garantie</span><b>${esc(D.garantie || '—')}</b></div></div>
       ${(D.elemente || []).length ? `<div class="list" style="margin-top:10px">${D.elemente.map((e, i) => `<div class="item" style="cursor:default"><div class="grow"><b>${i + 1}. ${esc(e.bez || '')}</b><span class="small muted">${esc([e.typ, e.farbe, e.glas].filter(Boolean).join(' · '))}</span></div></div>`).join('')}</div>` : ''}</section>
+    ${D.nacharbeit?.erledigt ? `<p class="note ok" style="margin-top:14px">Alle Nacharbeiten aus der Abnahme sind erledigt (${fmt(D.nacharbeit.erledigt)}).</p>` : D.nacharbeit?.offen ? `<p class="note" style="margin-top:14px">Aus der Abnahme ${D.nacharbeit.offen === 1 ? 'ist noch 1 Nacharbeit' : 'sind noch ' + D.nacharbeit.offen + ' Nacharbeiten'} offen – ${esc(F.name)} kümmert sich darum.</p>` : ''}
     <section class="card"><h2>Pflegehinweise</h2><p style="white-space:pre-line">${esc(D.pflege || '')}</p></section>
+    <section class="card" id="wartung"><h2>Erinnerung an die Wartung</h2><p class="small muted" style="margin-bottom:12px">Regelmäßige Wartung hält Beschläge leichtgängig und Dichtungen dicht. Auf Wunsch erinnert ${esc(F.name)} Sie per E-Mail – Sie bestätigen die Anmeldung per Link und können sich jederzeit abmelden.</p>
+      <div id="wBox"><form id="wf" class="stack" novalidate>
+        <div class="grid g2"><label class="f">Ihr Name<input id="wN" autocomplete="name" maxlength="80"></label><label class="f">E-Mail<input id="wE" type="email" autocomplete="email"></label></div>
+        <label class="f">Wie oft?<select id="wI"><option value="12">jedes Jahr</option><option value="24">alle 2 Jahre</option></select></label>
+        <input id="wW" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+        <button class="btn ghost block">Erinnerung einrichten</button><p id="wR" role="status"></p></form></div></section>
+    ${D.bewertung ? `<section class="card"><h2>Zufrieden?</h2><p class="small muted" style="margin-bottom:10px">Über eine kurze Bewertung freut sich ${esc(F.name)} sehr – sie hilft anderen bei der Wahl ihres Fensterbauers.</p><a class="btn ghost block" href="${esc(D.bewertung)}" target="_blank" rel="noopener">Jetzt bewerten</a></section>` : ''}
     <section class="card" id="service"><h2>Serviceanfrage</h2><p class="small muted" style="margin-bottom:12px">Etwas klemmt, zieht oder ist kaputt? Schreiben Sie uns – Ihre Anfrage geht direkt an ${esc(F.name)}.</p>
       <form id="sf" class="stack" novalidate>
         <label class="f">Ihr Name<input id="sN" autocomplete="name" maxlength="80" required></label>
@@ -57,6 +65,21 @@
     <section class="card"><h2>Kontakt</h2><p>${esc(F.name)}</p>${F.anschrift ? `<p class="muted">${esc(F.anschrift)}</p>` : ''}
       <div class="row" style="margin-top:8px">${tel ? `<a href="tel:${esc(tel)}">${esc(F.telefon)}</a>` : ''}${F.email ? `<a href="mailto:${esc(F.email)}">${esc(F.email)}</a>` : ''}${F.web ? `<a href="${esc(/^https?:\/\//.test(F.web) ? F.web : 'https://' + F.web)}" rel="noopener">${esc(F.web.replace(/^https?:\/\//, ''))}</a>` : ''}</div></section>
     <p class="tiny muted" style="text-align:center;margin:18px 0 40px">Fensterpass mit PassFort · <a href="../../impressum.html">Impressum NovaWorks</a></p>`;
+  const post = async body => { const res = await fetch(SB_URL + '/functions/v1/fb-konto', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SB_KEY }, body: JSON.stringify(body) }); const j = await res.json().catch(() => ({})); if (!res.ok) throw new Error(j.error || 'FEHLER'); return j; };
+  const qs = new URLSearchParams(location.search), wc = qs.get('wartung'), ab = qs.get('abmelden');
+  if ((wc || ab) && !demo) {
+    history.replaceState(null, '', location.pathname + '?t=' + encodeURIComponent(token));
+    try { const r = await post({ action: wc ? 'wartung_ok' : 'wartung_ab', code: wc || ab }); $('#wBox').innerHTML = `<p class="note ok">${wc ? `Danke! Die Erinnerung ist eingerichtet – Sie hören in ${r.intervall === 24 ? 'zwei Jahren' : 'einem Jahr'} von uns.` : 'Sie sind abgemeldet und erhalten keine Wartungserinnerungen mehr.'}</p>`; }
+    catch { $('#wBox').innerHTML = '<p class="note crit">Der Link ist ungültig oder abgelaufen.</p>'; }
+    $('#wartung').scrollIntoView();
+  }
+  $('#wf')?.addEventListener('submit', async e => {
+    e.preventDefault(); const r = $('#wR'), body = { action: 'wartung', token, name: $('#wN').value.trim(), email: $('#wE').value.trim(), intervall: +$('#wI').value, website: $('#wW').value };
+    if (body.name.length < 2 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.email)) { r.className = 'note warn'; r.textContent = 'Bitte Name und E-Mail angeben.'; return; }
+    e.submitter.disabled = true;
+    try { if (!demo) await post(body); $('#wBox').innerHTML = `<p class="note ok">${demo ? 'In der Demo wird keine E-Mail verschickt.' : `Fast geschafft: Bitte bestätigen Sie die Anmeldung über den Link, den wir an ${esc(body.email)} geschickt haben.`}</p>`; }
+    catch (er) { e.submitter.disabled = false; r.className = 'note crit'; r.textContent = er.message === 'LIMIT' ? 'Heute wurden schon mehrere Anmeldungen gesendet.' : 'Das hat nicht geklappt. Bitte später erneut versuchen.'; }
+  });
   $('#sf').onsubmit = async e => {
     e.preventDefault(); const btn = e.submitter, r = $('#sR');
     const body = { action: 'service', token, name: $('#sN').value.trim(), email: $('#sE').value.trim(), telefon: $('#sT').value.trim(), nachricht: $('#sM').value.trim(), website: $('#sW').value };
@@ -77,7 +100,8 @@
     const p = (await demoAll('projekte')).find(x => x.pass_token === t); if (!p) return null;
     const d = await idb(), firma = await new Promise(res => { const r = d.transaction('kv').objectStore('kv').get('firma'); r.onsuccess = () => res(r.result || {}); });
     const F = { name: 'Fensterbau Muster (Demo)', anschrift: 'Musterstraße 1, 12345 Musterstadt', telefon: '01234 56789', email: 'service@example.com', pflege: 'Beschläge einmal im Jahr leicht ölen. Dichtungen mit Wasser und mildem Reiniger säubern, danach mit Pflegestift behandeln.', ...firma };
-    return { firma: F, nummer: p.nummer, montage: p.abnahme?.datum, produkt: p.abnahme?.produkt, garantie: p.abnahme?.garantie, pflege: p.abnahme?.pflege || F.pflege, elemente: (p.aufmass?.elemente || []).map(e => ({ bez: e.label, typ: e.type, farbe: e.color, glas: e.glass })), _id: p.id };
+    const na = p.nacharbeit || [], nOff = na.filter(n => !n.erledigt_at).length;
+    return { bewertung: F.bewertung_link || null, nacharbeit: !na.length ? null : nOff ? { offen: nOff } : { erledigt: na.map(n => n.erledigt_at).sort().pop() }, firma: F, nummer: p.nummer, montage: p.abnahme?.datum, produkt: p.abnahme?.produkt, garantie: p.abnahme?.garantie, pflege: p.abnahme?.pflege || F.pflege, elemente: (p.aufmass?.elemente || []).map(e => ({ bez: e.label, typ: e.type, farbe: e.color, glas: e.glass })), _id: p.id };
   }
   async function demoService(t, b) {
     const d = await idb(), p = (await demoAll('projekte')).find(x => x.pass_token === t);

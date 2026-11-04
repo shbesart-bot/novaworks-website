@@ -9,7 +9,7 @@
 <link rel="manifest" href="./profitar.webmanifest">
 <link rel="icon" href="./icon-profitar.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icon-profitar-180.png">
-<link rel="stylesheet" href="./fb.css?v=2026-11-04a">
+<link rel="stylesheet" href="./fb.css?v=2026-11-04b">
 <style>
   .elist .item { padding: 10px 8px; border-radius: 10px; }
   .elist .item[aria-current="true"] { background: var(--accent-soft); }
@@ -23,7 +23,7 @@
 <body>
 <main id="app"><div class="skel"></div></main>
 <script src="./vendor/supabase.js"></script>
-<script src="./fb-core.js?v=2026-11-04a"></script>
+<script src="./fb-core.js?v=2026-11-04b"></script>
 <script src="./vendor/jspdf.umd.min.js" defer></script>
 <script>
 (async () => {
@@ -52,7 +52,7 @@
   /* ================= Projektliste ================= */
   async function listView() {
     app.innerHTML = `<div class="head"><div><p class="eyebrow">Aufmaß</p><h1>Projekte</h1></div>
-      <div class="row">${FB.canEdit() ? '<button class="btn" id="neu">+ Neues Aufmaß</button>' : ''}</div></div>
+      <div class="row"><button class="btn ghost" id="sammel" title="Alle angezeigten Projekte als eine Tabelle">Sammel-Bestellliste</button>${FB.canEdit() ? '<button class="btn" id="neu">+ Neues Aufmaß</button>' : ''}</div></div>
       <div class="card"><div class="row" style="margin-bottom:10px"><input class="field" id="q" placeholder="Suchen: Kunde, Adresse, Nummer" value="${esc(search)}" style="margin:0;flex:1;min-width:200px" aria-label="Suchen">
         <div class="seg" id="flt">${[['alle', 'Alle'], ...Object.entries(STATUS).map(([k, v]) => [k, v[0]])].map(([k, l]) => `<button data-f="${k}" aria-pressed="${filter === k}">${l}</button>`).join('')}</div></div>
         <div id="list"><div class="skel"></div></div></div>`;
@@ -61,6 +61,7 @@
     $$('#flt button').forEach(b => b.onclick = () => { filter = b.dataset.f; $$('#flt button').forEach(x => x.setAttribute('aria-pressed', x === b)); draw(); });
     let list = [];
     try { list = await FB.listProjekte(); } catch (e) { $('#list').innerHTML = `<p class="note crit">${esc(errText(e))}</p>`; return; }
+    $('#sammel').onclick = () => { const q = search.trim().toLowerCase(), l = list.filter(p => (filter === 'alle' || p.status === filter) && (!q || [p.nummer, p.kunde?.name, p.kunde?.adresse].join(' ').toLowerCase().includes(q))); if (!l.length) return toast('Keine Projekte in der Auswahl.'); exportCSV(l, `Sammel-Bestellliste_${filter}_${FB.today()}.csv`); };
     draw();
     function draw() {
       const q = search.trim().toLowerCase();
@@ -121,7 +122,7 @@
         <p class="small muted" id="calSt" style="margin-top:6px"></p>
         <div class="kv" id="sum" style="margin-top:12px"></div></section></div>
       </div>
-      <div class="dock no-print"><button class="btn ghost" id="pdfBtn">Aufmaßblatt (PDF)</button><button class="btn" id="toPF">Zur Abnahme</button></div>`;
+      <div class="dock no-print"><button class="btn ghost" id="pdfBtn">Aufmaßblatt</button><button class="btn ghost" id="angBtn">Angebot</button><button class="btn" id="toPF">Zur Abnahme</button></div>`;
     $$('[data-k]').forEach(i => i.oninput = () => { k[i.dataset.k] = i.value; if (i.dataset.k === 'name') $('#ttl').textContent = i.value || 'Neues Aufmaß'; dirty(); });
     $('#nummer').oninput = e => { P.nummer = e.target.value; dirty(); };
     $('#datum').onchange = e => { P.aufmass.datum = e.target.value; dirty(); };
@@ -129,6 +130,7 @@
     $('#status').onchange = e => { P.status = e.target.value; dirty(true); };
     $('#addEl')?.addEventListener('click', () => { P.aufmass.elemente.push(neuesElement(P.aufmass.elemente.length + 1)); active = P.aufmass.elemente.length - 1; renderEl(); dirty(); $('#edit').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     $('#pdfBtn').onclick = () => pdfAufmass().catch(e => toast(errText(e)));
+    $('#angBtn').onclick = angebot;
     $('#toPF').onclick = async () => { if (!FB.canEdit()) return (location.href = './passfort.html#p=' + P.id); if (['aufmass', 'angebot', 'bestellt'].includes(P.status)) P.status = 'montage'; await saveNow(); location.href = './passfort.html#p=' + P.id; };
     $('#more').onclick = more;
     if (ro) $$('#app input, #app textarea, #app select').forEach(x => x.disabled = true);
@@ -170,6 +172,8 @@
         <label class="check"><input type="checkbox" id="oFbi" ${e.options?.fbInnen ? 'checked' : ''}>Fensterbank innen</label>
         <label class="check"><input type="checkbox" id="oFba" ${e.options?.fbAussen ? 'checked' : ''}>Fensterbank außen</label>
         <label class="f span2">Notiz zur Position<textarea id="eNote" rows="2" placeholder="z. B. Altfenster ausbauen, Anschluss mit Kompriband">${esc(e.notiz)}</textarea></label>
+        <div class="span2"><div class="row between" style="margin-bottom:6px"><span class="small muted" style="font-weight:600">Detailfotos (Anschluss, Laibung, Schäden)</span>${ro ? '' : '<div class="row"><label class="btn soft sm">Foto aufnehmen<input type="file" accept="image/*" capture="environment" id="dCam" hidden></label><label class="btn ghost sm">Wählen<input type="file" accept="image/*" multiple id="dPick" hidden></label></div>'}</div>
+          <div class="thumbs" id="dThumbs"></div></div>
       </div>`;
     const num = s => String(s || '').replace(/,/g, '.').split(/[\s/;]+/).map(Number).filter(n => Number.isFinite(n) && n > 0).slice(0, 3);
     const bind = (id, fn, ev = 'input') => { const el = $('#' + id); if (el) el.addEventListener(ev, () => { fn(el); upd(); }); };
@@ -185,6 +189,18 @@
     $('#dup')?.addEventListener('click', () => { const c = JSON.parse(JSON.stringify(e)); c.id = uid(); c.label = (e.label || '') + ' (Kopie)'; c.foto = null; c.overlay = null; L.splice(active + 1, 0, c); active++; renderEl(); dirty(); });
     $('#delEl')?.addEventListener('click', async () => { if (!(await FB.confirmDlg(`Position „${e.label}“ löschen?`, 'Löschen', true))) return; if (e.foto) FB.removeFile(e.foto); L.splice(active, 1); active = Math.max(0, active - 1); renderEl(); dirty(true); });
     if (ro) $$('#edit input, #edit select, #edit textarea').forEach(x => x.disabled = true);
+    e.fotos ||= [];
+    const onD = async ev => { const fs = [...ev.target.files]; ev.target.value = ''; for (const f of fs.slice(0, 12)) { if (!f.type.startsWith('image/')) continue; try { const bl = await FB.compress(f, 1600, .8); e.fotos.push({ pfad: await FB.saveFile(P.id, bl), text: '' }); } catch (er) { toast(errText(er)); } } dThumbs(); dirty(true); };
+    $('#dCam')?.addEventListener('change', onD); $('#dPick')?.addEventListener('change', onD);
+    async function dThumbs() {
+      const box = $('#dThumbs'); if (!box) return;
+      box.innerHTML = e.fotos.length ? e.fotos.map((f, i) => `<figure><img data-i="${i}" alt="Detailfoto ${i + 1}"><input class="field" style="font-size:12px;min-height:30px;padding:4px 6px" data-t="${i}" value="${esc(f.text)}" placeholder="Beschriftung" ${ro ? 'disabled' : ''}>${ro ? '' : `<button data-x="${i}" aria-label="Foto entfernen">✕</button><button data-an="${i}" aria-label="Foto beschriften" style="right:34px">✎</button>`}</figure>`).join('') : '<p class="small muted">Keine Detailfotos.</p>';
+      for (const im of $$('#dThumbs img')) im.src = await FB.fileUrl(e.fotos[+im.dataset.i].pfad);
+      $$('#dThumbs [data-t]').forEach(i => i.oninput = () => { e.fotos[+i.dataset.t].text = i.value; dirty(); });
+      $$('#dThumbs [data-x]').forEach(bt => bt.onclick = async () => { if (!(await FB.confirmDlg('Foto entfernen?', 'Entfernen', true))) return; const f = e.fotos.splice(+bt.dataset.x, 1)[0]; FB.removeFile(f.pfad); dThumbs(); dirty(true); });
+      $$('#dThumbs [data-an]').forEach(bt => bt.onclick = async () => { const f = e.fotos[+bt.dataset.an], bl = await FB.fileBlob(f.pfad); if (!bl) return toast('Foto noch nicht geladen.'); const out = await FB.annotate(bl); if (!out) return; const old = f.pfad; f.pfad = await FB.saveFile(P.id, out); FB.removeFile(old); dThumbs(); dirty(true); });
+    }
+    dThumbs();
     warn(); summary(); loadPhoto();
   }
   function bestell(e) {
@@ -365,7 +381,8 @@
         ['Zubehör', [e.options?.muntins && 'Sprossen', e.options?.insekt && 'Insektenschutz', e.options?.fbInnen && 'Fensterbank innen', e.options?.fbAussen && 'Fensterbank außen'].filter(Boolean).join(', ') || '—']];
       rows.forEach(([a, v]) => { font(8.5, true); doc.text(a, M, yy); font(8.5); doc.text(doc.splitTextToSize(String(v), 110), M + 60, yy); yy += 5; });
       const w = pruef(e); if (w.length) { yy += 2; font(8.5, true); doc.setTextColor(150, 90, 0); doc.text('Bitte prüfen:', M, yy); font(8.5); doc.text(doc.splitTextToSize(w.join(' '), W - 2 * M - 25), M + 25, yy); doc.setTextColor(0); yy += 10; }
-      if (e.notiz) { font(8.5, true); doc.text('Notiz', M, yy); font(8.5); doc.text(doc.splitTextToSize(e.notiz, W - 2 * M - 60), M + 60, yy); }
+      if (e.notiz) { font(8.5, true); doc.text('Notiz', M, yy); font(8.5); doc.text(doc.splitTextToSize(e.notiz, W - 2 * M - 60), M + 60, yy); yy += 8; }
+      if ((e.fotos || []).length) { let col = 0; const fw = (W - 2 * M - 6) / 2, fh = fw * .75; for (const f of e.fotos) { const bl = await FB.fileBlob(f.pfad).catch(() => null); if (!bl) continue; if (col === 0 && yy + fh + 8 > 282) { doc.addPage(); headr(); yy = 36; } const du = await FB.blobToDataUrl(bl); const x = M + col * (fw + 6); try { const pr = doc.getImageProperties(du); const sc = Math.min(fw / pr.width, fh / pr.height); doc.addImage(du, 'JPEG', x, yy, pr.width * sc, pr.height * sc); } catch {} font(7.5); doc.text(doc.splitTextToSize(f.text || '', fw), x, yy + fh + 3.5); col++; if (col === 2) { col = 0; yy += fh + 9; } } }
     }
     foot();
     FB.download(doc.output('blob'), `Aufmass_${FB.safeName(P.nummer)}_${FB.safeName(k.name)}.pdf`);
@@ -375,22 +392,95 @@
       positionen: P.aufmass.elemente.map((e, i) => { const b = bestell(e); return { pos: i + 1, bezeichnung: e.label, typ: e.type, stueck: e.anzahl || 1, bestellmass_b_mm: b.B || null, bestellmass_h_mm: b.H || null, breite_messpunkte_mm: e.widthPoints, hoehe_messpunkte_mm: e.heightPoints, diagonalen_mm: e.diagonals, einbaufuge_mm: e.installGapMm, oeffnung: e.opening, kopplung: e.coupling, profil: e.profil, farbe_innen: e.color, farbe_aussen: e.colorAussen || e.color, verglasung: e.glass, rollladen: e.rollladen, sprossen: !!e.options?.muntins, insektenschutz: !!e.options?.insekt, fensterbank_innen: !!e.options?.fbInnen, fensterbank_aussen: !!e.options?.fbAussen, notiz: e.notiz, hinweise: pruef(e) }; }) };
     FB.download(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }), `Aufmass_${FB.safeName(P.nummer)}.json`);
   }
-  function exportCSV() {
-    const h = ['Pos', 'Bezeichnung', 'Typ', 'Stück', 'Bestellmaß B (mm)', 'Bestellmaß H (mm)', 'Breite Messpunkte', 'Höhe Messpunkte', 'Diagonalen', 'Fuge (mm)', 'Öffnung', 'Kopplung', 'Profil', 'Farbe innen', 'Farbe außen', 'Verglasung', 'Rollladen', 'Sprossen', 'Insektenschutz', 'Fensterbank innen', 'Fensterbank außen', 'Notiz'];
-    const q = v => { const s = String(v ?? ''); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-    const rows = P.aufmass.elemente.map((e, i) => { const b = bestell(e); return [i + 1, e.label, e.type, e.anzahl || 1, b.B || '', b.H || '', (e.widthPoints || []).join('/'), (e.heightPoints || []).join('/'), (e.diagonals || []).join('/'), e.installGapMm, e.opening, e.coupling, e.profil, e.color, e.colorAussen, e.glass, e.rollladen, e.options?.muntins ? 'ja' : 'nein', e.options?.insekt ? 'ja' : 'nein', e.options?.fbInnen ? 'ja' : 'nein', e.options?.fbAussen ? 'ja' : 'nein', e.notiz].map(q).join(';'); });
-    FB.download(new Blob(['﻿' + [h.join(';'), ...rows].join('\r\n')], { type: 'text/csv;charset=utf-8' }), `Aufmass_${FB.safeName(P.nummer)}.csv`);
+  function exportCSV(projekte = [P], name) {
+    const cols = FB.exportCols(), q = v => { const t = String(v ?? ''); return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+    const multi = projekte.length > 1, head = [...(multi ? ['Projekt', 'Kunde'] : []), ...cols.map(c => c.n)];
+    const rows = projekte.flatMap(p => (p.aufmass?.elemente || []).map((e, i) => [...(multi ? [p.nummer, p.kunde?.name] : []), ...cols.map(c => c.f(e, i))].map(q).join(';')));
+    FB.download(new Blob(['\ufeff' + [head.map(q).join(';'), ...rows].join('\r\n')], { type: 'text/csv;charset=utf-8' }), name || `Bestellliste_${FB.safeName(P.nummer)}.csv`);
+  }
+  async function pdfBestellung() {
+    await saveNow();
+    const doc = await FB.pdf({ unit: 'mm', format: 'a4', orientation: 'landscape' }), F = FB.S.firma, k = P.kunde || {}, W = 297, M = 12, fam = doc.getFontList().Noto ? 'Noto' : 'helvetica';
+    const font = (z, bd) => { doc.setFont(fam, bd ? 'bold' : 'normal'); doc.setFontSize(z); };
+    font(14, true); doc.text(`Bestellliste ${P.nummer || ''}`, M, 16); font(9); doc.text(`${F.name} · ${k.name || ''}${k.adresse ? ' · ' + k.adresse : ''} · Stand ${fmtDate(new Date().toISOString())}`, M, 22);
+    const cols = [['Pos', 9], ['Bezeichnung', 38], ['Typ', 32], ['Stk', 9], ['B × H (mm)', 24], ['Öffnung', 22], ['Profil', 30], ['Farbe innen / außen', 34], ['Verglasung', 32], ['Zubehör', 43]];
+    let y = 32; const th = () => { doc.setFillColor(238, 241, 246); doc.rect(M, y - 4.5, W - 2 * M, 7, 'F'); font(8, true); let x = M + 1; cols.forEach(([t, w]) => { doc.text(t, x, y); x += w; }); y += 6; }; th();
+    P.aufmass.elemente.forEach((e, i) => {
+      const b = bestell(e), z = [e.rollladen && e.rollladen !== 'kein' && 'Rollladen: ' + e.rollladen, e.options?.muntins && 'Sprossen', e.options?.insekt && 'Insektenschutz', e.options?.fbInnen && 'Fensterbank innen', e.options?.fbAussen && 'Fensterbank außen', e.coupling && !/^keine$/i.test(e.coupling) && 'Kopplung ' + e.coupling].filter(Boolean).join(', ');
+      const cells = [i + 1, e.label, e.type, e.anzahl || 1, b.B ? `${b.B} × ${b.H}` : 'FEHLT', e.opening, e.profil || '—', `${e.color} / ${e.colorAussen || 'wie innen'}`, e.glass, z || '—'];
+      font(8.5); const lines = cells.map((c, j) => doc.splitTextToSize(String(c), cols[j][1] - 2)), h = Math.max(...lines.map(l => l.length)) * 4 + 2;
+      if (y + h > 196) { doc.addPage(); y = 16; th(); }
+      let x = M + 1; lines.forEach((l, j) => { doc.text(l, x, y); x += cols[j][1]; }); y += h; doc.setDrawColor(225); doc.line(M, y - 3, W - M, y - 3);
+    });
+    font(8); doc.setTextColor(100); doc.text('Bestellmaße = Rahmenaußenmaß nach Aufmaß. Vor Bestellung gegen Herstellervorgaben, Anschlussdetail und Einbausituation prüfen.', M, Math.min(y + 4, 203)); doc.setTextColor(0);
+    FB.download(doc.output('blob'), `Bestellliste_${FB.safeName(P.nummer)}.pdf`);
+  }
+
+  /* ================= Angebot ================= */
+  function angebot() {
+    const A = P.aufmass.angebot ||= { nr: (P.nummer || '').replace(/^A-/, 'AN-') || 'AN-' + FB.today().replace(/-/g, ''), datum: FB.today(), gueltig: '', rabatt: 0, preis: {}, text: '' };
+    A.preis ||= {}; const L = P.aufmass.elemente, PR = FB.preise(), F = FB.S.firma, mw = +F.mwst || 0, ro = !FB.canEdit();
+    const leer = !Object.values(PR.typen).some(t => +t.m2 || +t.min);
+    const calc = () => { const pos = L.map(e => { const auto = FB.positionPreis(e, PR); const ep = A.preis[e.id] != null && A.preis[e.id] !== '' ? +A.preis[e.id] : auto.einzel; return { e, auto, ep, gp: ep * (e.anzahl || 1) }; }); const sum = pos.reduce((x, p) => x + p.gp, 0), rab = sum * (+A.rabatt || 0) / 100, netto = sum - rab, st = netto * mw / 100; return { pos, sum, rab, netto, st, brutto: netto + st }; };
+    const d = FB.sheet(`<div class="row between"><h2>Angebot ${esc(P.nummer || '')}</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
+      ${leer ? `<p class="note warn" style="margin-top:10px">Noch keine Preise hinterlegt. ${FB.canAdmin() ? '<a href="./konto.html#preise">Preisliste unter Konto anlegen</a> – oder' : ''} Einzelpreise hier direkt eintragen.</p>` : ''}
+      <div class="grid g3" style="margin-top:10px"><label class="f">Angebots-Nr.<input id="anNr" value="${esc(A.nr)}"></label><label class="f">Datum<input id="anDat" type="date" value="${esc(A.datum)}"></label><label class="f">Rabatt (%)<input id="anRab" type="number" min="0" max="50" step="0.5" value="${+A.rabatt || 0}"></label></div>
+      <div class="list" id="anPos" style="margin-top:10px"></div><div id="anSum" class="kv" style="margin-top:10px"></div>
+      <label class="f" style="margin-top:10px">Zusätzlicher Text im Angebot<textarea id="anTxt" rows="2" placeholder="z. B. Lieferzeit ca. 6 Wochen">${esc(A.text)}</textarea></label>
+      <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ghost" data-close>Schließen</button><button class="btn" id="anPdf">Angebot als PDF</button></div>`);
+    const draw = () => { const c = calc();
+      $('#anPos', d.el).innerHTML = c.pos.map(({ e, auto, ep }, i) => `<div class="item" style="cursor:default"><span class="pos">${i + 1}</span><div class="grow"><b>${esc(e.label)}</b><span class="small muted">${esc(e.type)} · ${e.anzahl || 1} Stk.${auto.m2 ? ' · ' + auto.m2.toFixed(2).replace('.', ',') + ' m²' : ''}${auto.einzel ? ' · Preisliste ' + FB.eur(auto.einzel) : ''}</span></div><label class="f" style="width:130px">Einzelpreis<input type="number" step="0.01" min="0" data-ep="${e.id}" value="${A.preis[e.id] ?? ''}" placeholder="${auto.einzel ? auto.einzel.toFixed(2) : '0,00'}" ${ro ? 'disabled' : ''}></label></div>`).join('');
+      $('#anSum', d.el).innerHTML = `<div><span>Summe</span><b>${FB.eur(c.sum)}</b></div>${c.rab ? `<div><span>Rabatt ${A.rabatt} %</span><b>− ${FB.eur(c.rab)}</b></div>` : ''}<div><span>Netto</span><b>${FB.eur(c.netto)}</b></div><div><span>${mw ? 'MwSt. ' + mw + ' %' : 'ohne USt.'}</span><b>${FB.eur(c.st)}</b></div><div><span>Gesamt</span><b>${FB.eur(c.brutto)}</b></div>`;
+      $$('[data-ep]', d.el).forEach(i => i.oninput = () => { A.preis[i.dataset.ep] = i.value === '' ? null : +i.value; dirty(); drawSum(); }); };
+    const drawSum = () => { const c = calc(); $('#anSum', d.el).innerHTML = `<div><span>Summe</span><b>${FB.eur(c.sum)}</b></div>${c.rab ? `<div><span>Rabatt ${A.rabatt} %</span><b>− ${FB.eur(c.rab)}</b></div>` : ''}<div><span>Netto</span><b>${FB.eur(c.netto)}</b></div><div><span>${mw ? 'MwSt. ' + mw + ' %' : 'ohne USt.'}</span><b>${FB.eur(c.st)}</b></div><div><span>Gesamt</span><b>${FB.eur(c.brutto)}</b></div>`; };
+    draw();
+    $('#anNr', d.el).oninput = e => { A.nr = e.target.value; dirty(); }; $('#anDat', d.el).onchange = e => { A.datum = e.target.value; dirty(); };
+    $('#anRab', d.el).oninput = e => { A.rabatt = Math.max(0, Math.min(50, +e.target.value || 0)); dirty(); drawSum(); }; $('#anTxt', d.el).oninput = e => { A.text = e.target.value; dirty(); };
+    $('#anPdf', d.el).onclick = async () => { try { await pdfAngebot(calc()); if (['aufmass'].includes(P.status) && FB.canEdit()) { P.status = 'angebot'; $('#status').value = 'angebot'; dirty(true); } } catch (er) { toast(errText(er)); } };
+  }
+  async function pdfAngebot(c) {
+    await saveNow();
+    const A = P.aufmass.angebot, doc = await FB.pdf(), F = FB.S.firma, k = P.kunde || {}, W = 210, M = 18, mw = +F.mwst || 0, fam = doc.getFontList().Noto ? 'Noto' : 'helvetica';
+    const font = (z, bd) => { doc.setFont(fam, bd ? 'bold' : 'normal'); doc.setFontSize(z); };
+    if (F.logo && /^data:image\/(png|jpe?g)/.test(F.logo)) { try { const pr = doc.getImageProperties(F.logo); const h = 16, w = Math.min(55, h * pr.width / pr.height); doc.addImage(F.logo, W - M - w, 12, w, h); } catch {} }
+    font(7.5); doc.setTextColor(110); doc.text([F.name, F.anschrift].filter(Boolean).join(' · '), M, 46); doc.setTextColor(0);
+    font(10); doc.text([k.name, ...(k.adresse || '').split(/,\s*/)].filter(Boolean), M, 52);
+    font(9); doc.text([F.name, F.anschrift, F.telefon && 'Tel. ' + F.telefon, F.email, F.web].filter(Boolean), W - M, 34, { align: 'right' });
+    font(9); doc.text([`Angebot Nr. ${A.nr}`, `Datum: ${fmtDate(A.datum)}`, `Bauvorhaben: ${k.adresse || '—'}`], W - M, 66, { align: 'right' });
+    font(16, true); doc.text('Angebot', M, 82); font(9.5); const intro = doc.splitTextToSize(F.angebot_text || '', W - 2 * M); doc.text(intro, M, 89);
+    let y = 89 + intro.length * 4.6 + 6;
+    const cols = [['Pos', 10], ['Leistung', 96], ['Menge', 18], ['Einzelpreis', 25], ['Gesamt', 25]];
+    const th = () => { doc.setFillColor(238, 241, 246); doc.rect(M, y - 4.5, W - 2 * M, 7, 'F'); font(8.5, true); let x = M + 1; cols.forEach(([t, w], i) => { doc.text(t, i >= 2 ? x + w - 2 : x, y, i >= 2 ? { align: 'right' } : {}); x += w; }); y += 7; };
+    th();
+    c.pos.forEach(({ e, ep, gp }, i) => {
+      const b = bestell(e), det = [`${e.type}${b.B ? `, ${b.B} × ${b.H} mm` : ''}`, [e.profil, e.color + (e.colorAussen ? ' / außen ' + e.colorAussen : ''), e.glass].filter(Boolean).join(', '), [e.opening !== 'fest' && 'Öffnung ' + e.opening, e.rollladen && e.rollladen !== 'kein' && 'Rollladen ' + e.rollladen, e.options?.muntins && 'Sprossen', e.options?.insekt && 'Insektenschutz', e.options?.fbInnen && 'Fensterbank innen', e.options?.fbAussen && 'Fensterbank außen'].filter(Boolean).join(', ')].filter(Boolean);
+      font(9, true); const t1 = doc.splitTextToSize(e.label || '', cols[1][1] - 2); font(8.5); const t2 = doc.splitTextToSize(det.join('\n'), cols[1][1] - 2); const h = (t1.length + t2.length) * 4.2 + 3;
+      if (y + h > 262) { doc.addPage(); y = 24; th(); }
+      let x = M + 1; font(9); doc.text(String(i + 1), x, y); x += cols[0][1]; font(9, true); doc.text(t1, x, y); font(8.5); doc.setTextColor(70); doc.text(t2, x, y + t1.length * 4.2); doc.setTextColor(0); x += cols[1][1];
+      font(9); doc.text(`${e.anzahl || 1} Stk.`, x + cols[2][1] - 2, y, { align: 'right' }); x += cols[2][1]; doc.text(FB.eur(ep), x + cols[3][1] - 2, y, { align: 'right' }); x += cols[3][1]; doc.text(FB.eur(gp), x + cols[4][1] - 2, y, { align: 'right' });
+      y += h; doc.setDrawColor(225); doc.line(M, y - 3, W - M, y - 3);
+    });
+    if (y > 235) { doc.addPage(); y = 24; }
+    const line = (l, v, bd) => { font(9.5, bd); doc.text(l, W - M - 52, y); doc.text(v, W - M, y, { align: 'right' }); y += 5.5; };
+    y += 3; line('Summe', FB.eur(c.sum)); if (c.rab) line(`abzüglich ${A.rabatt} % Rabatt`, '− ' + FB.eur(c.rab)); line('Nettobetrag', FB.eur(c.netto));
+    line(mw ? `zzgl. ${mw} % MwSt.` : 'Umsatzsteuer', mw ? FB.eur(c.st) : '—'); doc.setDrawColor(120); doc.line(W - M - 52, y - 3.5, W - M, y - 3.5); line('Gesamtbetrag', FB.eur(c.brutto), true);
+    if (!mw) { font(8); doc.text('Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.', M, y); y += 5; }
+    if (A.text) { y += 3; font(9); const t = doc.splitTextToSize(A.text, W - 2 * M); doc.text(t, M, y); y += t.length * 4.5; }
+    font(9); y += 6; doc.text(['Wir freuen uns auf Ihren Auftrag.', '', 'Mit freundlichen Grüßen', F.name], M, y);
+    const n = doc.getNumberOfPages(); for (let i = 1; i <= n; i++) { doc.setPage(i); font(7.5); doc.setTextColor(120); doc.text(`Angebot ${A.nr} · ${F.name} · Seite ${i}/${n}`, M, 290); doc.setTextColor(0); }
+    FB.download(doc.output('blob'), `Angebot_${FB.safeName(A.nr)}_${FB.safeName(k.name)}.pdf`);
   }
   function more() {
     const d = FB.sheet(`<h2>Projekt ${esc(P.nummer || '')}</h2><div class="stack" style="margin-top:12px">
-      <button class="btn ghost" data-a="pdf">Aufmaßblatt als PDF</button><button class="btn ghost" data-a="csv">Positionen als Excel-Tabelle (CSV)</button><button class="btn ghost" data-a="json">Export für Branchensoftware (JSON)</button>
-      <button class="btn ghost" data-a="pf">In PassFort öffnen (Abnahme)</button>
+      <button class="btn" data-a="ang">Angebot erstellen</button><button class="btn ghost" data-a="pdf">Aufmaßblatt als PDF</button>
+      <button class="btn ghost" data-a="best">Bestellliste für den Hersteller (PDF)</button><button class="btn ghost" data-a="csv">Bestellliste als Excel-Tabelle (CSV)</button><button class="btn ghost" data-a="json">Export für Branchensoftware (JSON)</button>
+      <button class="btn ghost" data-a="ter">Termin planen</button><button class="btn ghost" data-a="pf">In PassFort öffnen (Abnahme)</button>
       ${FB.canAdmin() && FB.canEdit() ? '<button class="btn danger" data-a="del">Projekt löschen</button>' : ''}<button class="btn ghost" data-close>Schließen</button></div>
       <p class="tiny muted" style="margin-top:10px">Der JSON-Export ist eine offene Struktur. Für einen direkten Import in eure Branchensoftware gleichen wir die Felder gern ab.</p>`);
     d.el.addEventListener('click', async ev => {
       const a = ev.target.closest('[data-a]')?.dataset.a; if (!a) return; d.close();
-      if (a === 'pdf') pdfAufmass().catch(e => toast(errText(e))); if (a === 'csv') exportCSV(); if (a === 'json') exportJSON(); if (a === 'pf') location.href = './passfort.html#p=' + P.id;
-      if (a === 'del') { if (!(await FB.confirmDlg(`Projekt ${P.nummer || ''} mit allen Fotos löschen?`, 'Löschen', true))) return; try { const files = P.aufmass.elemente.map(e => e.foto).filter(Boolean); await FB.deleteProjekt(P.id); files.forEach(f => FB.removeFile(f)); toast('Gelöscht'); location.hash = ''; } catch (e) { toast(errText(e)); } }
+      if (a === 'pdf') pdfAufmass().catch(e => toast(errText(e))); if (a === 'csv') exportCSV(); if (a === 'best') pdfBestellung().catch(e => toast(errText(e))); if (a === 'ang') angebot(); if (a === 'ter') { saveNow().then(() => location.href = './planung.html#neu=' + P.id); } if (a === 'json') exportJSON(); if (a === 'pf') location.href = './passfort.html#p=' + P.id;
+      if (a === 'del') { if (!(await FB.confirmDlg(`Projekt ${P.nummer || ''} mit allen Fotos löschen?`, 'Löschen', true))) return; try { const files = P.aufmass.elemente.flatMap(e => [e.foto, ...(e.fotos || []).map(f => f.pfad)]).filter(Boolean); await FB.deleteProjekt(P.id); files.forEach(f => FB.removeFile(f)); toast('Gelöscht'); location.hash = ''; } catch (e) { toast(errText(e)); } }
     });
   }
 })();

@@ -1,7 +1,7 @@
 /* ProFitAR & PassFort: App-Dateien offline verfügbar (Daten liegen in IndexedDB, nicht hier) */
-const CACHE = 'fensterbau-2026-11-04a';
-const SHELL = ['./profitar.html', './passfort.html', './konto.html', './pass.html', './fb.css?v=2026-11-04a', './fb-core.js?v=2026-11-04a', './vendor/supabase.js', './vendor/jspdf.umd.min.js', './vendor/qrcode.min.js',
-  './vendor/figtree-latin-400-normal.woff2', './vendor/figtree-latin-600-normal.woff2', './vendor/figtree-latin-700-normal.woff2', './icon-profitar.svg', './icon-passfort.svg'];
+const CACHE = 'fensterbau-2026-11-04b';
+const SHELL = ['./profitar.html', './passfort.html', './konto.html', './pass.html', './planung.html', './fb.css?v=2026-11-04b', './fb-core.js?v=2026-11-04b', './vendor/supabase.js', './vendor/jspdf.umd.min.js', './vendor/qrcode.min.js',
+  './vendor/figtree-latin-400-normal.woff2', './vendor/figtree-latin-600-normal.woff2', './vendor/figtree-latin-700-normal.woff2', './icon-profitar.svg', './icon-passfort.svg', './icon-planung.svg'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('fensterbau-') && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

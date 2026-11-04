@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#1e293b">
 <title>Konto – ProFitAR & PassFort</title>
 <link rel="icon" href="./icon-konto.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./fb.css?v=2026-11-04a">
+<link rel="stylesheet" href="./fb.css?v=2026-11-04b">
 <style>
   .auth { max-width: 440px; margin: 28px auto 0; }
   .plans { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
@@ -20,7 +20,7 @@
 <body>
 <main id="app"><div class="auth"><div class="skel"></div></div></main>
 <script src="./vendor/supabase.js"></script>
-<script src="./fb-core.js?v=2026-11-04a"></script>
+<script src="./fb-core.js?v=2026-11-04b"></script>
 <script>
 (async () => {
   const { $, $$, esc, toast, call, errText, fmtDate } = FB;
@@ -138,7 +138,7 @@
     app.innerHTML = ''; if (!$('header.top')) FB.header('konto', 'Konto');
     app.innerHTML = `
       <div class="head"><div><p class="eyebrow">Konto</p><h1>${esc(f.name)}</h1><p class="muted small">Angemeldet als ${esc(S.me?.name || '')} (${esc(S.user.email || '')}) · ${ROLLE[S.rolle] || ''}</p></div>
-        <div class="row"><a class="btn soft" href="./profitar.html">Aufmaß</a><a class="btn soft" href="./passfort.html">Abnahme</a><button class="btn ghost" id="logout">${FB.demo ? 'Demo beenden' : 'Abmelden'}</button></div></div>
+        <div class="row"><a class="btn soft" href="./profitar.html">Aufmaß</a><a class="btn soft" href="./passfort.html">Abnahme</a><a class="btn soft" href="./planung.html">Planung</a><button class="btn ghost" id="logout">${FB.demo ? 'Demo beenden' : 'Abmelden'}</button></div></div>
       <section class="card" id="abo"><h2>Abo</h2><div id="aboBox"></div></section>
       <section class="card" id="firma"><h2>Betrieb</h2>
         <form id="fFirma" class="grid g2" novalidate>
@@ -152,6 +152,8 @@
           <label class="f span2">Pflegehinweise im Fensterpass<textarea id="fPflege" rows="4" maxlength="2000" ${adm ? '' : 'disabled'}>${esc(f.pflege || '')}</textarea></label>
           ${adm ? '<div class="span2"><button class="btn">Speichern</button></div>' : '<p class="span2 small muted">Ändern können Inhaber und Büro.</p>'}
         </form></section>
+      <section class="card" id="preise"><h2>Preise für Angebote</h2><div id="preisBox"></div></section>
+      <section class="card" id="kunden"><h2>Kunden: Bewertung und Export</h2><div id="kundenBox"></div></section>
       <section class="card" id="team"><h2>Team</h2><div id="teamBox"><div class="skel"></div></div></section>
       <section class="card" id="daten"><h2>Daten</h2>
         <p class="small muted">Alle Projekte mit Aufmaß, Abnahme, Servicefällen, Fotos und Unterschriften als ZIP – für eure Ablage oder einen Wechsel.</p>
@@ -162,7 +164,7 @@
           <button class="btn danger" id="delBtn" style="margin-top:8px">Endgültig löschen</button></details>` : ''}
       </section>`;
     $('#logout').onclick = async () => { if (FB.demo) { sessionStorage.removeItem('fb.demo'); location.href = './konto.html?demo=0'; return; } await FB.sb.auth.signOut(); location.href = './konto.html'; };
-    aboBox(); team();
+    aboBox(); team(); preisBox(); kundenBox();
     let logo = f.logo;
     $('#fLogo')?.addEventListener('change', async e => {
       const file = e.target.files[0]; if (!file) return;
@@ -201,6 +203,50 @@
         ${PAY[k].m ? `<a class="btn sm" href="${esc(link(k, 'm'))}" rel="noopener">Monatlich buchen</a><a class="btn ghost sm" href="${esc(link(k, 'j'))}" rel="noopener">Jährlich buchen</a>` : `<a class="btn ghost sm" href="mailto:info@novaworks-it.de?subject=${encodeURIComponent('Fensterbau-Tarif ' + n + ' für ' + f.name)}">Tarif anfragen</a>`}</div>`).join('')}</div>
         <p class="small muted" style="margin-top:10px">Alle Preise sind Endpreise. Gemäß § 19 UStG wird keine Umsatzsteuer berechnet. Abos verlängern sich automatisch und sind zum Ende der Laufzeit kündbar. Zahlung sicher über Stripe.</p>
         ${PAY.portal && f.stripe_customer ? `<a class="btn ghost sm" style="margin-top:8px" href="${esc(PAY.portal)}?prefilled_email=${encodeURIComponent(FB.S.user.email || '')}" rel="noopener">Abo verwalten, Rechnungen, kündigen</a>` : ''}` : '<p class="small muted">Tarif und Zahlung verwaltet der Inhaber.</p>'}`;
+  }
+
+
+  function preisBox() {
+    const GLAS = ['2-fach Wärmeschutz', '3-fach Wärmeschutz', '3-fach mit Sicherheitsglas (VSG)', 'Schallschutz', 'Ornamentglas', 'Milchglas / satiniert'];
+    const f = FB.S.firma, P = FB.preise(), adm = FB.canAdmin(), box = $('#preisBox'), dis = adm ? '' : 'disabled';
+    const n = (id, v, ph = '0') => `<input type="number" min="0" step="0.01" id="${id}" value="${+v ? v : ''}" placeholder="${ph}" ${dis} style="margin:0">`;
+    box.innerHTML = `<p class="small muted" style="margin-bottom:10px">ProFitAR rechnet damit einen Angebotsvorschlag je Position: Fläche des Bestellmaßes × Preis pro m², mindestens der Mindestpreis, plus Zuschläge. Jeder Preis lässt sich im Angebot noch überschreiben.</p>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:14px"><thead><tr><th style="text-align:left;padding:6px">Elementtyp</th><th style="text-align:left;padding:6px">€ pro m²</th><th style="text-align:left;padding:6px">Mindestpreis €</th></tr></thead><tbody>
+        ${FB.TYPEN.map((t, i) => `<tr style="border-top:1px solid var(--line)"><td style="padding:6px">${esc(t)}</td><td style="padding:6px" class="field-cell">${n('pm' + i, P.typen[t]?.m2)}</td><td style="padding:6px">${n('pn' + i, P.typen[t]?.min)}</td></tr>`).join('')}</tbody></table></div>
+      <div class="grid g3" style="margin-top:12px">
+        <label class="f">Farbe/Dekor (Aufschlag %)${n('zF', P.farbe_prozent)}</label><label class="f">Rollladen (€ je Stück)${n('zR', P.rollladen)}</label><label class="f">Sprossen (€ je Stück)${n('zS', P.sprossen)}</label>
+        <label class="f">Insektenschutz (€ je Stück)${n('zI', P.insekt)}</label><label class="f">Fensterbank innen (€ je m)${n('zFi', P.fb_innen_m)}</label><label class="f">Fensterbank außen (€ je m)${n('zFa', P.fb_aussen_m)}</label>
+        <label class="f">Montage (€ je Stück)${n('zM', P.montage)}</label><label class="f">Ausbau & Entsorgung (€ je Stück)${n('zD', P.demontage)}</label><label class="f">Mehrwertsteuer (%)<input type="number" min="0" max="30" step="1" id="zMw" value="${+f.mwst}" ${dis} style="margin:0"></label></div>
+      <details style="margin-top:10px"><summary class="small" style="cursor:pointer">Aufpreis je Verglasung (€ pro m²)</summary><div class="grid g3" style="margin-top:8px">${GLAS.map((g, i) => `<label class="f">${esc(g)}${n('zg' + i, P.glas[g])}</label>`).join('')}</div></details>
+      <label class="f" style="margin-top:10px">Einleitungstext im Angebot<textarea id="zTxt" rows="3" maxlength="1500" ${dis}>${esc(f.angebot_text || '')}</textarea></label>
+      <p class="hint">Mehrwertsteuer 0 % nur, wenn euer Betrieb Kleinunternehmer nach § 19 UStG ist – dann steht der Hinweis automatisch im Angebot.</p>
+      ${adm ? '<button class="btn" id="zSave" style="margin-top:10px">Preise speichern</button>' : ''}`;
+    $('#zSave')?.addEventListener('click', async () => {
+      const v = id => Math.max(0, +($('#' + id).value || 0));
+      const preise = { typen: Object.fromEntries(FB.TYPEN.map((t, i) => [t, { m2: v('pm' + i), min: v('pn' + i) }])), farbe_prozent: v('zF'), rollladen: v('zR'), sprossen: v('zS'), insekt: v('zI'), fb_innen_m: v('zFi'), fb_aussen_m: v('zFa'), montage: v('zM'), demontage: v('zD'), glas: Object.fromEntries(GLAS.map((g, i) => [g, v('zg' + i)])) };
+      try { await FB.saveFirma({ preise, mwst: Math.min(30, v('zMw')), angebot_text: $('#zTxt').value.trim() }); toast('Preise gespeichert'); } catch (e) { toast(errText(e)); }
+    });
+  }
+  function kundenBox() {
+    const f = FB.S.firma, adm = FB.canAdmin(), box = $('#kundenBox'), dis = adm ? '' : 'disabled';
+    let cols = (f.export_spalten?.cols?.length ? f.export_spalten.cols : FB.EXPORT_COLS.map(([k, n]) => ({ k, n }))).map(c => ({ ...c, on: true }));
+    FB.EXPORT_COLS.forEach(([k, n]) => { if (!cols.find(c => c.k === k)) cols.push({ k, n, on: false }); });
+    box.innerHTML = `<h3 style="margin-bottom:6px">Bitte um Bewertung</h3><p class="small muted" style="margin-bottom:8px">Mit Link zeigt der Fensterpass einen „Jetzt bewerten“-Knopf. Hat der Kunde bei der Übergabe zugestimmt, bekommt er nach einigen Tagen einmalig eine E-Mail mit der Bitte um Bewertung.</p>
+      <div class="grid g2"><label class="f">Link zur Bewertung (z. B. Google-Unternehmensprofil)<input id="bLink" type="url" placeholder="https://g.page/r/…/review" value="${esc(f.bewertung_link || '')}" ${dis}></label><label class="f">E-Mail nach wie vielen Tagen?<input id="bTage" type="number" min="1" max="30" value="${f.bewertung_tage || 3}" ${dis}></label></div>
+      <h3 style="margin:16px 0 6px">Spalten der Bestellliste (CSV)</h3><p class="small muted" style="margin-bottom:8px">Reihenfolge und Spaltennamen so einstellen, wie eure Branchensoftware oder euer Hersteller die Tabelle erwartet.</p>
+      <div class="list" id="colList"></div>
+      ${adm ? '<div class="row" style="margin-top:10px"><button class="btn" id="kSave">Speichern</button><button class="btn ghost" id="kReset">Standard</button></div>' : ''}`;
+    const drawCols = () => { $('#colList').innerHTML = cols.map((c, i) => `<div class="item" style="cursor:default;padding:6px 2px"><input type="checkbox" data-on="${i}" ${c.on ? 'checked' : ''} ${dis} aria-label="Spalte verwenden"><input class="field" style="margin:0;flex:1;min-height:36px;padding:6px 10px" data-n="${i}" value="${esc(c.n)}" ${dis} aria-label="Spaltenname"><span class="tiny muted" style="width:110px">${esc(FB.EXPORT_COLS.find(x => x[0] === c.k)?.[1] || '')}</span>${adm ? `<button class="iconbtn" data-up="${i}" aria-label="nach oben">↑</button><button class="iconbtn" data-dn="${i}" aria-label="nach unten">↓</button>` : ''}</div>`).join('');
+      $$('[data-on]').forEach(x => x.onchange = () => cols[+x.dataset.on].on = x.checked); $$('[data-n]').forEach(x => x.oninput = () => cols[+x.dataset.n].n = x.value);
+      $$('[data-up]').forEach(x => x.onclick = () => { const i = +x.dataset.up; if (i > 0) { [cols[i - 1], cols[i]] = [cols[i], cols[i - 1]]; drawCols(); } });
+      $$('[data-dn]').forEach(x => x.onclick = () => { const i = +x.dataset.dn; if (i < cols.length - 1) { [cols[i + 1], cols[i]] = [cols[i], cols[i + 1]]; drawCols(); } }); };
+    drawCols();
+    $('#kReset')?.addEventListener('click', () => { cols = FB.EXPORT_COLS.map(([k, n]) => ({ k, n, on: true })); drawCols(); });
+    $('#kSave')?.addEventListener('click', async () => {
+      const link = $('#bLink').value.trim(); if (link && !/^https:\/\//.test(link)) return toast('Der Bewertungslink muss mit https:// beginnen.');
+      const on = cols.filter(c => c.on).map(c => ({ k: c.k, n: c.n.trim() || FB.EXPORT_COLS.find(x => x[0] === c.k)[1] })); if (!on.length) return toast('Mindestens eine Spalte auswählen.');
+      try { await FB.saveFirma({ bewertung_link: link, bewertung_tage: Math.max(1, Math.min(30, +$('#bTage').value || 3)), export_spalten: { cols: on } }); toast('Gespeichert'); } catch (e) { toast(errText(e)); }
+    });
   }
 
   async function team() {

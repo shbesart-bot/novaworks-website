@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0f766e">
+<title>Montageplanung – ProFitAR & PassFort</title>
+<link rel="icon" href="./icon-planung.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./fb.css?v=2026-11-04b">
+<style>
+  :root[data-app="planung"] { --accent: #0f766e; --accent-soft: #dcf3ef; }
+  @media (prefers-color-scheme: dark) { :root[data-app="planung"]:not([data-theme="light"]) { --accent: #2dd4bf; --accent-soft: #113a35; } }
+  .week { display: grid; gap: 10px; }
+  @media (min-width: 980px) { .week { grid-template-columns: repeat(7, minmax(0, 1fr)); align-items: start; } }
+  .day { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 10px; min-height: 90px; }
+  .day.today { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .day h3 { font-size: 13px; color: var(--muted); margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .t { display: block; width: 100%; text-align: left; font: inherit; border: 0; border-left: 4px solid var(--accent); background: var(--soft); border-radius: 10px; padding: 8px 10px; margin-top: 6px; cursor: pointer; color: var(--ink); }
+  .t.aufmass { border-color: #0369a1; } .t.montage { border-color: #0f766e; } .t.service { border-color: #b45309; } .t.wartung { border-color: #7c3aed; } .t.sonstiges { border-color: #64748b; }
+  .t.done { opacity: .55; text-decoration: line-through; }
+  .t b { display: block; font-size: 14px; }
+  .t span { display: block; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main id="app"><div class="skel"></div></main>
+<script src="./vendor/supabase.js"></script>
+<script src="./fb-core.js?v=2026-11-04b"></script>
+<script>
+(async () => {
+  const { $, $$, esc, toast, errText, fmtDate } = FB;
+  try { await FB.init(); } catch (e) { if (e.message !== 'redirect') $('#app').innerHTML = `<div class="card"><p>${esc(errText(e))}</p></div>`; return; }
+  FB.header('planung', 'Montageplanung');
+  const app = $('#app');
+  const ART = { aufmass: 'Aufmaß', montage: 'Montage', service: 'Service', wartung: 'Wartung', sonstiges: 'Sonstiges' };
+  const iso = d => { const x = new Date(d); return new Date(x.getTime() - x.getTimezoneOffset() * 6e4).toISOString().slice(0, 10); };
+  const monday = d => { const x = new Date(d + 'T12:00:00'); const wd = (x.getDay() + 6) % 7; x.setDate(x.getDate() - wd); return iso(x); };
+  const addDays = (d, n) => { const x = new Date(d + 'T12:00:00'); x.setDate(x.getDate() + n); return iso(x); };
+  const kw = d => { const t = new Date(d + 'T12:00:00'); t.setDate(t.getDate() + 3 - (t.getDay() + 6) % 7); const w1 = new Date(t.getFullYear(), 0, 4); return 1 + Math.round(((t - w1) / 864e5 - 3 + (w1.getDay() + 6) % 7) / 7); };
+  let start = monday(FB.today()), nur = false, termine = [], projekte = [], team = [];
+  let saved = null; try { nur = localStorage.getItem('fb.plan.meine') === '1'; } catch {}
+  [projekte, team] = await Promise.all([FB.listProjekte().catch(() => []), FB.listTeam().catch(() => [])]);
+  const pById = id => projekte.find(p => p.id === id);
+  const tName = id => team.find(t => t.user_id === id)?.name || '';
+
+  async function render() {
+    const end = addDays(start, 6);
+    app.innerHTML = `<div class="head"><div><p class="eyebrow">Planung</p><h1>KW ${kw(start)} · ${fmtDate(start)} – ${fmtDate(end)}</h1></div>
+      <div class="row"><button class="btn ghost sm" id="prev" aria-label="Vorige Woche">‹</button><button class="btn ghost sm" id="heute">Heute</button><button class="btn ghost sm" id="next" aria-label="Nächste Woche">›</button>
+        <label class="check small"><input type="checkbox" id="meine" ${nur ? 'checked' : ''}>nur meine</label>${FB.canEdit() ? '<button class="btn" id="neu">+ Termin</button>' : ''}</div></div>
+      <div class="week" id="wk"><div class="skel"></div></div>
+      <div class="row" style="margin-top:14px"><button class="btn ghost sm" id="ics">Woche als Kalender-Datei (ICS)</button></div>`;
+    $('#prev').onclick = () => { start = addDays(start, -7); render(); }; $('#next').onclick = () => { start = addDays(start, 7); render(); }; $('#heute').onclick = () => { start = monday(FB.today()); render(); };
+    $('#meine').onchange = e => { nur = e.target.checked; try { localStorage.setItem('fb.plan.meine', nur ? '1' : '0'); } catch {} draw(); };
+    $('#neu')?.addEventListener('click', () => edit({ datum: FB.today() < start || FB.today() > end ? start : FB.today(), art: 'montage', monteure: [FB.S.user.id] }));
+    $('#ics').onclick = ics;
+    try { termine = await FB.listTermine(start, end); } catch (e) { $('#wk').innerHTML = `<p class="note crit">${esc(errText(e))}</p>`; return; }
+    draw();
+  }
+  function draw() {
+    const days = [...Array(7)].map((_, i) => addDays(start, i)), me = FB.S.user.id;
+    const l = termine.filter(t => !nur || (t.monteure || []).includes(me));
+    $('#wk').innerHTML = days.map(d => { const tt = l.filter(t => t.datum === d), wd = new Date(d + 'T12:00:00').toLocaleDateString('de-DE', { weekday: 'long' });
+      return `<section class="day ${d === FB.today() ? 'today' : ''}"><h3><span>${wd}</span><span>${fmtDate(d).slice(0, 6)}</span></h3>${tt.map(t => { const p = pById(t.projekt_id); return `<button class="t ${t.art} ${t.erledigt ? 'done' : ''}" data-t="${t.id}"><span>${t.von ? t.von.slice(0, 5) + (t.bis ? '–' + t.bis.slice(0, 5) : '') + ' · ' : ''}${ART[t.art]}</span><b>${esc(t.titel || p?.kunde?.name || 'Termin')}</b><span>${esc(p?.kunde?.adresse || '')}</span><span>${esc((t.monteure || []).map(tName).filter(Boolean).join(', '))}</span></button>`; }).join('') || '<p class="tiny muted">—</p>'}</section>`; }).join('');
+    $$('[data-t]').forEach(b => b.onclick = () => detail(termine.find(t => t.id === b.dataset.t)));
+  }
+  function detail(t) {
+    const p = pById(t.projekt_id), k = p?.kunde || {}, adr = k.adresse ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(k.adresse) : '';
+    const pos = (p?.aufmass?.elemente || []).map((e, i) => { const b = FB.bestell(e); return `<div><span>${i + 1}. ${esc(e.label)}</span><b>${esc(e.type)}${b.B ? ' · ' + b.B + ' × ' + b.H : ''}${e.anzahl > 1 ? ' · ' + e.anzahl + ' Stk.' : ''}</b></div>`; }).join('');
+    const d = FB.sheet(`<div class="row between"><h2>${esc(ART[t.art])}: ${esc(t.titel || k.name || 'Termin')}</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
+      <p class="small muted" style="margin-top:4px">${fmtDate(t.datum)}${t.von ? ', ' + t.von.slice(0, 5) + (t.bis ? '–' + t.bis.slice(0, 5) : '') + ' Uhr' : ''} · ${esc((t.monteure || []).map(tName).filter(Boolean).join(', ') || 'niemand eingeteilt')}</p>
+      ${p ? `<div class="kv" style="margin-top:12px"><div><span>Kunde</span><b>${esc(k.name || '—')}</b></div>${k.adresse ? `<div><span>Adresse</span><b><a href="${esc(adr)}" target="_blank" rel="noopener">${esc(k.adresse)}</a></b></div>` : ''}${k.telefon ? `<div><span>Telefon</span><b><a href="tel:${esc(k.telefon.replace(/[^\d+]/g, ''))}">${esc(k.telefon)}</a></b></div>` : ''}${k.notiz ? `<div><span>Hinweise</span><b>${esc(k.notiz)}</b></div>` : ''}</div>` : ''}
+      ${t.notiz ? `<p class="note" style="margin-top:10px;white-space:pre-line">${esc(t.notiz)}</p>` : ''}
+      ${pos ? `<h3 style="margin:12px 0 6px">Positionen (Bestellmaß)</h3><div class="kv">${pos}</div>` : ''}
+      <div class="row" style="margin-top:14px">${adr ? `<a class="btn" href="${esc(adr)}" target="_blank" rel="noopener">Navigation</a>` : ''}${p ? `<a class="btn ghost" href="./profitar.html#p=${p.id}">Aufmaß</a><a class="btn ghost" href="./passfort.html#p=${p.id}">Abnahme</a>` : ''}
+        ${FB.canEdit() ? `<button class="btn ghost" id="tDone">${t.erledigt ? 'Wieder offen' : 'Erledigt'}</button><button class="btn ghost" id="tEdit">Bearbeiten</button>` : ''}</div>`);
+    $('#tDone', d.el)?.addEventListener('click', async () => { try { await FB.saveTermin({ ...t, erledigt: !t.erledigt }); d.close(); render(); } catch (e) { toast(errText(e)); } });
+    $('#tEdit', d.el)?.addEventListener('click', () => { d.close(); edit(t); });
+  }
+  function edit(t) {
+    const offen = projekte.filter(p => p.id === t.projekt_id || !p.abgeschlossen_at || ['service', 'wartung'].includes(t.art)).slice(0, 300);
+    const d = FB.sheet(`<div class="row between"><h2>${t.id ? 'Termin bearbeiten' : 'Neuer Termin'}</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
+      <div class="grid g2" style="margin-top:12px">
+        <label class="f">Art<select id="eArt">${Object.entries(ART).map(([k, l]) => `<option value="${k}" ${t.art === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
+        <label class="f">Projekt<select id="eP"><option value="">ohne Projekt</option>${offen.map(p => `<option value="${p.id}" ${p.id === t.projekt_id ? 'selected' : ''}>${esc((p.nummer ? p.nummer + ' · ' : '') + (p.kunde?.name || 'ohne Name'))}</option>`).join('')}</select></label>
+        <label class="f">Datum<input id="eD" type="date" value="${esc(t.datum)}"></label>
+        <div class="row"><label class="f" style="flex:1">von<input id="eV" type="time" value="${esc((t.von || '').slice(0, 5))}"></label><label class="f" style="flex:1">bis<input id="eB" type="time" value="${esc((t.bis || '').slice(0, 5))}"></label></div>
+        <label class="f span2">Titel <span class="tiny">(leer = Kundenname)</span><input id="eT" maxlength="120" value="${esc(t.titel || '')}"></label>
+        <div class="span2"><span class="small muted" style="font-weight:600">Wer fährt hin?</span><div class="row" style="margin-top:6px">${team.filter(m => m.aktiv).map(m => `<label class="check"><input type="checkbox" data-m="${m.user_id}" ${(t.monteure || []).includes(m.user_id) ? 'checked' : ''}>${esc(m.name || m.email)}</label>`).join('')}</div></div>
+        <label class="f span2">Notiz<textarea id="eN" rows="3" placeholder="z. B. Material, Schlüssel beim Nachbarn, Gerüst">${esc(t.notiz || '')}</textarea></label></div>
+      <div class="row" style="margin-top:14px;justify-content:space-between">${t.id ? '<button class="btn danger" id="eDel">Löschen</button>' : '<span></span>'}<div class="row"><button class="btn ghost" data-close>Abbrechen</button><button class="btn" id="eOk">Speichern</button></div></div>`);
+    $('#eOk', d.el).onclick = async () => {
+      const row = { ...t, art: $('#eArt', d.el).value, projekt_id: $('#eP', d.el).value || null, datum: $('#eD', d.el).value, von: $('#eV', d.el).value || null, bis: $('#eB', d.el).value || null, titel: $('#eT', d.el).value.trim(), notiz: $('#eN', d.el).value.trim(), monteure: $$('[data-m]', d.el).filter(c => c.checked).map(c => c.dataset.m) };
+      if (!row.datum) return toast('Bitte ein Datum wählen.');
+      if (!row.projekt_id && !row.titel) return toast('Bitte ein Projekt oder einen Titel angeben.');
+      if (row.von && row.bis && row.bis <= row.von) return toast('Das Ende liegt vor dem Beginn.');
+      const clash = row.von && termine.filter(x => x.id !== row.id && x.datum === row.datum && x.von && (x.monteure || []).some(m => row.monteure.includes(m)) && x.von < (row.bis || '24:00') && (x.bis || '24:00') > row.von);
+      if (clash?.length && !(await FB.confirmDlg(`Überschneidung: ${clash.map(x => (x.monteure || []).filter(m => row.monteure.includes(m)).map(tName).join(', ') + ' ist ' + (x.von || '').slice(0, 5) + ' bei ' + (x.titel || pById(x.projekt_id)?.kunde?.name || 'einem Termin')).join('; ')}. Trotzdem speichern?`, 'Speichern'))) return;
+      try { await FB.saveTermin(row); d.close(); start = monday(row.datum); render(); toast('Gespeichert'); } catch (e) { toast(errText(e)); }
+    };
+    $('#eDel', d.el)?.addEventListener('click', async () => { if (!(await FB.confirmDlg('Termin löschen?', 'Löschen', true))) return; try { await FB.deleteTermin(t.id); d.close(); render(); } catch (e) { toast(errText(e)); } });
+  }
+  function ics() {
+    const pad = n => String(n).padStart(2, '0'), dt = (d, t) => d.replace(/-/g, '') + (t ? 'T' + t.slice(0, 5).replace(':', '') + '00' : ''), e2 = s => String(s || '').replace(/[\\;,]/g, m => '\\' + m).replace(/\n/g, '\\n');
+    const me = FB.S.user.id, l = termine.filter(t => !nur || (t.monteure || []).includes(me)), now = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
+    const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//NovaWorks//Fensterbau//DE', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:Montageplanung',
+      ...l.flatMap(t => { const p = pById(t.projekt_id), end = t.von ? (t.bis || pad(Math.min(23, +t.von.slice(0, 2) + 2)) + t.von.slice(2, 5)) : null;
+        return ['BEGIN:VEVENT', `UID:${t.id}@fensterbau`, `DTSTAMP:${now}`, t.von ? `DTSTART:${dt(t.datum, t.von)}` : `DTSTART;VALUE=DATE:${dt(t.datum)}`, t.von ? `DTEND:${dt(t.datum, end)}` : `DTEND;VALUE=DATE:${dt(addDays(t.datum, 1))}`,
+          `SUMMARY:${e2(ART[t.art] + ': ' + (t.titel || p?.kunde?.name || ''))}`, p?.kunde?.adresse ? `LOCATION:${e2(p.kunde.adresse)}` : '', `DESCRIPTION:${e2([t.notiz, p?.kunde?.telefon && 'Tel. ' + p.kunde.telefon].filter(Boolean).join('\n'))}`, 'END:VEVENT'].filter(Boolean); }), 'END:VCALENDAR'];
+    FB.download(new Blob([lines.join('\r\n')], { type: 'text/calendar;charset=utf-8' }), `Montageplanung_KW${kw(start)}.ics`);
+  }
+
+  const m = location.hash.match(/^#neu=([\w-]+)(?:&art=(\w+))?(?:&service=([\w-]+))?/);
+  await render();
+  if (m && FB.canEdit()) { history.replaceState(null, '', location.pathname + location.search); const p = pById(m[1]); edit({ projekt_id: m[1], art: ART[m[2]] ? m[2] : (p?.abgeschlossen_at ? 'service' : p?.status === 'aufmass' ? 'aufmass' : 'montage'), service_id: m[3] || null, datum: FB.today(), monteure: [FB.S.user.id] }); }
+})();
+</script>
+</body>
+</html>

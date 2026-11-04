@@ -4,7 +4,7 @@
   const SB_URL = 'https://brtdtjqinyhsesiqhkkk.supabase.co';
   const SB_KEY = 'sb_publishable_i5Lf1DJYMBVX0yQOW2_nKQ_bRBbDUD2';
   const FN = SB_URL + '/functions/v1/fb-konto';
-  const VERSION = '2026-11-04a';
+  const VERSION = '2026-11-04b';
   const qs = new URLSearchParams(location.search);
   let demo = qs.get('demo') === '1';
   try { if (qs.get('demo') === '0') sessionStorage.removeItem('fb.demo'); else if (demo) sessionStorage.setItem('fb.demo', '1'); else demo = sessionStorage.getItem('fb.demo') === '1'; } catch {}
@@ -75,7 +75,9 @@
   /* Demo: Beispielbetrieb, alles bleibt im Browser */
   const DEMO_FIRMA = { id: 'demo', name: 'Fensterbau Muster (Demo)', anschrift: 'Musterstraße 1, 12345 Musterstadt', telefon: '01234 56789', email: 'service@example.com', web: '', logo: null, plan: 'team', testphase_bis: new Date(Date.now() + 14 * 864e5).toISOString(), bezahlt_bis: null,
     pruefliste: ['Fenster und Türen auf leichtgängige Funktion geprüft', 'Dichtungen, Beschläge und Entwässerung kontrolliert', 'Anschlüsse innen und außen sauber ausgeführt', 'Baustelle gereinigt, Verpackung entsorgt', 'Kunde in Bedienung und Pflege eingewiesen'],
-    pflege: 'Beschläge einmal im Jahr leicht ölen. Dichtungen mit Wasser und mildem Reiniger säubern, danach mit Pflegestift behandeln. Entwässerungsschlitze frei halten. Rahmen nicht mit scheuernden Mitteln reinigen.' };
+    pflege: 'Beschläge einmal im Jahr leicht ölen. Dichtungen mit Wasser und mildem Reiniger säubern, danach mit Pflegestift behandeln. Entwässerungsschlitze frei halten. Rahmen nicht mit scheuernden Mitteln reinigen.',
+    mwst: 19, angebot_text: 'Vielen Dank für Ihre Anfrage. Gern bieten wir Ihnen folgende Leistungen an. Das Angebot gilt 30 Tage. Maße vorbehaltlich der Prüfung vor Bestellung.', bewertung_link: '', bewertung_tage: 3,
+    preise: { typen: { 'Dreh-Kipp-Fenster': { m2: 480, min: 390 }, 'Festverglasung': { m2: 380, min: 290 }, 'Stulpfenster (2-flügelig)': { m2: 520, min: 690 }, 'Balkontür': { m2: 520, min: 790 }, 'Hebe-Schiebetür': { m2: 980, min: 3900 }, 'Haustür': { m2: 0, min: 2900 }, 'Nebeneingangstür': { m2: 0, min: 1400 } }, farbe_prozent: 12, rollladen: 290, sprossen: 60, insekt: 85, fb_innen_m: 45, fb_aussen_m: 55, montage: 120, demontage: 60, glas: { '3-fach mit Sicherheitsglas (VSG)': 45, 'Schallschutz': 60 } } };
   async function demoSeed() {
     if (await get('kv', 'seeded')) return;
     const el = (label, type, w, h, extra = {}) => ({ id: uid(), label, type, widthMm: w, heightMm: h, widthPoints: [w, w, w], heightPoints: [h, h, h], diagonals: [], installGapMm: 15, opening: 'DIN links', coupling: 'Keine', color: 'RAL 7016 Anthrazit', colorHex: '#3b4148', glass: '3-fach Wärmeschutz', profil: 'Kunststoff 82 mm', rollladen: 'kein', anzahl: 1, colorAussen: '', notiz: '', options: { muntins: false }, ...extra });
@@ -86,6 +88,7 @@
       aufmass: { datum: today(), elemente: [el('Haustür', 'Haustür', 1100, 2150, { color: 'Eiche', colorHex: '#a8794f', opening: 'DIN rechts' })] }, abnahme: {}, created_at: new Date(Date.now() - 9 * 864e5).toISOString(), updated_at: new Date(Date.now() - 3 * 864e5).toISOString(), version: 1 };
     await put('projekte', p1.id, p1); await put('projekte', p2.id, p2);
     await put('kv', 'service', [{ id: uid(), projekt_id: p2.id, name: 'Herr Muster', email: 'kunde@example.com', telefon: '', nachricht: 'Die Haustür schleift unten leicht, wenn es kalt ist.', status: 'neu', zustaendig: null, notiz: '', created_at: new Date(Date.now() - 36e5).toISOString() }]);
+    await put('kv', 'termine', [{ id: uid(), firma_id: 'demo', projekt_id: p2.id, art: 'montage', datum: today(), von: '08:00:00', bis: '12:00:00', titel: '', notiz: 'Haustür mit Seitenteil, Altelement entsorgen', monteure: ['demo-user'], erledigt: false }, { id: uid(), firma_id: 'demo', projekt_id: p1.id, art: 'aufmass', datum: today(), von: '14:00:00', bis: '15:00:00', titel: '', notiz: '', monteure: ['demo-user'], erledigt: false }]);
     await put('kv', 'seeded', 1);
   }
 
@@ -116,7 +119,7 @@
   const canAdmin = () => ['inhaber', 'buero'].includes(S.rolle);
 
   /* ---------- Projekte ---------- */
-  const FIELDS = 'id,firma_id,nummer,kunde,status,aufmass,abnahme,abgeschlossen_at,pass_token,created_at,updated_at,version';
+  const FIELDS = 'id,firma_id,nummer,kunde,status,aufmass,abnahme,nacharbeit,abgeschlossen_at,pass_token,kunde_mail_at,bewertung_mail_at,created_at,updated_at,version';
   async function listProjekte() {
     if (demo) return (await all('projekte')).map(([, v]) => v).sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''));
     const pending = new Map((await all('outbox')).filter(([, o]) => o.kind === 'projekt').map(([, o]) => [o.row.id, o.row]));
@@ -135,11 +138,11 @@
     try { const { data, error } = await sb.from('fb_projekte').select(FIELDS).eq('id', id).maybeSingle(); if (error) throw error; if (data) await put('projekte', id, data); return data; } catch { return local || null; }
   }
   function neuesProjekt() {
-    return { id: uid(), firma_id: S.firma?.id, nummer: '', status: 'aufmass', kunde: { name: '', adresse: '', telefon: '', email: '', notiz: '' }, aufmass: { datum: today(), elemente: [] }, abnahme: {}, abgeschlossen_at: null, pass_token: null, version: 0, _neu: true };
+    return { id: uid(), firma_id: S.firma?.id, nummer: '', status: 'aufmass', kunde: { name: '', adresse: '', telefon: '', email: '', notiz: '' }, aufmass: { datum: today(), elemente: [] }, abnahme: {}, nacharbeit: [], abgeschlossen_at: null, pass_token: null, version: 0, _neu: true };
   }
   async function saveProjekt(p) {
     p.updated_at = new Date().toISOString();
-    const row = { id: p.id, firma_id: S.firma.id, nummer: p.nummer || '', kunde: p.kunde, status: p.status, aufmass: p.aufmass, abnahme: p.abnahme, abgeschlossen_at: p.abgeschlossen_at || null };
+    const row = { id: p.id, firma_id: S.firma.id, nummer: p.nummer || '', kunde: p.kunde, status: p.status, aufmass: p.aufmass, abnahme: p.abnahme, nacharbeit: p.nacharbeit || [], abgeschlossen_at: p.abgeschlossen_at || null };
     if (demo) {
       if (row.abgeschlossen_at && !p.pass_token) { p.pass_token = 'demo-' + uid().replace(/-/g, '').slice(0, 20); p.status = 'abgenommen'; }
       p.version = (p.version || 0) + 1; delete p._neu; await put('projekte', p.id, { ...p }); return p;
@@ -211,7 +214,7 @@
             if (b) { const { error } = await sb.storage.from('fensterbau').upload(o.path, b, { contentType: o.type, upsert: true }); if (error && !/exists|Duplicate/i.test(error.message)) throw error; }
             await del('outbox', k);
           } else {
-            const r = o.row, row = { id: r.id, firma_id: r.firma_id || S.firma.id, nummer: r.nummer || '', kunde: r.kunde, status: r.status, aufmass: r.aufmass, abnahme: r.abnahme, abgeschlossen_at: r.abgeschlossen_at || null };
+            const r = o.row, row = { id: r.id, firma_id: r.firma_id || S.firma.id, nummer: r.nummer || '', kunde: r.kunde, status: r.status, aufmass: r.aufmass, abnahme: r.abnahme, nacharbeit: r.nacharbeit || [], abgeschlossen_at: r.abgeschlossen_at || null };
             const { data, error } = await sb.from('fb_projekte').upsert(row, { onConflict: 'id' }).select(FIELDS).single();
             if (error) throw error;
             const cur = await get('outbox', k);
@@ -236,15 +239,16 @@
   const LOGO = {
     profitar: '<svg viewBox="0 0 100 100" fill="none" aria-hidden="true"><path d="M15 30V15h15M70 15h15v15M85 70v15H70M30 85H15V70" stroke="var(--accent)" stroke-width="7" stroke-linecap="round"/><rect x="27" y="27" width="46" height="46" rx="4" stroke="#16a34a" stroke-width="5" stroke-dasharray="7 5"/><path d="M50 27v46M27 50h46" stroke="var(--accent)" stroke-width="4"/></svg>',
     passfort: '<svg viewBox="0 0 100 100" fill="none" aria-hidden="true"><path d="M50 10l32 12v24c0 22-14 37-32 44C32 83 18 68 18 46V22z" stroke="var(--accent)" stroke-width="7" stroke-linejoin="round"/><path d="M36 50l10 10 19-21" stroke="#16a34a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    planung: '<svg viewBox="0 0 100 100" fill="none" aria-hidden="true"><rect x="14" y="20" width="72" height="66" rx="9" stroke="var(--accent)" stroke-width="7"/><path d="M14 40h72M34 12v16M66 12v16" stroke="var(--accent)" stroke-width="7" stroke-linecap="round"/><path d="M36 62l9 9 18-18" stroke="#16a34a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     konto: '<svg viewBox="0 0 100 100" fill="none" aria-hidden="true"><rect x="14" y="14" width="72" height="72" rx="10" stroke="var(--accent)" stroke-width="7"/><path d="M50 14v72M14 50h72" stroke="var(--accent)" stroke-width="5"/></svg>'
   };
   function header(app, title, sub) {
     document.documentElement.dataset.app = app;
-    const name = { profitar: 'ProFit<span>AR</span>', passfort: 'Pass<span>Fort</span>', konto: 'Fensterbau <span>Konto</span>' }[app];
+    const name = { profitar: 'ProFit<span>AR</span>', passfort: 'Pass<span>Fort</span>', konto: 'Fensterbau <span>Konto</span>', planung: 'Montage<span>planung</span>' }[app];
     const el = document.createElement('header'); el.className = 'top';
-    el.innerHTML = `<div class="top-in"><a class="brand" href="./${app === 'konto' ? 'konto' : app}.html${location.search.includes('demo=1') ? '?demo=1' : ''}">${LOGO[app]}<div><b>${name}</b><small>${esc(sub || S.firma?.name || title || '')}</small></div></a>
+    el.innerHTML = `<div class="top-in"><a class="brand" href="./${app}.html${location.search.includes('demo=1') ? '?demo=1' : ''}">${LOGO[app]}<div><b>${name}</b><small>${esc(sub || S.firma?.name || title || '')}</small></div></a>
       <div class="grow"></div>
-      ${S.user ? `<nav class="switch" aria-label="Apps"><a href="./profitar.html" ${app === 'profitar' ? 'aria-current="page"' : ''}>Aufmaß</a><a href="./passfort.html" ${app === 'passfort' ? 'aria-current="page"' : ''}>Abnahme</a><a href="./konto.html" ${app === 'konto' ? 'aria-current="page"' : ''} title="Firma, Team, Abo">Konto</a></nav>
+      ${S.user ? `<nav class="switch" aria-label="Apps"><a href="./profitar.html" ${app === 'profitar' ? 'aria-current="page"' : ''}>Aufmaß</a><a href="./passfort.html" ${app === 'passfort' ? 'aria-current="page"' : ''}>Abnahme</a><a href="./planung.html" ${app === 'planung' ? 'aria-current="page"' : ''}>Planung</a><a href="./konto.html" ${app === 'konto' ? 'aria-current="page"' : ''} title="Firma, Team, Abo">Konto</a></nav>
       <span id="fbSync" class="sync" aria-live="polite">…</span>` : ''}</div>`;
     document.body.prepend(el);
     if (S.user) {
@@ -305,10 +309,107 @@
     const { data } = await sb.from('fb_log').select('aktion,created_at,user_id').eq('projekt_id', projektId).order('created_at', { ascending: false }).limit(50); return data || [];
   }
 
+
+  /* ---------- Termine (Montageplanung) und Wartungsliste ---------- */
+  async function listTermine(von, bis) {
+    if (demo) return ((await get('kv', 'termine')) || []).filter(t => t.datum >= von && t.datum <= bis).sort((a, b) => (a.datum + (a.von || '')).localeCompare(b.datum + (b.von || '')));
+    try {
+      const { data, error } = await sb.from('fb_termine').select('*').gte('datum', von).lte('datum', bis).order('datum').order('von', { nullsFirst: true }); if (error) throw error;
+      await put('kv', 'termine:' + von, data); return data;
+    } catch (e) { const c = await get('kv', 'termine:' + von); if (c) return c; throw e; }
+  }
+  async function saveTermin(t) {
+    const row = { id: t.id || uid(), firma_id: S.firma.id, projekt_id: t.projekt_id || null, service_id: t.service_id || null, art: t.art, datum: t.datum, von: t.von || null, bis: t.bis || null, titel: t.titel || '', notiz: t.notiz || '', monteure: t.monteure || [], erledigt: !!t.erledigt };
+    if (demo) { const l = (await get('kv', 'termine')) || []; const i = l.findIndex(x => x.id === row.id); if (i >= 0) l[i] = row; else l.push(row); await put('kv', 'termine', l); return row; }
+    const { data, error } = await sb.from('fb_termine').upsert(row, { onConflict: 'id' }).select('*').single(); if (error) throw error; return data;
+  }
+  async function deleteTermin(id) {
+    if (demo) { await put('kv', 'termine', ((await get('kv', 'termine')) || []).filter(x => x.id !== id)); return; }
+    const { error } = await sb.from('fb_termine').delete().eq('id', id); if (error) throw error;
+  }
+  async function listWartung() {
+    if (demo) return (await get('kv', 'wartung')) || [];
+    const { data, error } = await sb.from('fb_wartung').select('id,projekt_id,name,email,intervall_monate,naechste,bestaetigt_at,abgemeldet_at,letzte_mail_at,created_at').order('naechste', { nullsFirst: false }); if (error) throw error; return data;
+  }
+
+  /* ---------- Bestellmaß, Preise, Export-Spalten (gemeinsam für Aufmaß, Angebot, Bestellliste) ---------- */
+  function bestell(e) {
+    const g = +e.installGapMm || 0, w = e.widthPoints || [], h = e.heightPoints || [];
+    const B = e.bestellB || (w.length ? Math.min(...w) - 2 * g : 0), H = e.bestellH || (h.length ? Math.min(...h) - 2 * g : 0);
+    const how = e.bestellB || e.bestellH ? 'fest eingetragen' : w.length && h.length ? `kleinstes Maß − 2 × ${g} mm Fuge – bitte gegen Herstellervorgabe prüfen` : 'trägt sich ein, sobald Breite und Höhe gemessen sind';
+    return { B: B > 0 ? Math.round(B) : 0, H: H > 0 ? Math.round(H) : 0, how };
+  }
+  const TYPEN = ['Dreh-Kipp-Fenster', 'Festverglasung', 'Stulpfenster (2-flügelig)', 'Kippfenster', 'Balkontür', 'Hebe-Schiebetür', 'Parallel-Schiebe-Kipp-Tür', 'Haustür', 'Nebeneingangstür', 'Rollladen / Sonnenschutz'];
+  /* Preisliste: je Typ Preis pro m² (Rahmenaußenmaß) und Mindestpreis; Zuschläge in € bzw. % */
+  const PREISE_DEFAULT = { typen: Object.fromEntries(TYPEN.map(t => [t, { m2: 0, min: 0 }])), farbe_prozent: 0, glas: {}, rollladen: 0, sprossen: 0, insekt: 0, fb_innen_m: 0, fb_aussen_m: 0, montage: 0, demontage: 0 };
+  const preise = () => { const p = S.firma?.preise || {}; return { ...PREISE_DEFAULT, ...p, typen: { ...PREISE_DEFAULT.typen, ...(p.typen || {}) }, glas: p.glas || {} }; };
+  function positionPreis(e, P = preise()) {
+    const b = bestell(e), m2 = b.B && b.H ? (b.B / 1000) * (b.H / 1000) : 0, t = P.typen[e.type] || { m2: 0, min: 0 }, teile = [];
+    let basis = Math.max(m2 * (+t.m2 || 0), +t.min || 0); if (basis) teile.push(['Element', basis]);
+    if (e.colorAussen || !/^Weiß$/.test(e.color || 'Weiß')) { const z = basis * (+P.farbe_prozent || 0) / 100; if (z) teile.push(['Farbe/Dekor', z]); }
+    const gz = +(P.glas[e.glass] || 0) * m2; if (gz) teile.push(['Verglasung', gz]);
+    if (e.rollladen && !/kein|Bestand/.test(e.rollladen) && +P.rollladen) teile.push(['Rollladen', +P.rollladen]);
+    if (e.options?.muntins && +P.sprossen) teile.push(['Sprossen', +P.sprossen]);
+    if (e.options?.insekt && +P.insekt) teile.push(['Insektenschutz', +P.insekt]);
+    if (e.options?.fbInnen && +P.fb_innen_m) teile.push(['Fensterbank innen', +P.fb_innen_m * (b.B / 1000 || 1)]);
+    if (e.options?.fbAussen && +P.fb_aussen_m) teile.push(['Fensterbank außen', +P.fb_aussen_m * (b.B / 1000 || 1)]);
+    if (+P.montage) teile.push(['Montage', +P.montage]);
+    if (+P.demontage) teile.push(['Ausbau & Entsorgung Altelement', +P.demontage]);
+    const einzel = Math.round(teile.reduce((s, [, v]) => s + v, 0) * 100) / 100;
+    return { einzel, teile, m2 };
+  }
+  const eur = n => (Math.round((+n || 0) * 100) / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+  const EXPORT_COLS = [
+    ['pos', 'Pos', (e, i) => i + 1], ['bez', 'Bezeichnung', e => e.label], ['typ', 'Typ', e => e.type], ['stk', 'Stück', e => e.anzahl || 1],
+    ['b', 'Breite (mm)', e => bestell(e).B || ''], ['h', 'Höhe (mm)', e => bestell(e).H || ''], ['oeff', 'Öffnung', e => e.opening], ['kopp', 'Kopplung', e => e.coupling],
+    ['profil', 'Profil', e => e.profil], ['fi', 'Farbe innen', e => e.color], ['fa', 'Farbe außen', e => e.colorAussen || e.color], ['glas', 'Verglasung', e => e.glass],
+    ['roll', 'Rollladen', e => e.rollladen || 'kein'], ['spr', 'Sprossen', e => e.options?.muntins ? 'ja' : 'nein'], ['ins', 'Insektenschutz', e => e.options?.insekt ? 'ja' : 'nein'],
+    ['fbi', 'Fensterbank innen', e => e.options?.fbInnen ? 'ja' : 'nein'], ['fba', 'Fensterbank außen', e => e.options?.fbAussen ? 'ja' : 'nein'],
+    ['wp', 'Breite Messpunkte', e => (e.widthPoints || []).join('/')], ['hp', 'Höhe Messpunkte', e => (e.heightPoints || []).join('/')], ['dg', 'Diagonalen', e => (e.diagonals || []).join('/')], ['fuge', 'Fuge (mm)', e => e.installGapMm],
+    ['notiz', 'Notiz', e => e.notiz]];
+  function exportCols() {
+    const cfg = S.firma?.export_spalten;
+    if (!cfg?.cols?.length) return EXPORT_COLS.map(([k, n, f]) => ({ k, n, f }));
+    return cfg.cols.map(c => { const d = EXPORT_COLS.find(x => x[0] === c.k); return d ? { k: c.k, n: c.n || d[1], f: d[2] } : null; }).filter(Boolean);
+  }
+
+  /* ---------- Foto beschriften (Pfeile, Linien, Text) ---------- */
+  function annotate(blob) {
+    return new Promise(async res => {
+      const bm = await createImageBitmap(blob), d = sheet(`<div class="row between"><h2>Foto beschriften</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
+        <div class="seg" id="anT" style="margin:10px 0">${[['pfeil', 'Pfeil'], ['linie', 'Linie'], ['frei', 'Stift'], ['text', 'Text']].map(([k, l], i) => `<button data-t="${k}" aria-pressed="${i === 0}">${l}</button>`).join('')}</div>
+        <div class="row" style="margin-bottom:8px">${['#ef4444', '#facc15', '#22c55e', '#ffffff'].map((c, i) => `<button class="iconbtn" data-c="${c}" aria-label="Farbe" style="background:${c};${i === 0 ? 'outline:3px solid var(--accent)' : ''}"></button>`).join('')}<button class="btn ghost sm" id="anU">Rückgängig</button></div>
+        <canvas id="anC" style="width:100%;border-radius:10px;touch-action:none;background:#000"></canvas>
+        <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ghost" data-close>Abbrechen</button><button class="btn" id="anOk">Übernehmen</button></div>`, () => res(null));
+      const c = $('#anC', d.el), x = c.getContext('2d'), sc = Math.min(1, 1600 / Math.max(bm.width, bm.height));
+      c.width = Math.round(bm.width * sc); c.height = Math.round(bm.height * sc);
+      let tool = 'pfeil', col = '#ef4444', ops = [], cur = null;
+      const lw = () => Math.max(4, c.width / 220);
+      const redraw = () => { x.drawImage(bm, 0, 0, c.width, c.height); for (const o of [...ops, cur].filter(Boolean)) drawOp(o); };
+      const drawOp = o => {
+        x.strokeStyle = x.fillStyle = o.col; x.lineWidth = lw(); x.lineCap = 'round'; x.lineJoin = 'round';
+        if (o.t === 'frei') { x.beginPath(); o.p.forEach((q, i) => i ? x.lineTo(q.x, q.y) : x.moveTo(q.x, q.y)); x.stroke(); return; }
+        if (o.t === 'text') { const fs = Math.max(22, c.width / 28); x.font = `700 ${fs}px Figtree, sans-serif`; x.lineWidth = fs / 6; x.strokeStyle = o.col === '#ffffff' ? '#000' : '#fff'; x.strokeText(o.s, o.a.x, o.a.y); x.fillText(o.s, o.a.x, o.a.y); return; }
+        const { a, b: z } = o; x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(z.x, z.y); x.stroke();
+        if (o.t === 'pfeil') { const ang = Math.atan2(z.y - a.y, z.x - a.x), h = lw() * 4.5; x.beginPath(); x.moveTo(z.x, z.y); x.lineTo(z.x - h * Math.cos(ang - .45), z.y - h * Math.sin(ang - .45)); x.lineTo(z.x - h * Math.cos(ang + .45), z.y - h * Math.sin(ang + .45)); x.closePath(); x.fill(); }
+      };
+      const pt = e => { const r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) * c.width / r.width, y: (e.clientY - r.top) * c.height / r.height }; };
+      c.onpointerdown = e => { const p = pt(e); if (tool === 'text') { const s = prompt('Text für das Foto:'); if (s) { ops.push({ t: 'text', s: s.slice(0, 60), a: p, col }); redraw(); } return; } cur = tool === 'frei' ? { t: 'frei', p: [p], col } : { t: tool, a: p, b: p, col }; c.setPointerCapture(e.pointerId); };
+      c.onpointermove = e => { if (!cur) return; const p = pt(e); if (cur.t === 'frei') cur.p.push(p); else cur.b = p; redraw(); };
+      c.onpointerup = () => { if (cur) { ops.push(cur); cur = null; redraw(); } };
+      $$('#anT [data-t]', d.el).forEach(b => b.onclick = () => { tool = b.dataset.t; $$('#anT [data-t]', d.el).forEach(y => y.setAttribute('aria-pressed', y === b)); });
+      $$('[data-c]', d.el).forEach(b => b.onclick = () => { col = b.dataset.c; $$('[data-c]', d.el).forEach(y => y.style.outline = y === b ? '3px solid var(--accent)' : ''); });
+      $('#anU', d.el).onclick = () => { ops.pop(); redraw(); };
+      $('#anOk', d.el).onclick = () => c.toBlob(b2 => { const r0 = res; d.el.parentElement.remove(); r0(b2); }, 'image/jpeg', .85);
+      redraw();
+    });
+  }
+
   if ('serviceWorker' in navigator && !/localhost|127\.0\.0\.1/.test(location.hostname)) navigator.serviceWorker.register('./sw.js').catch(() => {});
 
   window.FB = { S, sb, demo, VERSION, $, $$, esc, uid, today, fmtDate, fmtDT, errText, toast, sheet, confirmDlg, call, init, abo, canEdit, canAdmin,
     listProjekte, getProjekt, neuesProjekt, saveProjekt, deleteProjekt, compress, saveFile, fileUrl, fileBlob, removeFile, flush, header, pdf, blobToDataUrl, sha256, passUrl, download, safeName,
-    listService, updateService, deleteService, listTeam, saveFirma, logLines,
+    listService, updateService, deleteService, listTeam, saveFirma, logLines, listTermine, saveTermin, deleteTermin, listWartung,
+    bestell, TYPEN, PREISE_DEFAULT, preise, positionPreis, eur, EXPORT_COLS, exportCols, annotate,
     kv: { get: k => get('kv', k), put: (k, v) => put('kv', k, v) }, DEMO_FIRMA };
 })();

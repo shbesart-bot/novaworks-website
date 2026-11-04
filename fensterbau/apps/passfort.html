@@ -9,7 +9,7 @@
 <link rel="manifest" href="./passfort.webmanifest">
 <link rel="icon" href="./icon-passfort.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icon-passfort-180.png">
-<link rel="stylesheet" href="./fb.css?v=2026-11-04a">
+<link rel="stylesheet" href="./fb.css?v=2026-11-04b">
 <style>
   .ck { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
   .ck:first-child { border-top: 0; }
@@ -28,7 +28,7 @@
 <body>
 <main id="app"><div class="skel"></div></main>
 <script src="./vendor/supabase.js"></script>
-<script src="./fb-core.js?v=2026-11-04a"></script>
+<script src="./fb-core.js?v=2026-11-04b"></script>
 <script src="./vendor/qrcode.min.js" defer></script>
 <script src="./vendor/jspdf.umd.min.js" defer></script>
 <script>
@@ -47,22 +47,25 @@
   function route() {
     const m = location.hash.match(/^#p=([\w-]+)/);
     if (m) return openProjekt(m[1]);
-    P = null; if (location.hash === '#service') tab = 'service'; listView();
+    P = null; if (['#service', '#nacharbeit'].includes(location.hash)) tab = location.hash.slice(1); listView();
   }
 
   /* ================= Übersicht ================= */
   async function listView() {
     app.innerHTML = `<div class="head"><div><p class="eyebrow">PassFort</p><h1>Abnahme & Service</h1></div>${FB.canEdit() ? '<button class="btn" id="neu">+ Neue Abnahme</button>' : ''}</div>
-      <div class="seg" id="tabs" style="margin-bottom:12px">${[['offen', 'Offene Abnahmen'], ['fertig', 'Abgenommen'], ['service', 'Service']].map(([k, l]) => `<button data-t="${k}" aria-pressed="${tab === k}">${l}<span id="cnt-${k}"></span></button>`).join('')}</div>
+      <div class="seg" id="tabs" style="margin-bottom:12px">${[['offen', 'Offene Abnahmen'], ['fertig', 'Abgenommen'], ['nacharbeit', 'Nacharbeiten'], ['service', 'Service']].map(([k, l]) => `<button data-t="${k}" aria-pressed="${tab === k}">${l}<span id="cnt-${k}"></span></button>`).join('')}</div>
       <div class="card" id="body"><div class="skel"></div></div>`;
-    $$('#tabs button').forEach(b => b.onclick = () => { tab = b.dataset.t; history.replaceState(null, '', tab === 'service' ? '#service' : location.pathname + location.search); listView(); });
+    $$('#tabs button').forEach(b => b.onclick = () => { tab = b.dataset.t; history.replaceState(null, '', ['service', 'nacharbeit'].includes(tab) ? '#' + tab : location.pathname + location.search); listView(); });
     $('#neu')?.addEventListener('click', async () => { const p = FB.neuesProjekt(); p.status = 'montage'; p.nummer = 'M-' + FB.today().replace(/-/g, '').slice(2) + '-' + Math.random().toString(36).slice(2, 5).toUpperCase(); await FB.saveProjekt(p); location.hash = '#p=' + p.id; });
     const [list, svc] = await Promise.all([FB.listProjekte().catch(() => []), FB.listService().catch(() => [])]);
     const offen = list.filter(p => !p.abgeschlossen_at && ['bestellt', 'montage'].includes(p.status) || (!p.abgeschlossen_at && p.abnahme?.begonnen)), fertig = list.filter(p => p.abgeschlossen_at);
     const neu = svc.filter(s => s.status === 'neu').length;
     $('#cnt-offen').textContent = offen.length ? ` (${offen.length})` : ''; $('#cnt-service').textContent = neu ? ` (${neu} neu)` : '';
     const body = $('#body');
+    const naOffen = list.filter(p => p.abgeschlossen_at).flatMap(p => (p.nacharbeit || []).filter(n => !n.erledigt_at).map(n => ({ n, p }))).sort((a, b) => (a.n.frist || '9999').localeCompare(b.n.frist || '9999'));
+    $('#cnt-nacharbeit').textContent = naOffen.length ? ` (${naOffen.length})` : '';
     if (tab === 'service') return serviceList(svc, list);
+    if (tab === 'nacharbeit') { body.innerHTML = naOffen.length ? `<div class="list">${naOffen.map(({ n, p }) => { const late = n.frist && n.frist < FB.today(); return `<a class="item" href="#p=${p.id}"><div class="grow"><b>${esc(n.text)}</b><span class="small muted">${esc([p.nummer, p.kunde?.name, p.kunde?.adresse].filter(Boolean).join(' · '))}</span></div><span class="chip ${late ? 'crit' : n.frist ? 'warn' : ''}">${n.frist ? (late ? 'überfällig ' : 'bis ') + fmtDate(n.frist) : 'ohne Frist'}</span></a>`; }).join('')}</div>` : '<div class="empty">Keine offenen Nacharbeiten.</div>'; return; }
     const l = tab === 'offen' ? offen : fertig;
     const rest = tab === 'offen' ? list.filter(p => !p.abgeschlossen_at && !offen.includes(p)) : [];
     body.innerHTML = (l.length ? `<div class="list">${l.map(row).join('')}</div>` : `<div class="empty">${tab === 'offen' ? 'Keine offenen Abnahmen. Projekte erscheinen hier, sobald sie in ProFitAR auf „Montage“ stehen – oder leg eine neue Abnahme an.' : 'Noch keine abgeschlossenen Abnahmen.'}</div>`)
@@ -77,6 +80,11 @@
     $('#body').innerHTML = svc.length ? `<div class="list">${svc.map(s => { const p = byId[s.projekt_id], st = SST[s.status]; return `<button class="item" data-s="${s.id}"><div class="grow"><b>${esc(s.name)} · ${esc(p?.nummer || '')}</b><span class="small muted">${esc(s.nachricht.slice(0, 110))}</span></div><div style="text-align:right"><span class="chip ${st[1]}">${st[0]}</span><div class="tiny muted">${fmtDT(s.created_at)}</div></div></button>`; }).join('')}</div>`
       : '<div class="empty">Noch keine Serviceanfragen. Kunden melden sich über den QR-Code im Fensterpass.</div>';
     $$('[data-s]').forEach(b => b.onclick = () => serviceSheet(svc.find(x => x.id === b.dataset.s), byId));
+    const wl = await FB.listWartung().catch(() => []);
+    const w = document.createElement('div'); w.style.marginTop = '18px';
+    w.innerHTML = `<h3 style="margin-bottom:6px">Wartungserinnerungen</h3><p class="small muted" style="margin-bottom:6px">Kunden tragen sich im Fensterpass selbst ein (mit Bestätigung per E-Mail). Bei Fälligkeit bekommen sie eine Erinnerung, ihr eine Übersicht.</p>` + (wl.length ? `<div class="list">${wl.map(x => { const p = byId[x.projekt_id], st = x.abgemeldet_at ? ['abgemeldet', ''] : !x.bestaetigt_at ? ['nicht bestätigt', ''] : x.naechste && x.naechste <= FB.today() ? ['fällig', 'crit'] : ['aktiv', 'ok']; return `<div class="item" style="cursor:default"><div class="grow"><b>${esc(x.name)} · ${esc(p?.nummer || '')}</b><span class="small muted">${esc(x.email)} · alle ${x.intervall_monate} Monate${x.naechste ? ' · nächste ' + fmtDate(x.naechste) : ''}${p?.kunde?.adresse ? ' · ' + esc(p.kunde.adresse) : ''}</span></div><span class="chip ${st[1]}">${st[0]}</span>${p ? `<a class="btn ghost sm" href="./planung.html#neu=${p.id}&art=wartung">Termin</a>` : ''}${FB.canAdmin() ? `<button class="btn danger sm" data-wd="${x.id}">Entfernen</button>` : ''}</div>`; }).join('')}</div>` : '<p class="small muted">Noch keine Anmeldungen.</p>');
+    $('#body').append(w);
+    $$('[data-wd]').forEach(b => b.onclick = async () => { if (!(await FB.confirmDlg('Wartungserinnerung entfernen? Der Kunde bekommt dann keine Erinnerungen mehr.', 'Entfernen', true))) return; const { error } = await FB.sb.from('fb_wartung').delete().eq('id', b.dataset.wd); if (error) return toast(errText(error)); listView(); });
   }
   function serviceSheet(s, byId) {
     const p = byId[s.projekt_id];
@@ -87,7 +95,7 @@
       <div class="grid g2" style="margin-top:12px"><label class="f">Status<select id="sSt">${Object.entries(SST).map(([k, [l]]) => `<option value="${k}" ${s.status === k ? 'selected' : ''}>${l}</option>`).join('')}</select></label>
         <label class="f">Zuständig<select id="sZu"><option value="">niemand</option>${(team || []).filter(t => t.aktiv).map(t => `<option value="${t.user_id}" ${s.zustaendig === t.user_id ? 'selected' : ''}>${esc(t.name || t.email)}</option>`).join('')}</select></label>
         <label class="f span2">Interne Notiz<textarea id="sNo" rows="3">${esc(s.notiz)}</textarea></label></div>
-      <div class="row" style="margin-top:12px"><button class="btn" id="sSave">Speichern</button>${p ? `<a class="btn ghost" href="#p=${p.id}" data-close>Projekt öffnen</a>` : ''}${FB.canAdmin() ? '<button class="btn danger" id="sDel">Löschen</button>' : ''}</div>`);
+      <div class="row" style="margin-top:12px"><button class="btn" id="sSave">Speichern</button>${p ? `<a class="btn ghost" href="#p=${p.id}" data-close>Projekt öffnen</a><a class="btn ghost" href="./planung.html#neu=${p.id}&art=service&service=${s.id}">Termin planen</a>` : ''}${FB.canAdmin() ? '<button class="btn danger" id="sDel">Löschen</button>' : ''}</div>`);
     $('#sSave', d.el).onclick = async () => { try { await FB.updateService(s.id, { status: $('#sSt', d.el).value, zustaendig: $('#sZu', d.el).value || null, notiz: $('#sNo', d.el).value }); toast('Gespeichert'); d.close(); listView(); } catch (e) { toast(errText(e)); } };
     $('#sDel', d.el)?.addEventListener('click', async () => { if (!(await FB.confirmDlg('Serviceanfrage löschen?', 'Löschen', true))) return; try { await FB.deleteService(s.id); d.close(); listView(); } catch (e) { toast(errText(e)); } });
   }
@@ -128,6 +136,8 @@
         <p class="small muted" style="margin:10px 0 6px">Unterschrift</p><canvas class="sig" id="sig" aria-label="Unterschriftsfeld"></canvas>
         <div class="row between" style="margin-top:6px"><button class="btn ghost sm" id="sigClr">Löschen</button><span class="tiny muted">mit Finger oder Stift unterschreiben</span></div>
         <label class="check" style="margin-top:12px"><input type="checkbox" id="uOk"><span>Der Kunde bestätigt die Abnahme der montierten Elemente ${'<span id="uRest"></span>'}.</span></label>
+        <label class="f" style="margin-top:12px">E-Mail des Kunden für Protokoll und Fensterpass <span class="tiny">(freiwillig)</span><input id="uMail" type="email" value="${esc(k.email || '')}" autocomplete="off"></label>
+        ${F.bewertung_link ? `<label class="check" style="margin-top:8px"><input type="checkbox" id="uBew" ${A.einwilligung?.bewertung ? 'checked' : ''}><span class="small">Der Kunde ist einverstanden, dass ${esc(F.name)} ihm einmalig per E-Mail eine Bitte um eine Bewertung schickt.</span></label>` : ''}
         <div id="uWarn" class="stack" style="margin-top:10px"></div>
         <button class="btn block" id="done" style="margin-top:12px">Abnahme abschließen & Pass erstellen</button>
         <p class="tiny muted" style="margin-top:8px">Danach ist das Protokoll gesperrt. Die Unterschrift auf dem Bildschirm ist eine einfache elektronische Unterschrift, keine qualifizierte Signatur.</p>
@@ -184,11 +194,16 @@
         const blob = await pad.blob(), path = await FB.saveFile(P.id, blob, 'png'), zeit = new Date().toISOString();
         A.unterschrift = { pfad: path, name: $('#uName').value.trim(), zeit, geraet: navigator.userAgent.slice(0, 120) };
         A.pflege = F.pflege || '';
+        const um = $('#uMail').value.trim(); if (um) k.email = um;
+        A.einwilligung = { bewertung: !!$('#uBew')?.checked && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(k.email || ''), zeit };
+        P.nacharbeit = [...checks.filter(c => A.checks[c]?.v === 'mangel').map(c => ({ id: uid(), text: c + (A.checks[c].n ? ': ' + A.checks[c].n : ''), frist: '' })),
+          ...(A.maengel || []).filter(m => m.text?.trim()).map(m => ({ id: uid(), text: m.text.trim(), frist: m.frist || '' })),
+          ...L.filter(e => A.montiert?.[e.id] === false).map(e => ({ id: uid(), text: 'Montage nachholen: ' + e.label, frist: '' }))];
         A.hash = await FB.sha256(JSON.stringify({ nummer: P.nummer, kunde: P.kunde, abnahme: { ...A, hash: undefined }, positionen: L.map(e => [e.label, e.type, e.anzahl]) }));
         P.abgeschlossen_at = zeit; P.status = 'abgenommen';
         await FB.saveProjekt(P);
         toast(navigator.onLine || FB.demo ? 'Abnahme abgeschlossen' : 'Gespeichert – der Pass entsteht, sobald wieder Internet da ist.', 4000);
-        P = await FB.getProjekt(P.id); doneView();
+        P = await FB.getProjekt(P.id); await doneView(); if (k.email && !FB.demo) setTimeout(() => kundeMail(true), 400);
       } catch (e) { btn.disabled = false; btn.textContent = 'Abnahme abschließen & Pass erstellen'; toast(errText(e)); }
     };
     if (ro) $$('#app input, #app textarea, #app select, #app button:not(#pdfDraft)').forEach(x => { if (!x.closest('.head')) x.disabled = true; });
@@ -231,8 +246,11 @@
           <div><span>Verglasung</span><b>${esc(A.produkt?.glas || '—')}</b></div><div><span>Farbe</span><b>${esc(A.produkt?.farbe || '—')}</b></div><div><span>Garantie</span><b>${esc(A.garantie || '—')}</b></div>
           <div><span>Unterschrift</span><b>${esc(A.unterschrift?.name || '—')}</b></div><div><span>Fotos</span><b>${(A.fotos || []).length}</b></div></div>
           ${off.length ? `<h3 style="margin:14px 0 6px">Offene Punkte</h3><div class="stack">${off.map(o => `<div class="note warn small">${esc(o)}</div>`).join('')}</div>` : '<p class="note ok" style="margin-top:12px">Ohne offene Punkte abgenommen.</p>'}
-          <div class="row" style="margin-top:14px"><button class="btn" id="pdf">Abnahmeprotokoll (PDF)</button><a class="btn ghost" href="./profitar.html#p=${P.id}">Aufmaß</a></div>
+          <div class="row" style="margin-top:14px"><button class="btn" id="pdf">Abnahmeprotokoll (PDF)</button><button class="btn ghost" id="mailK">An Kunden senden</button><a class="btn ghost" href="./profitar.html#p=${P.id}">Aufmaß</a><a class="btn ghost" href="./planung.html#neu=${P.id}&art=service">Termin</a></div>
+          ${P.kunde_mail_at ? `<p class="tiny muted" style="margin-top:6px">Zuletzt an den Kunden geschickt: ${fmtDT(P.kunde_mail_at)}</p>` : ''}
           <p class="tiny muted" style="margin-top:8px">Prüfsumme: <span class="tnum" style="overflow-wrap:anywhere">${esc(A.hash || '—')}</span></p></section>
+        <section class="card"><div class="row between" style="margin-bottom:8px"><h2 style="margin:0">Nacharbeiten</h2>${FB.canEdit() ? '<button class="btn ghost sm" id="naAdd">+ Eintrag</button>' : ''}</div><div class="stack" id="naList"></div>
+          <p class="hint">Sind alle erledigt, zeigt der Fensterpass dem Kunden „Nacharbeiten abgeschlossen“.</p></section>
       </div><div class="stick">
         <section class="pass"><div class="row between"><div><p style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.75">Digitaler Fensterpass</p><h2 style="color:#fff;margin-top:4px">${esc(F.name)}</h2><p style="opacity:.8;font-size:13px">${esc(P.nummer || '')}</p></div>${F.logo ? `<img src="${esc(F.logo)}" alt="" style="max-height:40px;max-width:110px;background:#fff;border-radius:8px;padding:4px">` : ''}</div>
           <div class="row" style="margin-top:14px;gap:16px;align-items:flex-start"><div class="qr" id="qr">${url ? '' : '<p style="color:#0f172a;font-size:13px;padding:10px">Der QR-Code erscheint, sobald die Abnahme gespeichert ist (Internet nötig).</p>'}</div>
@@ -240,14 +258,42 @@
         <div class="row" style="margin-top:12px">${url ? `<button class="btn" id="label">QR-Aufkleber (PDF)</button><button class="btn ghost" id="copy">Link kopieren</button><a class="btn ghost" href="${esc(url)}" target="_blank" rel="noopener">Pass ansehen</a>` : ''}</div>
       </div></div>`;
     $('#pdf').onclick = () => protokollPdf(url).catch(e => toast(errText(e)));
+    $('#mailK').onclick = () => kundeMail(false);
+    nacharbeit();
     $('#copy')?.addEventListener('click', async () => { try { await navigator.clipboard.writeText(url); toast('Link kopiert'); } catch { toast(url, 6000); } });
     $('#label')?.addEventListener('click', () => labelPdf(url).catch(e => toast(errText(e))));
     if (url) { await qrReady(); new QRCode($('#qr'), { text: url, width: 148, height: 148, correctLevel: QRCode.CorrectLevel.M }); }
   }
+
+  function nacharbeit() {
+    const box = $('#naList'); if (!box) return; P.nacharbeit ||= []; const ro = !FB.canEdit();
+    box.innerHTML = P.nacharbeit.length ? P.nacharbeit.map((n, i) => `<div class="note ${n.erledigt_at ? 'ok' : n.frist && n.frist < FB.today() ? 'crit' : 'warn'}" style="display:grid;gap:6px">
+      <label class="check"><input type="checkbox" data-ok="${i}" ${n.erledigt_at ? 'checked' : ''} ${ro ? 'disabled' : ''}><span><b>${esc(n.text)}</b>${n.erledigt_at ? `<br><span class="tiny">erledigt ${fmtDT(n.erledigt_at)}${n.erledigt_von ? ' · ' + esc(n.erledigt_von) : ''}</span>` : ''}</span></label>
+      ${n.erledigt_at ? (n.foto ? `<img data-nf="${i}" alt="Nachweisfoto" style="max-width:160px;border-radius:8px">` : '') : `<div class="row"><label class="f" style="width:160px">Erledigen bis<input type="date" data-fr="${i}" value="${esc(n.frist || '')}" ${ro ? 'disabled' : ''}></label>${ro ? '' : `<label class="btn ghost sm">Foto vom Ergebnis<input type="file" accept="image/*" capture="environment" data-ph="${i}" hidden></label>`}</div>`}</div>`).join('') : '<p class="small muted">Keine Nacharbeiten.</p>';
+    $$('#naList [data-nf]').forEach(async im => { im.src = await FB.fileUrl(P.nacharbeit[+im.dataset.nf].foto); });
+    const save = async () => { try { await FB.saveProjekt(P); } catch (e) { toast(errText(e)); } nacharbeit(); };
+    $$('#naList [data-ok]').forEach(c => c.onchange = () => { const n = P.nacharbeit[+c.dataset.ok]; if (c.checked) { n.erledigt_at = new Date().toISOString(); n.erledigt_von = FB.S.me?.name || ''; } else { delete n.erledigt_at; delete n.erledigt_von; } save(); });
+    $$('#naList [data-fr]').forEach(i => i.onchange = () => { P.nacharbeit[+i.dataset.fr].frist = i.value; save(); });
+    $$('#naList [data-ph]').forEach(i => i.onchange = async () => { const f = i.files[0]; if (!f) return; const n = P.nacharbeit[+i.dataset.ph]; n.foto = await FB.saveFile(P.id, await FB.compress(f, 1600, .8)); n.erledigt_at = new Date().toISOString(); n.erledigt_von = FB.S.me?.name || ''; save(); });
+    $('#naAdd')?.addEventListener('click', async () => { const d = FB.sheet(`<h2>Nacharbeit hinzufügen</h2><div class="stack" style="margin-top:10px"><label class="f">Was ist zu tun?<input id="naT" maxlength="300"></label><label class="f">Erledigen bis<input id="naF" type="date"></label><div class="row" style="justify-content:flex-end"><button class="btn ghost" data-close>Abbrechen</button><button class="btn" id="naOk">Hinzufügen</button></div></div>`); $('#naOk', d.el).onclick = () => { const t = $('#naT', d.el).value.trim(); if (!t) return; P.nacharbeit.push({ id: uid(), text: t, frist: $('#naF', d.el).value }); d.close(); save(); }; }, { once: true });
+  }
+  async function kundeMail(auto) {
+    const k = P.kunde || {}, d = FB.sheet(`<h2>Protokoll an den Kunden senden</h2><p class="small muted" style="margin-top:6px">Der Kunde bekommt das Abnahmeprotokoll als PDF und den Link zum Fensterpass. Antworten gehen an ${esc(FB.S.firma.email || 'eure E-Mail-Adresse')}.</p>
+      <label class="f" style="margin-top:12px">E-Mail des Kunden<input id="kmM" type="email" value="${esc(k.email || '')}"></label>
+      <div class="row" style="margin-top:14px;justify-content:flex-end"><button class="btn ghost" data-close>${auto ? 'Später' : 'Abbrechen'}</button><button class="btn" id="kmOk">Senden</button></div>`);
+    $('#kmOk', d.el).onclick = async () => {
+      const email = $('#kmM', d.el).value.trim(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Bitte eine gültige E-Mail-Adresse eingeben.');
+      if (FB.demo) { d.close(); return toast('In der Demo wird keine E-Mail verschickt.'); }
+      if (!P.pass_token) return toast('Bitte warten, bis die Abnahme gespeichert ist (Internet nötig).');
+      const btn = $('#kmOk', d.el); btn.disabled = true; btn.textContent = 'Wird gesendet …';
+      try { const { blob, name } = await protokollPdf(FB.passUrl(P.pass_token), true); const b64 = (await FB.blobToDataUrl(blob)).split(',')[1]; await FB.call('kunde_mail', { projekt_id: P.id, email, pdf: b64, dateiname: name }); P.kunde = { ...k, email }; P.kunde_mail_at = new Date().toISOString(); toast('An ' + email + ' gesendet'); d.close(); }
+      catch (e) { btn.disabled = false; btn.textContent = 'Senden'; toast(errText(e)); }
+    };
+  }
   const qrReady = () => new Promise(r => { const t = () => window.QRCode ? r() : setTimeout(t, 50); t(); });
   async function qrDataUrl(text, size = 512) { await qrReady(); const d = document.createElement('div'); new QRCode(d, { text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M }); await new Promise(r => setTimeout(r, 30)); const c = d.querySelector('canvas'); return c ? c.toDataURL('image/png') : d.querySelector('img')?.src; }
 
-  async function protokollPdf(url) {
+  async function protokollPdf(url, asBlob) {
     await new Promise(r => { const t = () => window.jspdf ? r() : setTimeout(t, 50); t(); });
     if (!url) await saveNow();
     toast('PDF wird erstellt …');
@@ -276,7 +322,9 @@
     font(7); doc.setTextColor(110); need(14);
     doc.text(doc.splitTextToSize(`Einfache elektronische Unterschrift auf dem Bildschirm, keine qualifizierte elektronische Signatur.${A.hash ? ' Prüfsumme (SHA-256) des Protokolls: ' + A.hash : ''}`, W - 2 * M - 40), M, y + 4); doc.setTextColor(0);
     const n = doc.getNumberOfPages(); for (let i = 1; i <= n; i++) { doc.setPage(i); font(7.5); doc.setTextColor(120); doc.text(`Abnahmeprotokoll ${P.nummer || ''} · erstellt mit PassFort · Seite ${i}/${n}`, M, 290); doc.setTextColor(0); }
-    FB.download(doc.output('blob'), `Abnahme_${FB.safeName(P.nummer)}_${FB.safeName(k.name)}${url ? '' : '_Entwurf'}.pdf`);
+    const name = `Abnahme_${FB.safeName(P.nummer)}_${FB.safeName(k.name)}${url ? '' : '_Entwurf'}.pdf`;
+    if (asBlob) return { blob: doc.output('blob'), name };
+    FB.download(doc.output('blob'), name);
   }
   async function labelPdf(url) {
     await new Promise(r => { const t = () => window.jspdf ? r() : setTimeout(t, 50); t(); });
