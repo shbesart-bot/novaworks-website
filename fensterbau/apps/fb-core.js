@@ -4,7 +4,7 @@
   const SB_URL = 'https://brtdtjqinyhsesiqhkkk.supabase.co';
   const SB_KEY = 'sb_publishable_i5Lf1DJYMBVX0yQOW2_nKQ_bRBbDUD2';
   const FN = SB_URL + '/functions/v1/fb-konto';
-  const VERSION = '2026-11-04b';
+  const VERSION = '2026-11-04c';
   const qs = new URLSearchParams(location.search);
   let demo = qs.get('demo') === '1';
   try { if (qs.get('demo') === '0') sessionStorage.removeItem('fb.demo'); else if (demo) sessionStorage.setItem('fb.demo', '1'); else demo = sessionStorage.getItem('fb.demo') === '1'; } catch {}

@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#1e293b">
 <title>Konto – ProFitAR & PassFort</title>
 <link rel="icon" href="./icon-konto.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./fb.css?v=2026-11-04b">
+<link rel="stylesheet" href="./fb.css?v=2026-11-04c">
 <style>
   .auth { max-width: 440px; margin: 28px auto 0; }
   .plans { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
@@ -20,13 +20,15 @@
 <body>
 <main id="app"><div class="auth"><div class="skel"></div></div></main>
 <script src="./vendor/supabase.js"></script>
-<script src="./fb-core.js?v=2026-11-04b"></script>
+<script src="./fb-core.js?v=2026-11-04c"></script>
 <script>
 (async () => {
   const { $, $$, esc, toast, call, errText, fmtDate } = FB;
   /* Stripe-Zahlungslinks (Endpreise, § 19 UStG). client_reference_id = FB-<Firma> ordnet die Zahlung zu. */
   const PAY = {
-    solo: { m: '', j: '' }, team: { m: '', j: '' }, business: { m: '', j: '' }, portal: ''
+    solo: { m: 'https://buy.stripe.com/5kQ8wP2Nd7x5bzF2ERcV204', j: 'https://buy.stripe.com/4gMbJ1cnNeZx5bhenzcV205' },
+    team: { m: 'https://buy.stripe.com/aFa00jdrR9Fd7jpa7jcV206', j: 'https://buy.stripe.com/8x228r2Nd3gPcDJ93fcV207' },
+    business: { m: 'https://buy.stripe.com/eVq6oHcnN3gPcDJgvHcV208', j: 'https://buy.stripe.com/5kQ7sL73tcRp8nt2ERcV209' }, portal: 'https://billing.stripe.com/p/login/dRm7sL0F53gP9rxfrDcV200'
   };
   const PLAN = { solo: ['Solo', 29, 290, '1 Person'], team: ['Team', 59, 590, 'bis 5 Personen'], business: ['Business', 99, 990, 'bis 15 Personen'] };
   const ROLLE = { inhaber: 'Inhaber/in', buero: 'Büro', monteur: 'Monteur/in' };
@@ -51,6 +53,8 @@
   if (qs.get('fehler')) return authView('login', errText(qs.get('fehler')));
   if (!FB.S.user) return authView(location.hash === '#registrieren' ? 'register' : 'login');
   render();
+  // Rückkehr von Stripe: Webhook braucht einen Moment, danach einmal neu laden
+  if (qs.get('bezahlt')) { history.replaceState(null, '', location.pathname); toast('Danke für deine Zahlung! Die Freischaltung dauert meist nur wenige Sekunden.'); setTimeout(() => location.reload(), 6000); }
 
   /* ---------- Anmelden / Registrieren / Passwort ---------- */
   function authView(mode, msg = '') {
