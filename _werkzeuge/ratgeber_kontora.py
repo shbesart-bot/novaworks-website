@@ -190,4 +190,43 @@ SEITEN = [
     quellen=[("§ 141 AO – Buchführungspflicht (gesetze-im-internet.de)", "https://www.gesetze-im-internet.de/ao_1977/__141.html"),
              ("§ 11 EStG – Zufluss und Abfluss (gesetze-im-internet.de)", "https://www.gesetze-im-internet.de/estg/__11.html"),
              ("ELSTER – Mein ELSTER", "https://www.elster.de/")], hinweis=HINWEIS),
+
+  dict(datei="kontoabruf-fints.html", passend=("Buchhaltung mit Bankanbindung (FinTS)", "https://mykontora.de/buchhaltung-bankanbindung.html"), kurz="Kontoabruf per FinTS",
+    titel="Kontoumsätze automatisch in die Buchhaltung: FinTS, HBCI und PSD2 erklärt",
+    beschreibung="Kontoauszüge automatisch in die Buchhaltung holen: Was FinTS (früher HBCI) ist, wie sich der Abruf von PSD2-Kontoinformationsdiensten unterscheidet, welche TAN-Verfahren gehen und wie Sie den Zugang einrichten.",
+    lead="Kontoumsätze von Hand abzutippen oder jeden Monat eine CSV-Datei hochzuladen, kostet Zeit und führt zu Fehlern. Viele Buchhaltungsprogramme holen die Umsätze deshalb direkt von der Bank. Dafür gibt es in Deutschland zwei Wege – mit Unterschieden beim Datenschutz.",
+    kurzantwort="<strong>FinTS</strong> (früher HBCI) ist der Standard der Deutschen Kreditwirtschaft für Online-Banking-Software. Ihr Programm verbindet sich damit <strong>direkt mit Ihrer Bank</strong> – Sie melden sich mit Anmeldename, PIN und TAN an. Cloud-Programme nutzen dagegen meist einen <strong>Kontoinformationsdienst nach PSD2</strong>, über dessen Server Ihre Bankdaten laufen.",
+    abschnitte=[
+      ("Was ist FinTS?", ["FinTS steht für Financial Transaction Services und ist der Nachfolger von HBCI. Die Deutsche Kreditwirtschaft – also Sparkassen, Volks- und Raiffeisenbanken, private Banken und öffentliche Banken – legt den Standard fest. Fast alle deutschen Banken bieten einen FinTS-Zugang mit PIN/TAN an. Software, die FinTS nutzt, muss bei der Deutschen Kreditwirtschaft registriert sein und sendet ihre Registrierungsnummer bei jeder Verbindung mit."]),
+      ("FinTS oder Kontoinformationsdienst?", [
+        """  <table class="t"><thead><tr><th></th><th>FinTS (eigene Software)</th><th>Kontoinformationsdienst (PSD2)</th></tr></thead><tbody>
+    <tr><td>Verbindung</td><td>direkt von Ihrem Programm zur Bank</td><td>über den Server eines Drittanbieters</td></tr>
+    <tr><td>Wer sieht die Umsätze?</td><td>nur Sie und Ihre Bank</td><td>auch der Dienstleister</td></tr>
+    <tr><td>Zulassung</td><td>Produktregistrierung bei der Deutschen Kreditwirtschaft</td><td>Erlaubnis der BaFin oder einer anderen EU-Aufsicht</td></tr>
+    <tr><td>Typisch für</td><td>Programme auf dem eigenen PC</td><td>Cloud-Buchhaltung und Finanz-Apps</td></tr>
+  </tbody></table>
+""", "Beide Wege sind zulässig. Wer seine Buchhaltung bewusst auf dem eigenen Rechner führt, behält mit FinTS auch beim Kontoabruf die Kontrolle über die Daten."]),
+      ("Starke Kundenauthentifizierung: Wann eine TAN nötig ist", ["Seit der EU-Zahlungsdiensterichtlinie PSD2 verlangen Banken beim Zugriff auf das Konto eine starke Kundenauthentifizierung, also zwei Faktoren: Ihr Wissen (PIN) und ein Gerät (TAN-Generator oder Banking-App). Für das reine Abrufen von Umsätzen dürfen Banken danach eine Zeit lang auf eine neue TAN verzichten. Viele Banken fragen deshalb beim ersten Abruf und dann etwa alle 90 Tage nach einer TAN oder Freigabe."]),
+      ("Welche TAN-Verfahren funktionieren?", None, [
+        "<strong>Freigabe in der App</strong> (z. B. pushTAN, SecureGo plus): Sie bestätigen den Abruf auf dem Smartphone, eine TAN müssen Sie nicht abtippen",
+        "<strong>photoTAN / QR-TAN</strong>: Sie scannen eine Grafik mit der App der Bank",
+        "<strong>chipTAN optisch</strong>: der TAN-Generator liest eine blinkende Grafik vom Bildschirm",
+        "<strong>chipTAN manuell</strong> oder <strong>smsTAN</strong>: Sie tippen eine TAN ein"]),
+      ("So richten Sie den Kontoabruf ein", None, [
+        "Prüfen, ob der FinTS- bzw. HBCI-Zugang im Online-Banking freigeschaltet ist (bei manchen Banken muss man ihn einmal aktivieren)",
+        "Im Buchhaltungsprogramm die Bankleitzahl eingeben – gute Programme ergänzen Bankname und FinTS-Adresse selbst",
+        "Mit Anmeldename und PIN des Online-Bankings anmelden und das TAN-Verfahren wählen",
+        "Konten auswählen, Umsätze abrufen und die Zahlungen den Rechnungen und Belegen zuordnen"]),
+      ("Sicherheit", None, [
+        "Die PIN sollte das Programm nicht speichern – Sie geben sie bei jedem Abruf ein",
+        "Ein reines Abrufprogramm kann keine Überweisungen ausführen",
+        "Updates des Programms einspielen, denn Banken ändern ihre Schnittstellen gelegentlich"]),
+    ],
+    faq=[("Ist HBCI dasselbe wie FinTS?", "Fast: FinTS ist die Weiterentwicklung von HBCI. Banken und Programme verwenden die Begriffe oft gleichbedeutend, gemeint ist meist der Zugang mit PIN und TAN."),
+         ("Geht FinTS mit jeder Bank?", "Mit den meisten deutschen Banken und Sparkassen. Einige reine Smartphone-Banken bieten keinen FinTS-Zugang; dort hilft der CSV-Export aus dem Online-Banking."),
+         ("Muss ich bei jedem Abruf eine TAN eingeben?", "Meist nicht. Viele Banken verlangen nur beim ersten Abruf und dann etwa alle 90 Tage eine TAN oder eine Freigabe in der App."),
+         ("Darf jede App FinTS nutzen?", "Software, die Kunden selbst auf ihrem Gerät nutzen, braucht eine Produktregistrierung bei der Deutschen Kreditwirtschaft. Dienste, die für Dritte auf Konten zugreifen, brauchen eine Zulassung als Kontoinformationsdienst und müssen die PSD2-Schnittstelle der Bank nutzen.")],
+    band_text="Kontora ruft Umsätze per FinTS direkt von Ihrer Bank ab, speichert die PIN nicht und ordnet Zahlungen automatisch Ihren Rechnungen zu.",
+    quellen=[("Deutsche Kreditwirtschaft: FinTS-Produktregistrierung", "https://www.fints.org/de/hersteller/produktregistrierung"),
+             ("Richtlinie (EU) 2015/2366 – Zahlungsdiensterichtlinie PSD2 (EUR-Lex)", "https://eur-lex.europa.eu/legal-content/DE/TXT/?uri=CELEX:32015L2366")], hinweis=HINWEIS),
 ]

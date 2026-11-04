@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kontoumsätze automatisch in die Buchhaltung: FinTS, HBCI und PSD2 erklärt | Kontora</title>
+  <meta name="description" content="Kontoauszüge automatisch in die Buchhaltung holen: Was FinTS (früher HBCI) ist, wie sich der Abruf von PSD2-Kontoinformationsdiensten unterscheidet, welche TAN-Verfahren gehen und wie Sie den Zugang einrichten.">
+  <link rel="canonical" href="https://novaworks-it.de/kontora/ratgeber/kontoabruf-fints.html">
+  <link rel="icon" href="../../assets/kontora-icon.png">
+  <meta name="theme-color" content="#f5f7f4">
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="de_DE">
+  <meta property="og:site_name" content="NovaWorks">
+  <meta property="og:title" content="Kontoumsätze automatisch in die Buchhaltung: FinTS, HBCI und PSD2 erklärt">
+  <meta property="og:description" content="Kontoauszüge automatisch in die Buchhaltung holen: Was FinTS (früher HBCI) ist, wie sich der Abruf von PSD2-Kontoinformationsdiensten unterscheidet, welche TAN-Verfahren gehen und wie Sie den Zugang einrichten.">
+  <meta property="og:url" content="https://novaworks-it.de/kontora/ratgeber/kontoabruf-fints.html">
+  <meta property="og:image" content="https://novaworks-it.de/kontora/img/dashboard.webp">
+  <link rel="stylesheet" href="../produkt.css">
+  <style>:root{--blue:#247548;--blue-d:#1a5a36;--soft:#e2efe6;--ink:#17344a;--paper:#f5f7f4}.text a{color:var(--blue)}.quellen li{font-size:.92rem}.inhalt{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 20px;margin:24px 0}.inhalt ol{margin:6px 0 0;padding-left:20px}.tipp{background:var(--soft);border-radius:14px;padding:14px 18px;margin:18px 0}table.t{width:100%;border-collapse:collapse;margin:14px 0;font-size:.95rem;background:#fff}table.t th,table.t td{border:1px solid var(--line);padding:9px 11px;text-align:left;vertical-align:top}table.t th{background:var(--soft)}.tw{overflow-x:auto}.text h1,.text h2{hyphens:auto;overflow-wrap:break-word}@media(max-width:560px){table.t{font-size:.84rem}table.t th,table.t td{padding:7px 8px;hyphens:auto;overflow-wrap:anywhere}}.weitere{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;list-style:none;padding:0}.weitere a{display:block;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-decoration:none;font-weight:600}</style>
+  <script type="application/ld+json">[{"@context": "https://schema.org", "@type": "Article", "headline": "Kontoumsätze automatisch in die Buchhaltung: FinTS, HBCI und PSD2 erklärt", "description": "Kontoauszüge automatisch in die Buchhaltung holen: Was FinTS (früher HBCI) ist, wie sich der Abruf von PSD2-Kontoinformationsdiensten unterscheidet, welche TAN-Verfahren gehen und wie Sie den Zugang einrichten.", "inLanguage": "de", "datePublished": "2026-10-21", "dateModified": "2026-10-21", "author": {"@type": "Organization", "name": "NovaWorks", "url": "https://novaworks-it.de/"}, "publisher": {"@type": "Organization", "name": "NovaWorks", "url": "https://novaworks-it.de/", "logo": {"@type": "ImageObject", "url": "https://novaworks-it.de/icon-512.png"}}, "image": "https://novaworks-it.de/kontora/img/dashboard.webp", "mainEntityOfPage": "https://novaworks-it.de/kontora/ratgeber/kontoabruf-fints.html"}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Ist HBCI dasselbe wie FinTS?", "acceptedAnswer": {"@type": "Answer", "text": "Fast: FinTS ist die Weiterentwicklung von HBCI. Banken und Programme verwenden die Begriffe oft gleichbedeutend, gemeint ist meist der Zugang mit PIN und TAN."}}, {"@type": "Question", "name": "Geht FinTS mit jeder Bank?", "acceptedAnswer": {"@type": "Answer", "text": "Mit den meisten deutschen Banken und Sparkassen. Einige reine Smartphone-Banken bieten keinen FinTS-Zugang; dort hilft der CSV-Export aus dem Online-Banking."}}, {"@type": "Question", "name": "Muss ich bei jedem Abruf eine TAN eingeben?", "acceptedAnswer": {"@type": "Answer", "text": "Meist nicht. Viele Banken verlangen nur beim ersten Abruf und dann etwa alle 90 Tage eine TAN oder eine Freigabe in der App."}}, {"@type": "Question", "name": "Darf jede App FinTS nutzen?", "acceptedAnswer": {"@type": "Answer", "text": "Software, die Kunden selbst auf ihrem Gerät nutzen, braucht eine Produktregistrierung bei der Deutschen Kreditwirtschaft. Dienste, die für Dritte auf Konten zugreifen, brauchen eine Zulassung als Kontoinformationsdienst und müssen die PSD2-Schnittstelle der Bank nutzen."}}]}, {"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "NovaWorks", "item": "https://novaworks-it.de/"}, {"@type": "ListItem", "position": 2, "name": "Kontora", "item": "https://novaworks-it.de/kontora/"}, {"@type": "ListItem", "position": 3, "name": "Ratgeber", "item": "https://novaworks-it.de/kontora/ratgeber/"}, {"@type": "ListItem", "position": 4, "name": "Kontoabruf per FinTS", "item": "https://novaworks-it.de/kontora/ratgeber/kontoabruf-fints.html"}]}]</script>
+</head>
+<body>
+<a class="skip" href="#inhalt">Zum Inhalt springen</a>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="../"><img src="../../assets/kontora-icon.png" alt="" width="34" height="34">Kontora <small>Ratgeber</small></a>
+    <nav aria-label="Kontora"><a href="../">Über Kontora</a><a href="./">Alle Ratgeber</a><a class="btn btn-primary" href="https://mykontora.de/">Kostenlos laden</a></nav>
+  </div>
+</header>
+<main id="inhalt" class="wrap text">
+  <p class="klein"><a href="../">Kontora</a> › <a href="./">Ratgeber</a> › Kontoabruf per FinTS</p>
+  <h1>Kontoumsätze automatisch in die Buchhaltung: FinTS, HBCI und PSD2 erklärt</h1>
+  <p class="lead" style="color:var(--muted)">Kontoumsätze von Hand abzutippen oder jeden Monat eine CSV-Datei hochzuladen, kostet Zeit und führt zu Fehlern. Viele Buchhaltungsprogramme holen die Umsätze deshalb direkt von der Bank. Dafür gibt es in Deutschland zwei Wege – mit Unterschieden beim Datenschutz.</p>
+  <div class="tipp"><strong>Kurz gesagt:</strong> <strong>FinTS</strong> (früher HBCI) ist der Standard der Deutschen Kreditwirtschaft für Online-Banking-Software. Ihr Programm verbindet sich damit <strong>direkt mit Ihrer Bank</strong> – Sie melden sich mit Anmeldename, PIN und TAN an. Cloud-Programme nutzen dagegen meist einen <strong>Kontoinformationsdienst nach PSD2</strong>, über dessen Server Ihre Bankdaten laufen.</div>
+  <nav class="inhalt" aria-label="Inhalt"><strong>Inhalt</strong><ol><li><a href="#a1">Was ist FinTS?</a></li><li><a href="#a2">FinTS oder Kontoinformationsdienst?</a></li><li><a href="#a3">Starke Kundenauthentifizierung: Wann eine TAN nötig ist</a></li><li><a href="#a4">Welche TAN-Verfahren funktionieren?</a></li><li><a href="#a5">So richten Sie den Kontoabruf ein</a></li><li><a href="#a6">Sicherheit</a></li><li><a href="#fragen">Häufige Fragen</a></li></ol></nav>
+  <h2 id="a1">Was ist FinTS?</h2>
+  <p>FinTS steht für Financial Transaction Services und ist der Nachfolger von HBCI. Die Deutsche Kreditwirtschaft – also Sparkassen, Volks- und Raiffeisenbanken, private Banken und öffentliche Banken – legt den Standard fest. Fast alle deutschen Banken bieten einen FinTS-Zugang mit PIN/TAN an. Software, die FinTS nutzt, muss bei der Deutschen Kreditwirtschaft registriert sein und sendet ihre Registrierungsnummer bei jeder Verbindung mit.</p>
+  <h2 id="a2">FinTS oder Kontoinformationsdienst?</h2>
+  <div class="tw">
+  <table class="t"><thead><tr><th></th><th>FinTS (eigene Software)</th><th>Kontoinformationsdienst (PSD2)</th></tr></thead><tbody>
+    <tr><td>Verbindung</td><td>direkt von Ihrem Programm zur Bank</td><td>über den Server eines Drittanbieters</td></tr>
+    <tr><td>Wer sieht die Umsätze?</td><td>nur Sie und Ihre Bank</td><td>auch der Dienstleister</td></tr>
+    <tr><td>Zulassung</td><td>Produktregistrierung bei der Deutschen Kreditwirtschaft</td><td>Erlaubnis der BaFin oder einer anderen EU-Aufsicht</td></tr>
+    <tr><td>Typisch für</td><td>Programme auf dem eigenen PC</td><td>Cloud-Buchhaltung und Finanz-Apps</td></tr>
+  </tbody></table>
+  </div>
+  <p>Beide Wege sind zulässig. Wer seine Buchhaltung bewusst auf dem eigenen Rechner führt, behält mit FinTS auch beim Kontoabruf die Kontrolle über die Daten.</p>
+  <h2 id="a3">Starke Kundenauthentifizierung: Wann eine TAN nötig ist</h2>
+  <p>Seit der EU-Zahlungsdiensterichtlinie PSD2 verlangen Banken beim Zugriff auf das Konto eine starke Kundenauthentifizierung, also zwei Faktoren: Ihr Wissen (PIN) und ein Gerät (TAN-Generator oder Banking-App). Für das reine Abrufen von Umsätzen dürfen Banken danach eine Zeit lang auf eine neue TAN verzichten. Viele Banken fragen deshalb beim ersten Abruf und dann etwa alle 90 Tage nach einer TAN oder Freigabe.</p>
+  <h2 id="a4">Welche TAN-Verfahren funktionieren?</h2>
+  <ul>
+    <li><strong>Freigabe in der App</strong> (z. B. pushTAN, SecureGo plus): Sie bestätigen den Abruf auf dem Smartphone, eine TAN müssen Sie nicht abtippen</li>
+    <li><strong>photoTAN / QR-TAN</strong>: Sie scannen eine Grafik mit der App der Bank</li>
+    <li><strong>chipTAN optisch</strong>: der TAN-Generator liest eine blinkende Grafik vom Bildschirm</li>
+    <li><strong>chipTAN manuell</strong> oder <strong>smsTAN</strong>: Sie tippen eine TAN ein</li>
+  </ul>
+  <h2 id="a5">So richten Sie den Kontoabruf ein</h2>
+  <ul>
+    <li>Prüfen, ob der FinTS- bzw. HBCI-Zugang im Online-Banking freigeschaltet ist (bei manchen Banken muss man ihn einmal aktivieren)</li>
+    <li>Im Buchhaltungsprogramm die Bankleitzahl eingeben – gute Programme ergänzen Bankname und FinTS-Adresse selbst</li>
+    <li>Mit Anmeldename und PIN des Online-Bankings anmelden und das TAN-Verfahren wählen</li>
+    <li>Konten auswählen, Umsätze abrufen und die Zahlungen den Rechnungen und Belegen zuordnen</li>
+  </ul>
+  <h2 id="a6">Sicherheit</h2>
+  <ul>
+    <li>Die PIN sollte das Programm nicht speichern – Sie geben sie bei jedem Abruf ein</li>
+    <li>Ein reines Abrufprogramm kann keine Überweisungen ausführen</li>
+    <li>Updates des Programms einspielen, denn Banken ändern ihre Schnittstellen gelegentlich</li>
+  </ul>
+  <h2 id="fragen">Häufige Fragen</h2>
+  <details><summary>Ist HBCI dasselbe wie FinTS?</summary><p>Fast: FinTS ist die Weiterentwicklung von HBCI. Banken und Programme verwenden die Begriffe oft gleichbedeutend, gemeint ist meist der Zugang mit PIN und TAN.</p></details>
+  <details><summary>Geht FinTS mit jeder Bank?</summary><p>Mit den meisten deutschen Banken und Sparkassen. Einige reine Smartphone-Banken bieten keinen FinTS-Zugang; dort hilft der CSV-Export aus dem Online-Banking.</p></details>
+  <details><summary>Muss ich bei jedem Abruf eine TAN eingeben?</summary><p>Meist nicht. Viele Banken verlangen nur beim ersten Abruf und dann etwa alle 90 Tage eine TAN oder eine Freigabe in der App.</p></details>
+  <details><summary>Darf jede App FinTS nutzen?</summary><p>Software, die Kunden selbst auf ihrem Gerät nutzen, braucht eine Produktregistrierung bei der Deutschen Kreditwirtschaft. Dienste, die für Dritte auf Konten zugreifen, brauchen eine Zulassung als Kontoinformationsdienst und müssen die PSD2-Schnittstelle der Bank nutzen.</p></details>
+  <p class="tipp">Passend dazu: <a href="https://mykontora.de/buchhaltung-bankanbindung.html">Buchhaltung mit Bankanbindung (FinTS)</a></p>
+  <div class="demo-band" style="margin-top:40px"><div><h2>Buchhaltung, die auf Ihrem PC bleibt</h2><p>Kontora ruft Umsätze per FinTS direkt von Ihrer Bank ab, speichert die PIN nicht und ordnet Zahlungen automatisch Ihren Rechnungen zu.</p></div><a class="btn" href="https://mykontora.de/">Kontora kostenlos laden <span aria-hidden="true">→</span></a></div>
+  <h2>Quellen</h2>
+  <ul class="quellen">
+    <li><a href="https://www.fints.org/de/hersteller/produktregistrierung" rel="noopener">Deutsche Kreditwirtschaft: FinTS-Produktregistrierung</a></li>
+    <li><a href="https://eur-lex.europa.eu/legal-content/DE/TXT/?uri=CELEX:32015L2366" rel="noopener">Richtlinie (EU) 2015/2366 – Zahlungsdiensterichtlinie PSD2 (EUR-Lex)</a></li>
+  </ul>
+  <p class="hinweis" style="margin-top:24px">Dieser Ratgeber ersetzt keine Steuerberatung. Für Ihren Einzelfall wenden Sie sich an Ihre Steuerberatung oder das Finanzamt.</p>
+  <h2>Weitere Ratgeber</h2>
+  <ul class="weitere">
+    <li><a href="e-rechnung-kleinunternehmer.html">E-Rechnung für Kleinunternehmer</a></li>
+    <li><a href="xrechnung-zugferd-unterschied.html">XRechnung oder ZUGFeRD</a></li>
+    <li><a href="kleinunternehmerregelung.html">Kleinunternehmerregelung</a></li>
+    <li><a href="rechnung-pflichtangaben.html">Pflichtangaben auf Rechnungen</a></li>
+    <li><a href="aufbewahrungsfristen-belege.html">Aufbewahrungsfristen für Belege</a></li>
+    <li><a href="euer-erstellen.html">EÜR erstellen</a></li>
+  </ul>
+  <p class="klein">Stand: Oktober 2026 · Von NovaWorks, Warburg</p>
+</main>
+<footer><div class="wrap"><span>Kontora ist ein Produkt von <a href="../../">NovaWorks</a>, Warburg.</span><nav aria-label="Rechtliches"><a href="../">Über Kontora</a><a href="./">Ratgeber</a><a href="../../impressum.html">Impressum</a><a href="../../datenschutz.html">Datenschutz</a></nav></div></footer>
+</body>
+</html>
