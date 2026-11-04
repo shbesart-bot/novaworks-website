@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#1e293b">
+<title>Konto – ProFitAR & PassFort</title>
+<link rel="icon" href="./icon-konto.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./fb.css?v=2026-11-04a">
+<style>
+  .auth { max-width: 440px; margin: 28px auto 0; }
+  .plans { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+  .plan { border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .plan[aria-current="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .plan .price { font-size: 22px; font-weight: 700; }
+  .logo-prev { width: 120px; height: 60px; object-fit: contain; background: var(--soft); border-radius: 10px; }
+</style>
+</head>
+<body>
+<main id="app"><div class="auth"><div class="skel"></div></div></main>
+<script src="./vendor/supabase.js"></script>
+<script src="./fb-core.js?v=2026-11-04a"></script>
+<script>
+(async () => {
+  const { $, $$, esc, toast, call, errText, fmtDate } = FB;
+  /* Stripe-Zahlungslinks (Endpreise, § 19 UStG). client_reference_id = FB-<Firma> ordnet die Zahlung zu. */
+  const PAY = {
+    solo: { m: '', j: '' }, team: { m: '', j: '' }, business: { m: '', j: '' }, portal: ''
+  };
+  const PLAN = { solo: ['Solo', 29, 290, '1 Person'], team: ['Team', 59, 590, 'bis 5 Personen'], business: ['Business', 99, 990, 'bis 15 Personen'] };
+  const ROLLE = { inhaber: 'Inhaber/in', buero: 'Büro', monteur: 'Monteur/in' };
+  const qs = new URLSearchParams(location.search);
+  const back = qs.get('zurueck');
+  const app = $('#app');
+  const goBack = () => { if (back && /^(profitar|passfort)\.html(#.*)?$/.test(back)) location.replace('./' + back); else render(); };
+
+  // Links aus den E-Mails: Einmal-Code bestätigen
+  const code = qs.get('code'), typ = qs.get('typ');
+  if (code && FB.sb) {
+    history.replaceState(null, '', location.pathname);
+    const { error } = await FB.sb.auth.verifyOtp({ token_hash: code, type: typ === 'magiclink' ? 'magiclink' : typ });
+    if (error) { await FB.init({ require: false }); return authView('login', errText(error)); }
+    await FB.init({ require: false });
+    if (typ === 'invite') return setPassword('Willkommen! Lege dein Passwort fest.', true);
+    if (typ === 'recovery') return setPassword('Neues Passwort festlegen');
+    toast('E-Mail bestätigt – willkommen!');
+    return render();
+  }
+  try { await FB.init({ require: false }); } catch (e) { app.innerHTML = `<div class="auth card"><p>${esc(errText(e))}</p><button class="btn mt" onclick="location.reload()">Neu laden</button></div>`; return; }
+  if (qs.get('fehler')) return authView('login', errText(qs.get('fehler')));
+  if (!FB.S.user) return authView(location.hash === '#registrieren' ? 'register' : 'login');
+  render();
+
+  /* ---------- Anmelden / Registrieren / Passwort ---------- */
+  function authView(mode, msg = '') {
+    document.documentElement.dataset.app = 'konto';
+    app.innerHTML = `<div class="auth">
+      <div class="row" style="gap:12px;margin-bottom:18px"><div style="width:44px;height:44px">${'<svg viewBox="0 0 100 100" fill="none"><path d="M15 30V15h15M70 15h15v15M85 70v15H70M30 85H15V70" stroke="#0369a1" stroke-width="7" stroke-linecap="round"/><rect x="27" y="27" width="46" height="46" rx="4" stroke="#16a34a" stroke-width="5" stroke-dasharray="7 5"/></svg>'}</div>
+        <div><h1>ProFitAR & PassFort</h1><p class="muted small">Aufmaß, Montage-Abnahme und Fensterpass</p></div></div>
+      <div class="seg" role="tablist" style="margin-bottom:12px"><button data-m="login" aria-pressed="${mode === 'login'}">Anmelden</button><button data-m="register" aria-pressed="${mode === 'register'}">Kostenlos testen</button></div>
+      <div class="card">
+        ${msg ? `<p class="note crit" style="margin-bottom:12px">${esc(msg)}</p>` : ''}
+        ${mode === 'login' ? `<form id="fLogin" class="stack" novalidate>
+          <label class="f">E-Mail<input id="lMail" type="email" autocomplete="username" required></label>
+          <label class="f">Passwort<input id="lPw" type="password" autocomplete="current-password" required></label>
+          <button class="btn block">Anmelden</button>
+          <button type="button" class="btn ghost sm" id="lForgot">Passwort vergessen?</button>
+        </form>` : mode === 'forgot' ? `<form id="fForgot" class="stack" novalidate>
+          <h2>Passwort vergessen</h2><p class="small muted">Wir schicken dir einen Link, mit dem du ein neues Passwort festlegst.</p>
+          <label class="f">E-Mail<input id="fMail" type="email" autocomplete="username" required></label>
+          <button class="btn block">Link senden</button><button type="button" class="btn ghost sm" data-m="login">Zurück zur Anmeldung</button>
+        </form>` : `<form id="fReg" class="stack" novalidate>
+          <p class="small muted">14 Tage kostenlos und unverbindlich, ohne Zahlungsdaten. Danach wählst du einen Tarif – oder die Testphase endet einfach.</p>
+          <label class="f">Name des Betriebs<input id="rFirma" autocomplete="organization" maxlength="120" required></label>
+          <label class="f">Dein Name<input id="rName" autocomplete="name" maxlength="80" required></label>
+          <label class="f">E-Mail<input id="rMail" type="email" autocomplete="email" required></label>
+          <label class="f">Passwort (mind. 10 Zeichen)<input id="rPw" type="password" autocomplete="new-password" minlength="10" required></label>
+          <input id="rWeb" name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+          <label class="check"><input type="checkbox" id="rAgb"><span>Ich akzeptiere die <a href="./agb.html" target="_blank">AGB</a> und schließe den <a href="./avv.html" target="_blank">Vertrag zur Auftragsverarbeitung</a> für meinen Betrieb ab. Hinweise zum <a href="../../datenschutz.html#fensterbau" target="_blank">Datenschutz</a>.</span></label>
+          <button class="btn block">Konto anlegen</button>
+        </form>`}
+      </div>
+      <p class="small muted" style="margin-top:14px;text-align:center">Erst mal umschauen? <a href="./profitar.html?demo=1">Demo ohne Anmeldung öffnen</a></p>
+    </div>`;
+    $$('[data-m]').forEach(b => b.onclick = () => authView(b.dataset.m));
+    $('#lForgot')?.addEventListener('click', () => authView('forgot'));
+    $('#fLogin')?.addEventListener('submit', async e => {
+      e.preventDefault(); const btn = e.submitter; btn.disabled = true;
+      const { error } = await FB.sb.auth.signInWithPassword({ email: $('#lMail').value.trim(), password: $('#lPw').value });
+      if (error) {
+        btn.disabled = false;
+        if (/not confirmed/i.test(error.message)) { authView('login', errText(error)); const r = document.createElement('button'); r.className = 'btn ghost sm'; r.textContent = 'Bestätigungslink erneut senden'; r.onclick = async () => { await call('bestaetigung', { email: $('#lMail')?.value || '' }).catch(() => {}); toast('Falls das Konto existiert, ist ein neuer Link unterwegs.'); }; $('.card').append(r); return; }
+        return authView('login', errText(error));
+      }
+      try { await FB.init({ require: false }); } catch {}
+      if (!FB.S.user) return authView('login', errText('KEIN_TEAM'));
+      goBack();
+    });
+    $('#fForgot')?.addEventListener('submit', async e => {
+      e.preventDefault(); e.submitter.disabled = true;
+      await call('passwort', { email: $('#fMail').value.trim() }).catch(() => {});
+      app.querySelector('.card').innerHTML = `<p class="note ok">Wenn es ein Konto mit dieser Adresse gibt, ist jetzt eine E-Mail mit einem Link unterwegs. Schau auch im Spam-Ordner nach.</p>`;
+    });
+    $('#fReg')?.addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!$('#rAgb').checked) return toast(errText('AGB'));
+      const btn = e.submitter; btn.disabled = true; btn.textContent = 'Wird angelegt …';
+      try {
+        await call('registrieren', { firma: $('#rFirma').value, name: $('#rName').value, email: $('#rMail').value, passwort: $('#rPw').value, agb: true, avv: true, website: $('#rWeb').value });
+        app.querySelector('.card').innerHTML = `<h2>Fast geschafft</h2><p style="margin-top:8px">Wir haben dir eine E-Mail an <b>${esc($('#rMail')?.value || 'deine Adresse')}</b> geschickt. Klick auf den Link darin, dann geht es los.</p><p class="small muted" style="margin-top:8px">Keine E-Mail da? Schau im Spam-Ordner nach.</p>`;
+      } catch (er) { btn.disabled = false; btn.textContent = 'Konto anlegen'; toast(errText(er), 4500); }
+    });
+  }
+
+  function setPassword(title, invite = false) {
+    document.documentElement.dataset.app = 'konto';
+    app.innerHTML = `<div class="auth card"><h2>${esc(title)}</h2>
+      <form id="fPw" class="stack" style="margin-top:12px" novalidate>
+        <label class="f">Neues Passwort (mind. 10 Zeichen)<input id="pw1" type="password" autocomplete="new-password" minlength="10" required></label>
+        <label class="f">Wiederholen<input id="pw2" type="password" autocomplete="new-password" required></label>
+        <button class="btn block">Speichern</button></form></div>`;
+    $('#fPw').onsubmit = async e => {
+      e.preventDefault();
+      const a = $('#pw1').value, b = $('#pw2').value;
+      if (a.length < 10) return toast(errText('PASSWORT'));
+      if (a !== b) return toast('Die Passwörter stimmen nicht überein.');
+      const { error } = await FB.sb.auth.updateUser({ password: a });
+      if (error) return toast(errText(error));
+      if (invite) await call('beitreten').catch(() => {});
+      toast('Passwort gespeichert'); await FB.init({ require: false }); goBack();
+    };
+  }
+
+  /* ---------- Angemeldet: Firma, Abo, Team, Daten ---------- */
+  async function render() {
+    const { S } = FB, f = S.firma, own = S.rolle === 'inhaber', adm = FB.canAdmin(), a = FB.abo();
+    app.innerHTML = ''; if (!$('header.top')) FB.header('konto', 'Konto');
+    app.innerHTML = `
+      <div class="head"><div><p class="eyebrow">Konto</p><h1>${esc(f.name)}</h1><p class="muted small">Angemeldet als ${esc(S.me?.name || '')} (${esc(S.user.email || '')}) · ${ROLLE[S.rolle] || ''}</p></div>
+        <div class="row"><a class="btn soft" href="./profitar.html">Aufmaß</a><a class="btn soft" href="./passfort.html">Abnahme</a><button class="btn ghost" id="logout">${FB.demo ? 'Demo beenden' : 'Abmelden'}</button></div></div>
+      <section class="card" id="abo"><h2>Abo</h2><div id="aboBox"></div></section>
+      <section class="card" id="firma"><h2>Betrieb</h2>
+        <form id="fFirma" class="grid g2" novalidate>
+          <label class="f span2">Name des Betriebs<input id="fName" maxlength="120" value="${esc(f.name)}" ${adm ? '' : 'disabled'}></label>
+          <label class="f span2">Anschrift<input id="fAdr" maxlength="200" value="${esc(f.anschrift)}" placeholder="Straße, PLZ Ort" ${adm ? '' : 'disabled'}></label>
+          <label class="f">Telefon für Service<input id="fTel" maxlength="40" value="${esc(f.telefon)}" ${adm ? '' : 'disabled'}></label>
+          <label class="f">E-Mail für Service<input id="fMail" type="email" maxlength="200" value="${esc(f.email)}" ${adm ? '' : 'disabled'}></label>
+          <label class="f span2">Website<input id="fWeb" maxlength="200" value="${esc(f.web)}" placeholder="https://" ${adm ? '' : 'disabled'}></label>
+          <div class="span2 row"><img class="logo-prev" id="logoPrev" alt="" ${f.logo ? `src="${esc(f.logo)}"` : 'hidden'}><label class="btn ghost sm" ${adm ? '' : 'hidden'}>Logo wählen<input type="file" id="fLogo" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden></label>${f.logo && adm ? '<button type="button" class="btn ghost sm" id="logoDel">Logo entfernen</button>' : ''}<span class="hint">Erscheint auf Aufmaßblatt, Abnahmeprotokoll und Fensterpass.</span></div>
+          <label class="f span2">Prüfliste für die Abnahme <span class="tiny">(ein Punkt pro Zeile)</span><textarea id="fCheck" rows="6" ${adm ? '' : 'disabled'}>${esc((f.pruefliste || []).join('\n'))}</textarea></label>
+          <label class="f span2">Pflegehinweise im Fensterpass<textarea id="fPflege" rows="4" maxlength="2000" ${adm ? '' : 'disabled'}>${esc(f.pflege || '')}</textarea></label>
+          ${adm ? '<div class="span2"><button class="btn">Speichern</button></div>' : '<p class="span2 small muted">Ändern können Inhaber und Büro.</p>'}
+        </form></section>
+      <section class="card" id="team"><h2>Team</h2><div id="teamBox"><div class="skel"></div></div></section>
+      <section class="card" id="daten"><h2>Daten</h2>
+        <p class="small muted">Alle Projekte mit Aufmaß, Abnahme, Servicefällen, Fotos und Unterschriften als ZIP – für eure Ablage oder einen Wechsel.</p>
+        <div class="row" style="margin-top:10px"><button class="btn ghost" id="exp">Alles exportieren (ZIP)</button></div>
+        ${own && !FB.demo ? `<details style="margin-top:16px"><summary class="small" style="cursor:pointer;color:var(--crit)">Betrieb und alle Daten endgültig löschen</summary>
+          <p class="small" style="margin:8px 0">Löscht alle Projekte, Fotos, Unterschriften, Servicefälle und Zugänge eures Teams. Das lässt sich nicht rückgängig machen. Ein laufendes Abo kündigst du vorher im Kundenportal.</p>
+          <label class="f">Zur Bestätigung den Namen des Betriebs eintippen<input id="delName" autocomplete="off"></label>
+          <button class="btn danger" id="delBtn" style="margin-top:8px">Endgültig löschen</button></details>` : ''}
+      </section>`;
+    $('#logout').onclick = async () => { if (FB.demo) { sessionStorage.removeItem('fb.demo'); location.href = './konto.html?demo=0'; return; } await FB.sb.auth.signOut(); location.href = './konto.html'; };
+    aboBox(); team();
+    let logo = f.logo;
+    $('#fLogo')?.addEventListener('change', async e => {
+      const file = e.target.files[0]; if (!file) return;
+      try {
+        if (file.type === 'image/svg+xml') { if (file.size > 120000) return toast('Das Logo ist zu groß (max. 120 KB).'); logo = await FB.blobToDataUrl(file); }
+        else { const b = await FB.compress(file, 600, .9); const c = await createImageBitmap(b); const cv = document.createElement('canvas'); cv.width = c.width; cv.height = c.height; cv.getContext('2d').drawImage(c, 0, 0); logo = cv.toDataURL('image/png'); if (logo.length > 190000) logo = cv.toDataURL('image/jpeg', .85); }
+        $('#logoPrev').src = logo; $('#logoPrev').hidden = false;
+      } catch { toast('Das Bild konnte nicht gelesen werden.'); }
+    });
+    $('#logoDel')?.addEventListener('click', () => { logo = null; $('#logoPrev').hidden = true; });
+    $('#fFirma').onsubmit = async e => {
+      e.preventDefault(); if (!adm) return;
+      const p = { name: $('#fName').value.trim(), anschrift: $('#fAdr').value.trim(), telefon: $('#fTel').value.trim(), email: $('#fMail').value.trim(), web: $('#fWeb').value.trim(), logo,
+        pruefliste: $('#fCheck').value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 40), pflege: $('#fPflege').value.trim() };
+      if (p.name.length < 2) return toast('Bitte den Namen des Betriebs eintragen.');
+      if (!p.pruefliste.length) return toast('Die Prüfliste braucht mindestens einen Punkt.');
+      try { await FB.saveFirma(p); toast('Gespeichert'); $('.brand small').textContent = p.name; $('h1').textContent = p.name; } catch (er) { toast(errText(er)); }
+    };
+    $('#exp').onclick = exportAll;
+    $('#delBtn')?.addEventListener('click', async () => {
+      if ($('#delName').value.trim() !== f.name) return toast(errText('BESTAETIGUNG'));
+      if (!(await FB.confirmDlg('Wirklich alle Daten von „' + f.name + '“ endgültig löschen?', 'Endgültig löschen', true))) return;
+      try { await call('firma_loeschen', { bestaetigung: f.name }); await FB.sb.auth.signOut(); localStorage.clear(); indexedDB.deleteDatabase('fensterbau'); location.href = './konto.html?fehler=GELOESCHT'; } catch (er) { toast(errText(er)); }
+    });
+    if (location.hash) setTimeout(() => $(location.hash)?.scrollIntoView({ behavior: 'smooth' }), 80);
+  }
+
+  function aboBox() {
+    const f = FB.S.firma, a = FB.abo(), own = FB.S.rolle === 'inhaber', box = $('#aboBox');
+    const state = a.paid ? `<span class="chip ok">${PLAN[f.plan][0]} · bezahlt bis ${fmtDate(f.bezahlt_bis)}</span>` : a.trial ? `<span class="chip warn">Testphase · noch ${a.tage} Tag${a.tage === 1 ? '' : 'e'} (bis ${fmtDate(f.testphase_bis)})</span>` : '<span class="chip crit">abgelaufen – nur Lesen und Export</span>';
+    const link = (plan, per) => { const u = PAY[plan][per]; if (!u) return ''; const x = new URL(u); x.searchParams.set('client_reference_id', 'FB-' + f.id); if (FB.S.user.email) x.searchParams.set('prefilled_email', FB.S.user.email); return x.href; };
+    if (FB.demo) { box.innerHTML = `<p class="note">In der Demo wird nichts gebucht. Mit einem eigenen Konto testet ihr 14 Tage kostenlos, danach Solo 29 €, Team 59 € oder Business 99 € im Monat (Endpreise, § 19 UStG).</p><a class="btn" style="margin-top:10px" href="./konto.html?demo=0#registrieren">Kostenlos registrieren</a>`; return; }
+    box.innerHTML = `<p style="margin-bottom:12px">${state}</p>
+      ${own ? `<div class="plans">${Object.entries(PLAN).map(([k, [n, m, j, pers]]) => `<div class="plan" ${a.paid && f.plan === k ? 'aria-current="true"' : ''}><div class="row between"><b>${n}</b><span class="chip">${pers}</span></div>
+        <div><span class="price tnum">${m} €</span> <span class="muted small">/ Monat</span></div><div class="small muted">oder ${j} € im Jahr (2 Monate gratis)</div>
+        ${PAY[k].m ? `<a class="btn sm" href="${esc(link(k, 'm'))}" rel="noopener">Monatlich buchen</a><a class="btn ghost sm" href="${esc(link(k, 'j'))}" rel="noopener">Jährlich buchen</a>` : `<a class="btn ghost sm" href="mailto:info@novaworks-it.de?subject=${encodeURIComponent('Fensterbau-Tarif ' + n + ' für ' + f.name)}">Tarif anfragen</a>`}</div>`).join('')}</div>
+        <p class="small muted" style="margin-top:10px">Alle Preise sind Endpreise. Gemäß § 19 UStG wird keine Umsatzsteuer berechnet. Abos verlängern sich automatisch und sind zum Ende der Laufzeit kündbar. Zahlung sicher über Stripe.</p>
+        ${PAY.portal && f.stripe_customer ? `<a class="btn ghost sm" style="margin-top:8px" href="${esc(PAY.portal)}?prefilled_email=${encodeURIComponent(FB.S.user.email || '')}" rel="noopener">Abo verwalten, Rechnungen, kündigen</a>` : ''}` : '<p class="small muted">Tarif und Zahlung verwaltet der Inhaber.</p>'}`;
+  }
+
+  async function team() {
+    const box = $('#teamBox'), own = FB.S.rolle === 'inhaber';
+    let list = [];
+    try { list = await FB.listTeam(); } catch (e) { box.innerHTML = `<p class="note crit">${esc(errText(e))}</p>`; return; }
+    const aktive = list.filter(m => m.aktiv);
+    box.innerHTML = `<div class="list">${list.map(m => `<div class="item" style="cursor:default"><div class="grow"><b>${esc(m.name || m.email)}</b><span class="small muted">${esc(m.email)}</span></div>
+        <span class="chip ${m.aktiv ? '' : 'crit'}">${m.aktiv ? ROLLE[m.rolle] : 'gesperrt'}</span>
+        ${own && m.rolle !== 'inhaber' && m.aktiv && !FB.demo ? `<select class="field" style="width:auto;margin:0;min-height:36px;padding:4px 8px" data-rolle="${m.user_id}" aria-label="Rolle"><option value="monteur" ${m.rolle === 'monteur' ? 'selected' : ''}>Monteur/in</option><option value="buero" ${m.rolle === 'buero' ? 'selected' : ''}>Büro</option></select><button class="btn danger sm" data-weg="${m.user_id}">Entfernen</button>` : ''}</div>`).join('')}</div>
+      ${own && !FB.demo ? `<form id="fInv" class="grid g3" style="margin-top:14px" novalidate>
+        <label class="f">Name<input id="iName" maxlength="80" required></label><label class="f">E-Mail<input id="iMail" type="email" required></label>
+        <label class="f">Rolle<select id="iRolle"><option value="monteur">Monteur/in</option><option value="buero">Büro</option></select></label>
+        <div class="span2"><button class="btn">Einladen</button> <span class="hint">${aktive.length} Person${aktive.length === 1 ? '' : 'en'} im Team</span></div></form>
+        <p class="small muted" style="margin-top:8px">Monteur/innen erfassen Aufmaß und Abnahmen. Büro darf zusätzlich Firmendaten ändern, Servicefälle verwalten und Projekte löschen. Team und Abo verwaltet nur der Inhaber.</p>` : ''}`;
+    $$('[data-rolle]').forEach(s => s.onchange = async () => { const { error } = await FB.sb.from('fb_mitglieder').update({ rolle: s.value }).eq('user_id', s.dataset.rolle); toast(error ? errText(error) : 'Rolle geändert'); });
+    $$('[data-weg]').forEach(b => b.onclick = async () => { if (!(await FB.confirmDlg('Zugang entfernen? Die Person kann sich danach nicht mehr anmelden.', 'Entfernen', true))) return; try { await call('entfernen', { user_id: b.dataset.weg }); toast('Entfernt'); team(); } catch (e) { toast(errText(e)); } });
+    $('#fInv')?.addEventListener('submit', async e => {
+      e.preventDefault(); const btn = e.submitter; btn.disabled = true;
+      try { const r = await call('einladen', { name: $('#iName').value, email: $('#iMail').value, rolle: $('#iRolle').value }); toast(r.mail ? 'Einladung verschickt' : 'Angelegt – die E-Mail konnte nicht verschickt werden.'); team(); } catch (er) { btn.disabled = false; toast(errText(er), 4500); }
+    });
+  }
+
+  async function exportAll() {
+    const btn = $('#exp'); btn.disabled = true; btn.textContent = 'Wird erstellt …';
+    try {
+      await new Promise((res, rej) => { if (window.JSZip) return res(); const s = document.createElement('script'); s.src = './vendor/jszip.min.js'; s.onload = res; s.onerror = rej; document.head.append(s); });
+      const zip = new JSZip(), projekte = await FB.listProjekte(), service = await FB.listService().catch(() => []);
+      zip.file('firma.json', JSON.stringify({ ...FB.S.firma, logo: undefined }, null, 2));
+      zip.file('projekte.json', JSON.stringify(projekte, null, 2));
+      zip.file('service.json', JSON.stringify(service, null, 2));
+      const paths = new Set();
+      for (const p of projekte) { (p.aufmass?.elemente || []).forEach(e => e.foto && paths.add(e.foto)); (p.abnahme?.fotos || []).forEach(x => x.pfad && paths.add(x.pfad)); if (p.abnahme?.unterschrift?.pfad) paths.add(p.abnahme.unterschrift.pfad); }
+      let n = 0; for (const path of paths) { const b = await FB.fileBlob(path).catch(() => null); if (b) { zip.file('dateien/' + path.split('/').slice(1).join('/'), b); n++; } btn.textContent = `Dateien ${n}/${paths.size} …`; }
+      zip.file('LIESMICH.txt', `Export ProFitAR & PassFort – ${FB.S.firma.name}\nErstellt: ${new Date().toLocaleString('de-DE')}\n\nprojekte.json: alle Projekte mit Aufmaß und Abnahme\nservice.json: Serviceanfragen\ndateien/: Fotos und Unterschriften (Ordner = Projekt-ID)\n`);
+      FB.download(await zip.generateAsync({ type: 'blob' }), `Fensterbau-Export_${FB.safeName(FB.S.firma.name)}_${FB.today()}.zip`);
+    } catch (e) { toast(errText(e)); }
+    btn.disabled = false; btn.textContent = 'Alles exportieren (ZIP)';
+  }
+})();
+</script>
+</body>
+</html>

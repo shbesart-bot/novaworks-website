@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#1f2937">
+<title>Fensterpass</title>
+<link rel="icon" href="./icon-passfort.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./fb.css?v=2026-11-04a">
+<style>
+  main { max-width: 640px; }
+  .hero { border-radius: 18px; padding: 20px; background: linear-gradient(135deg, #1f2937, #0f172a); color: #f8fafc; }
+  .hero img { max-height: 48px; max-width: 140px; background: #fff; border-radius: 10px; padding: 5px; }
+  .hero a { color: #fde68a; }
+</style>
+</head>
+<body>
+<main id="app"><div class="skel"></div></main>
+<script src="./vendor/supabase.js"></script>
+<script>
+(async () => {
+  const SB_URL = 'https://brtdtjqinyhsesiqhkkk.supabase.co', SB_KEY = 'sb_publishable_i5Lf1DJYMBVX0yQOW2_nKQ_bRBbDUD2';
+  const $ = s => document.querySelector(s), esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const fmt = s => s ? new Date(String(s).length === 10 ? s + 'T12:00:00' : s).toLocaleDateString('de-DE') : '—';
+  const token = new URLSearchParams(location.search).get('t') || '';
+  document.documentElement.dataset.app = 'passfort';
+  const app = $('#app');
+  const demo = token.startsWith('demo-');
+  let D = null;
+  try {
+    if (demo) D = await demoPass(token);
+    else { const sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: false } }); const { data, error } = await sb.rpc('fb_pass', { p_token: token }); if (error) throw error; D = data; }
+  } catch { app.innerHTML = '<div class="card" style="margin-top:24px"><h1>Keine Verbindung</h1><p class="muted" style="margin-top:6px">Bitte später erneut öffnen.</p></div>'; return; }
+  if (!D) { app.innerHTML = '<div class="card" style="margin-top:24px"><h1>Fensterpass nicht gefunden</h1><p class="muted" style="margin-top:6px">Der Code ist ungültig oder der Pass wurde vom Betrieb entfernt.</p></div>'; return; }
+  const F = D.firma || {}, P = D.produkt || {};
+  document.title = 'Fensterpass – ' + (F.name || '');
+  const tel = (F.telefon || '').replace(/[^\d+]/g, '');
+  app.innerHTML = `
+    <section class="hero" style="margin-top:8px"><div class="row between"><div><p style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.75">Digitaler Fensterpass${demo ? ' · Demo' : ''}</p><h1 style="color:#fff;margin-top:4px">${esc(F.name)}</h1><p style="opacity:.8;font-size:13px">${esc(D.nummer || '')}</p></div>${F.logo ? `<img src="${esc(F.logo)}" alt="Logo ${esc(F.name)}">` : ''}</div>
+      <div class="row" style="margin-top:14px">${tel ? `<a class="btn" style="background:#f59e0b;border-color:#f59e0b;color:#111827" href="tel:${esc(tel)}">Anrufen</a>` : ''}<a class="btn ghost" style="color:#fff;border-color:rgba(255,255,255,.3)" href="#service">Serviceanfrage</a></div></section>
+    <section class="card" style="margin-top:14px"><h2>Ihre Fenster und Türen</h2><div class="kv">
+      <div><span>Montiert am</span><b>${fmt(D.montage)}</b></div><div><span>System</span><b>${esc(P.modell || '—')}</b></div><div><span>Verglasung</span><b>${esc(P.glas || '—')}</b></div>
+      <div><span>Farbe</span><b>${esc(P.farbe || '—')}</b></div><div><span>Garantie</span><b>${esc(D.garantie || '—')}</b></div></div>
+      ${(D.elemente || []).length ? `<div class="list" style="margin-top:10px">${D.elemente.map((e, i) => `<div class="item" style="cursor:default"><div class="grow"><b>${i + 1}. ${esc(e.bez || '')}</b><span class="small muted">${esc([e.typ, e.farbe, e.glas].filter(Boolean).join(' · '))}</span></div></div>`).join('')}</div>` : ''}</section>
+    <section class="card"><h2>Pflegehinweise</h2><p style="white-space:pre-line">${esc(D.pflege || '')}</p></section>
+    <section class="card" id="service"><h2>Serviceanfrage</h2><p class="small muted" style="margin-bottom:12px">Etwas klemmt, zieht oder ist kaputt? Schreiben Sie uns – Ihre Anfrage geht direkt an ${esc(F.name)}.</p>
+      <form id="sf" class="stack" novalidate>
+        <label class="f">Ihr Name<input id="sN" autocomplete="name" maxlength="80" required></label>
+        <label class="f">E-Mail für die Rückmeldung<input id="sE" type="email" autocomplete="email" required></label>
+        <label class="f">Telefon (optional)<input id="sT" type="tel" autocomplete="tel" maxlength="40"></label>
+        <label class="f">Was ist passiert?<textarea id="sM" rows="4" maxlength="3000" required placeholder="Welches Fenster, was fällt auf, seit wann?"></textarea></label>
+        <input id="sW" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+        <p class="tiny muted">Ihre Angaben gehen an ${esc(F.name)} und werden nur zur Bearbeitung Ihrer Anfrage verwendet. Verantwortlich ist ${esc(F.name)}${F.anschrift ? ', ' + esc(F.anschrift) : ''}; technisch bereitgestellt von NovaWorks (<a href="../../datenschutz.html#fensterbau">Datenschutz</a>).</p>
+        <button class="btn block">Anfrage senden</button><p id="sR" role="status"></p></form></section>
+    <section class="card"><h2>Kontakt</h2><p>${esc(F.name)}</p>${F.anschrift ? `<p class="muted">${esc(F.anschrift)}</p>` : ''}
+      <div class="row" style="margin-top:8px">${tel ? `<a href="tel:${esc(tel)}">${esc(F.telefon)}</a>` : ''}${F.email ? `<a href="mailto:${esc(F.email)}">${esc(F.email)}</a>` : ''}${F.web ? `<a href="${esc(/^https?:\/\//.test(F.web) ? F.web : 'https://' + F.web)}" rel="noopener">${esc(F.web.replace(/^https?:\/\//, ''))}</a>` : ''}</div></section>
+    <p class="tiny muted" style="text-align:center;margin:18px 0 40px">Fensterpass mit PassFort · <a href="../../impressum.html">Impressum NovaWorks</a></p>`;
+  $('#sf').onsubmit = async e => {
+    e.preventDefault(); const btn = e.submitter, r = $('#sR');
+    const body = { action: 'service', token, name: $('#sN').value.trim(), email: $('#sE').value.trim(), telefon: $('#sT').value.trim(), nachricht: $('#sM').value.trim(), website: $('#sW').value };
+    if (body.name.length < 2 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.email) || body.nachricht.length < 5) { r.className = 'note warn'; r.textContent = 'Bitte Name, E-Mail und eine kurze Beschreibung angeben.'; return; }
+    btn.disabled = true;
+    try {
+      let ok;
+      if (demo) { await demoService(token, body); ok = { ok: true, gemeldet: true }; }
+      else { const res = await fetch(SB_URL + '/functions/v1/fb-konto', { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SB_KEY }, body: JSON.stringify(body) }); ok = await res.json(); if (!res.ok) throw new Error(ok.error); }
+      $('#sf').innerHTML = `<div class="note ok">Danke! Ihre Anfrage ist bei ${esc(F.name)} eingegangen${ok.gemeldet ? '' : ' und wird im Service-Eingang bearbeitet'}. Sie erhalten eine Rückmeldung an ${esc(body.email)}.</div>`;
+    } catch (er) { btn.disabled = false; r.className = 'note crit'; r.textContent = er.message === 'LIMIT' ? 'Es wurden heute schon mehrere Anfragen gesendet. Bitte rufen Sie direkt an.' : 'Senden hat nicht geklappt. Bitte erneut versuchen oder anrufen.'; }
+  };
+
+  /* Demo: Pass aus dem Browser-Speicher der Demo */
+  function idb() { return new Promise((res, rej) => { const r = indexedDB.open('fensterbau-demo', 1); r.onupgradeneeded = () => { r.transaction.abort(); }; r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); }); }
+  async function demoAll(store) { const d = await idb(); return new Promise(res => { const out = []; const c = d.transaction(store).objectStore(store).openCursor(); c.onsuccess = () => { const x = c.result; if (x) { out.push(x.value); x.continue(); } else res(out); }; }); }
+  async function demoPass(t) {
+    const p = (await demoAll('projekte')).find(x => x.pass_token === t); if (!p) return null;
+    const d = await idb(), firma = await new Promise(res => { const r = d.transaction('kv').objectStore('kv').get('firma'); r.onsuccess = () => res(r.result || {}); });
+    const F = { name: 'Fensterbau Muster (Demo)', anschrift: 'Musterstraße 1, 12345 Musterstadt', telefon: '01234 56789', email: 'service@example.com', pflege: 'Beschläge einmal im Jahr leicht ölen. Dichtungen mit Wasser und mildem Reiniger säubern, danach mit Pflegestift behandeln.', ...firma };
+    return { firma: F, nummer: p.nummer, montage: p.abnahme?.datum, produkt: p.abnahme?.produkt, garantie: p.abnahme?.garantie, pflege: p.abnahme?.pflege || F.pflege, elemente: (p.aufmass?.elemente || []).map(e => ({ bez: e.label, typ: e.type, farbe: e.color, glas: e.glass })), _id: p.id };
+  }
+  async function demoService(t, b) {
+    const d = await idb(), p = (await demoAll('projekte')).find(x => x.pass_token === t);
+    await new Promise(res => { const tx = d.transaction('kv', 'readwrite'), s = tx.objectStore('kv'), r = s.get('service'); r.onsuccess = () => { const l = r.result || []; l.push({ id: crypto.randomUUID(), projekt_id: p?.id, name: b.name, email: b.email, telefon: b.telefon, nachricht: b.nachricht, status: 'neu', zustaendig: null, notiz: '', created_at: new Date().toISOString() }); s.put(l, 'service'); }; tx.oncomplete = res; });
+  }
+})();
+</script>
+</body>
+</html>

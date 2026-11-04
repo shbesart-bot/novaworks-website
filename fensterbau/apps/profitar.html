@@ -1,65 +1,399 @@
 <!doctype html>
-<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0f172a"><title>ProFitAR – Digitales Aufmaß</title><link rel="manifest" href="./profitar.webmanifest"><meta name="apple-mobile-web-app-capable" content="yes"><script src="https://cdn.tailwindcss.com"></script><style>
-:root{color-scheme:dark}*{box-sizing:border-box}body{background:#0f172a;color:#e2e8f0;font-family:Inter,ui-sans-serif,system-ui,sans-serif}input,select,textarea{color-scheme:dark}input:focus,select:focus,textarea:focus{outline:2px solid #0284c7;outline-offset:1px}canvas{max-width:100%}.visual-stage{position:relative;min-height:340px;overflow:hidden;background:#020617;border-radius:14px;touch-action:none}.visual-stage img,.visual-stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.visual-stage canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}.notice{display:none}.notice.show{display:block}@media print{body{background:white!important;color:#0f172a!important}.no-print{display:none!important}.card{background:white!important;color:#0f172a!important;box-shadow:none!important;border:1px solid #cbd5e1!important}.card *{color:#0f172a!important}.visual-stage{background:white;border:1px solid #94a3b8;min-height:420px}}
-</style></head><body class="min-h-screen">
-<header class="sticky top-0 z-20 border-b border-slate-700 bg-slate-900/95 backdrop-blur no-print"><div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6"><div class="flex items-center gap-3"><svg class="w-8 h-8 text-sky-500" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M 15,30 L 15,15 L 30,15" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path d="M 70,15 L 85,15 L 85,30" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path d="M 85,70 L 85,85 L 70,85" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><path d="M 30,85 L 15,85 L 15,70" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><rect x="25" y="25" width="50" height="50" rx="4" stroke="#22C55E" stroke-width="4" fill="none" stroke-dasharray="6 4"/><path d="M 40,50 L 50,42 L 60,50 L 50,58 Z M 50,42 L 50,58 M 40,50 L 60,50" stroke="#0284C7" stroke-width="3" stroke-linejoin="round"/></svg><div><div class="text-xl font-black text-white">ProFit<span class="text-sky-500">AR</span></div><div class="hidden text-xs text-slate-400 sm:block">Aufmaß & Visualisierung für Fenster und Türen</div></div></div><div class="flex gap-2"><button id="serverAccess" class="rounded-lg border border-slate-600 px-3 py-2 text-sm font-bold">API-Zugang</button><button id="save" class="rounded-lg border border-slate-600 px-3 py-2 text-sm font-bold">Entwurf speichern</button><button id="print" class="rounded-lg bg-sky-600 px-3 py-2 text-sm font-bold text-white">Projektblatt PDF/Druck</button></div></div></header>
-<main class="mx-auto max-w-7xl px-4 py-6 sm:px-6"><div class="mb-6"><p class="text-xs font-bold uppercase tracking-[.2em] text-sky-400">Außendienst · Digitales Aufmaß</p><h1 class="mt-1 text-3xl font-black text-white">Neues Aufmaß</h1></div><div class="grid gap-6 xl:grid-cols-[minmax(350px,.8fr)_minmax(0,1.2fr)]"><section class="space-y-6">
-<article class="card rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-xl"><h2 class="mb-4 text-lg font-bold text-white">Kundendaten</h2><div class="grid gap-3 sm:grid-cols-2"><label class="text-sm text-slate-300">Kundenname<input id="customer" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3" placeholder="Vor- und Nachname"></label><label class="text-sm text-slate-300">Projekt-ID<input id="project" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3" placeholder="PF-2026-001"></label><label class="text-sm text-slate-300 sm:col-span-2">Adresse<input id="address" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3" placeholder="Straße, PLZ Ort"></label><label class="text-sm text-slate-300 sm:col-span-2">Ansprechpartner<input id="contact" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3" placeholder="Name / Telefon / E-Mail"></label></div></article>
-<article class="card rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-xl"><h2 class="mb-4 text-lg font-bold text-white">Element-Konfiguration</h2><label class="mb-3 block text-sm text-slate-300">Elementbezeichnung<input id="elementLabel" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3" placeholder="z. B. EG Wohnzimmer links"></label><div class="grid gap-3 sm:grid-cols-2"><label class="text-sm text-slate-300 sm:col-span-2">Elementtyp<select id="type" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3"><option>Dreh-Kipp-Fenster</option><option>Schiebetür</option><option>Haustür</option></select></label><label class="text-sm text-slate-300">Breite (mm)<input id="width" type="number" min="300" max="10000" value="1200" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3"></label><label class="text-sm text-slate-300">Höhe (mm)<input id="height" type="number" min="300" max="10000" value="1400" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3"></label><label class="text-sm text-slate-300">Breite oben/mitte/unten<input id="widthPoints" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3" value="1200 / 1200 / 1200" placeholder="mm / mm / mm"></label><label class="text-sm text-slate-300">Höhe links/mitte/rechts<input id="heightPoints" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3" value="1400 / 1400 / 1400" placeholder="mm / mm / mm"></label><label class="text-sm text-slate-300">Diagonalen (mm)<input id="diagonals" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3" placeholder="z. B. 1840 / 1843"></label><label class="text-sm text-slate-300">Einbauluft (mm)<input id="installGap" type="number" min="0" value="15" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3"></label><label class="text-sm text-slate-300">Anschlagrichtung<select id="opening" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3"><option>DIN links</option><option>DIN rechts</option><option>Festverglasung</option></select></label><label class="text-sm text-slate-300">Kopplung<select id="coupling" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3"><option>Keine</option><option>Links</option><option>Rechts</option><option>Beidseitig</option></select></label><label class="text-sm text-slate-300">Farbe<select id="color" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3"><option value="#475569">RAL 7016 Anthrazit</option><option value="#a8794f">Eiche</option><option value="#f8fafc">Weiß</option></select></label><label class="text-sm text-slate-300">Verglasung<select id="glass" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-3"><option>2-fach</option><option selected>3-fach</option></select></label><div class="sm:col-span-2 flex flex-wrap gap-5 pt-1"><label class="flex items-center gap-2 text-sm"><input id="bars" type="checkbox" class="h-4 w-4 accent-emerald-500">Sprossen</label><label class="flex items-center gap-2 text-sm"><input id="shutter" type="checkbox" class="h-4 w-4 accent-emerald-500">Rollladenkasten</label></div></div><div id="warnings" class="notice mt-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-200"></div><div class="mt-4 flex flex-wrap items-center gap-3 no-print"><button id="addElement" class="rounded-lg bg-sky-600 px-4 py-3 font-bold text-white">Element zum Projekt hinzufügen</button><span id="elementCount" class="text-sm text-slate-400">1 Element in Bearbeitung</span></div><div id="elementList" class="mt-3 space-y-2"></div></article>
-<article class="card rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-xl"><h2 class="mb-2 text-lg font-bold text-white">Baustellenbild / AR</h2><p class="mb-4 text-sm text-slate-400">Foto wählen oder Kamera starten; das Element lässt sich auf dem Bild verschieben, skalieren und transparent einstellen.</p><div class="flex flex-wrap gap-2 no-print"><label class="cursor-pointer rounded-lg border border-slate-600 px-4 py-2.5 text-sm font-bold">Foto laden<input id="photo" type="file" accept="image/*" class="hidden"></label><button id="camera" class="rounded-lg border border-slate-600 px-4 py-2.5 text-sm font-bold">Live-Kamera starten</button><button id="stopCamera" class="rounded-lg border border-slate-600 px-4 py-2.5 text-sm font-bold">Kamera stoppen</button></div><div class="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] no-print"><label class="text-sm text-slate-300">Bekanntes Referenzmaß (mm)<input id="referenceMm" type="number" min="10" value="1000" class="mt-1 w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2"></label><button id="calibrate" class="self-end rounded-lg border border-emerald-500/50 px-4 py-2.5 font-bold text-emerald-300">Foto skalieren: 2 Punkte</button></div><p id="calibrationStatus" class="mt-2 text-xs text-slate-400 no-print">Foto-Kalibrierung noch nicht gesetzt; die Overlaygröße ist eine Vorschau.</p><label class="mt-4 block text-sm text-slate-300 no-print">Overlay-Transparenz <span id="opacityLabel">75%</span><input id="opacity" type="range" min="15" max="100" value="75" class="mt-2 w-full accent-emerald-500"></label><p id="cameraMsg" class="mt-3 text-xs text-slate-500"></p></article>
-<div class="no-print flex gap-3"><button id="export" class="flex-1 rounded-xl bg-emerald-600 px-4 py-3 font-extrabold text-white hover:bg-emerald-500">Als JSON/ERP exportieren</button></div>
-</section><section class="space-y-6"><article class="card rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-xl"><div class="mb-4 flex flex-wrap items-end justify-between gap-2"><div><h2 class="text-lg font-bold text-white">2D-Konfigurator & AR-Overlay</h2><p class="text-sm text-slate-400">Vorschau aktualisiert sich automatisch mit den Maßen.</p></div><span id="scaleInfo" class="rounded-full bg-slate-700 px-3 py-1 text-xs text-slate-300"></span></div><div id="stage" class="visual-stage"><img id="scenePhoto" class="hidden" alt="Baustellenfoto"><video id="cameraVideo" class="hidden" autoplay muted playsinline></video><canvas id="canvas" aria-label="Maßstabsgetreue Fenster-Visualisierung"></canvas><div id="emptyHint" class="pointer-events-none absolute inset-x-0 bottom-3 text-center text-xs text-slate-400">Overlay im Bild mit Finger oder Maus verschieben.</div></div><div class="mt-4 flex flex-wrap justify-between gap-2 text-xs text-slate-400"><span>Skalierung proportional zur Elementgröße</span><span>Drag: verschieben · Griff unten rechts: skalieren</span></div></article>
-<article class="card rounded-2xl border border-slate-700 bg-slate-800 p-5 shadow-xl"><h2 class="mb-3 text-lg font-bold text-white">Aufmaß-Zusammenfassung</h2><div id="summary" class="grid gap-2 text-sm sm:grid-cols-2"></div><div class="mt-4 border-t border-slate-700 pt-3"><span class="text-xs font-bold uppercase tracking-widest text-slate-500">Plausibilitätsprüfung</span><p id="validity" class="mt-1 text-sm text-emerald-400">Maße im üblichen Bereich.</p></div></article></section></div><div class="print-only mt-5 border-t border-slate-300 pt-4 text-xs text-slate-500">ProFitAR · Digitales Aufmaß</div></main>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0369a1">
+<title>ProFitAR – Digitales Aufmaß</title>
+<link rel="manifest" href="./profitar.webmanifest">
+<link rel="icon" href="./icon-profitar.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon-profitar-180.png">
+<link rel="stylesheet" href="./fb.css?v=2026-11-04a">
+<style>
+  .elist .item { padding: 10px 8px; border-radius: 10px; }
+  .elist .item[aria-current="true"] { background: var(--accent-soft); }
+  .pos { width: 30px; height: 30px; border-radius: 9px; background: var(--soft); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex: none; }
+  .warnings { display: flex; flex-direction: column; gap: 6px; }
+  .bm { font-size: 22px; font-weight: 700; }
+  .tools { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+</style>
+</head>
+<body>
+<main id="app"><div class="skel"></div></main>
+<script src="./vendor/supabase.js"></script>
+<script src="./fb-core.js?v=2026-11-04a"></script>
+<script src="./vendor/jspdf.umd.min.js" defer></script>
 <script>
-(()=>{
-  const $=id=>document.getElementById(id),stage=$('stage'),canvas=$('canvas'),ctx=canvas.getContext('2d'),img=$('scenePhoto'),video=$('cameraVideo'),stateKey='profitar-draft-v2';
-  const fieldIds=['customer','project','address','contact','elementLabel','type','width','height','widthPoints','heightPoints','diagonals','installGap','opening','coupling','color','glass','bars','shutter'],elementInputIds=['elementLabel','type','width','height','widthPoints','heightPoints','diagonals','installGap','opening','coupling','color','glass','bars','shutter'];
-  let stream=null,offset={x:.5,y:.5},size={w:.42,h:.62},drag=null,calibration=null,calibrating=false,calPoints=[],elements=[],activeElement=-1,currentUnsaved=false;
-  const dbp=new Promise((resolve,reject)=>{const r=indexedDB.open('profitar-local',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error)});
-  async function put(k,v){const db=await dbp;return new Promise((res,rej)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').put(v,k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
-  async function get(k){const db=await dbp;return new Promise((res,rej)=>{const r=db.transaction('kv').objectStore('kv').get(k);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
-  async function del(k){const db=await dbp;return new Promise((res,rej)=>{const t=db.transaction('kv','readwrite');t.objectStore('kv').delete(k);t.oncomplete=()=>res();t.onerror=()=>rej(t.error)})}
-  function auth(){const k=sessionStorage.getItem('appApiKey')||'';return k?{'Authorization':'Bearer '+k}:{} }
-  $('serverAccess').onclick=()=>{const v=prompt('Monteur-Schlüssel aus outputs/data/field.key oder Admin-Schlüssel aus outputs/data/admin.key. Nur diese Browsersitzung.',sessionStorage.getItem('appApiKey')||'');if(v!==null){sessionStorage.setItem('appApiKey',v.trim());syncPending()}};
-  function dims(s){return String(s||'').split(/[\s/;,]+/).map(Number).filter(Number.isFinite)}
-  function current(){return{label:$('elementLabel').value.trim()||`Element ${elements.length+1}`,type:$('type').value,widthMm:+$('width').value,heightMm:+$('height').value,widthPoints:dims($('widthPoints').value),heightPoints:dims($('heightPoints').value),diagonals:dims($('diagonals').value),installGapMm:+$('installGap').value,opening:$('opening').value,coupling:$('coupling').value,color:$('color').selectedOptions[0].text,colorHex:$('color').value,glass:$('glass').value,options:{muntins:$('bars').checked,rollerShutterBox:$('shutter').checked}}}
-  function stageSize(){const r=stage.getBoundingClientRect();return{w:r.width,h:r.height}}
-  function resize(){const {w,h}=stageSize(),d=window.devicePixelRatio||1;canvas.width=Math.max(1,Math.round(w*d));canvas.height=Math.max(1,Math.round(h*d));ctx.setTransform(d,0,0,d,0,0);draw()}
-  function draw(){const {w,h}=stageSize(),el=elements[activeElement]||current(),W=el.widthMm||1200,H=el.heightMm||1400,ratio=W/H;let fw=calibration?Math.min(W*calibration.pxPerMm,w*.88):Math.min(w*size.w,h*size.h,Math.sqrt(w*h*.22));let fh=fw/ratio;if(fh>h*(calibration?.75:size.h)){fh=h*(calibration?.75:size.h);fw=fh*ratio}const x=offset.x*w-fw/2,y=offset.y*h-fh/2;ctx.clearRect(0,0,w,h);ctx.globalAlpha=+$('opacity').value/100;ctx.fillStyle=el.colorHex||$('color').value;ctx.fillRect(x,y,fw,fh);ctx.globalAlpha=1;ctx.lineWidth=Math.max(3,fw*.018);ctx.strokeStyle='#22c55e';ctx.strokeRect(x,y,fw,fh);const m=Math.max(5,fw*.055);ctx.fillStyle='rgba(2,132,199,.32)';ctx.fillRect(x+m,y+m,fw-2*m,fh-2*m);ctx.strokeStyle='#7dd3fc';ctx.lineWidth=2;ctx.strokeRect(x+m,y+m,fw-2*m,fh-2*m);ctx.beginPath();if(el.type==='Dreh-Kipp-Fenster'){ctx.moveTo(x+m,y+m);ctx.lineTo(x+fw-m,y+fh-m);ctx.moveTo(x+fw-m,y+m);ctx.lineTo(x+m,y+fh-m)}else if(el.type==='Schiebetür'){ctx.moveTo(x+fw/2,y+m);ctx.lineTo(x+fw/2,y+fh-m);ctx.moveTo(x+fw*.42,y+fh*.5);ctx.lineTo(x+fw*.58,y+fh*.5)}else{ctx.moveTo(x+fw*.68,y+m);ctx.lineTo(x+fw*.68,y+fh-m)}ctx.stroke();if(el.options?.muntins||$('bars').checked){ctx.beginPath();ctx.moveTo(x+fw/2,y+m);ctx.lineTo(x+fw/2,y+fh-m);ctx.moveTo(x+m,y+fh/2);ctx.lineTo(x+fw-m,y+fh/2);ctx.stroke()}if(el.options?.rollerShutterBox||$('shutter').checked){ctx.fillStyle='#334155';ctx.fillRect(x-4,y-12,fw+8,10)}ctx.strokeStyle='#22c55e';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x,y+fh+13);ctx.lineTo(x+fw,y+fh+13);ctx.moveTo(x-13,y);ctx.lineTo(x-13,y+fh);ctx.stroke();ctx.fillStyle='#e2e8f0';ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillText(`${W} mm`,x+fw/2,y+fh+34);ctx.save();ctx.translate(x-28,y+fh/2);ctx.rotate(-Math.PI/2);ctx.fillText(`${H} mm`,0,0);ctx.restore();ctx.fillStyle='#22c55e';ctx.fillRect(x+fw-8,y+fh-8,16,16);$('scaleInfo').textContent=`${el.label||'Element'} · ${W} × ${H} mm${calibration?' · kalibriert':''}`;canvas.dataset.frame=JSON.stringify({x,y,fw,fh})}
-  function drawSummary(){const el=current(),warn=[];if(el.widthMm<300||el.widthMm>10000)warn.push('Breite außerhalb des üblichen Bereichs (300–10.000 mm).');if(el.heightMm<300||el.heightMm>10000)warn.push('Höhe außerhalb des üblichen Bereichs (300–10.000 mm).');if(el.widthMm>4000&&el.coupling==='Keine')warn.push('Breite über 4.000 mm: Kopplung/Statik prüfen.');if(el.widthMm>3000&&el.type==='Haustür')warn.push('Außergewöhnliche Haustürbreite prüfen.');if(el.heightMm>2800)warn.push('Höhe über 2.800 mm: Statik und Transport prüfen.');for(const [name,arr] of [['Breite',el.widthPoints],['Höhe',el.heightPoints]])if(arr.length>1&&Math.max(...arr)-Math.min(...arr)>5)warn.push(`${name} variiert um mehr als 5 mm – Öffnung auf Rechtwinkligkeit prüfen.`);if(el.diagonals.length>=2&&Math.abs(el.diagonals[0]-el.diagonals[1])>10)warn.push('Diagonalen unterscheiden sich um mehr als 10 mm.');$('warnings').textContent=warn.map(x=>'⚠ '+x).join(' · ');$('warnings').classList.toggle('show',warn.length>0);$('validity').textContent=warn.length?warn.join(' '):'Maße im üblichen Bereich.';$('validity').className='mt-1 text-sm '+(warn.length?'text-amber-300':'text-emerald-400');const obj={Kunde:$('customer').value||'—','Projekt-ID':$('project').value||'—',Adresse:$('address').value||'—',Ansprechpartner:$('contact').value||'—',Element:el.label,Typ:el.type,Maße:`${el.widthMm||'—'} × ${el.heightMm||'—'} mm`,Breitenpunkte:el.widthPoints.join(' / ')||'—',Höhenpunkte:el.heightPoints.join(' / ')||'—',Diagonalen:el.diagonals.join(' / ')||'—','Einbauluft':`${el.installGapMm} mm`,Anschlag:el.opening,Kopplung:el.coupling,Farbe:el.color,Glas:el.glass,Sprossen:el.options.muntins?'Ja':'Nein','Rollladenkasten':el.options.rollerShutterBox?'Ja':'Nein'};$('summary').replaceChildren();for(const [k,v] of Object.entries(obj)){const box=document.createElement('div');box.className='rounded-lg bg-slate-900/70 p-3';const a=document.createElement('div');a.className='text-xs text-slate-500';a.textContent=k;const b=document.createElement('div');b.className='mt-1 font-semibold text-slate-200';b.textContent=v;box.append(a,b);$('summary').append(box)}draw()}
-  function update(){drawSummary()}
-  function renderElements(){const list=$('elementList');list.replaceChildren();elements.forEach((el,i)=>{const row=document.createElement('div');row.className='flex items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900/70 p-3';const info=document.createElement('span');info.className='text-sm text-slate-300';info.textContent=`${i+1}. ${el.label} · ${el.widthMm} × ${el.heightMm} mm`;const load=document.createElement('button');load.className='rounded border border-slate-600 px-2 py-1 text-xs';load.textContent='Bearbeiten';load.onclick=()=>{activeElement=i;currentUnsaved=false;const e=elements[i];for(const [id,v] of Object.entries({elementLabel:e.label,type:e.type,width:e.widthMm,height:e.heightMm,widthPoints:e.widthPoints.join(' / '),heightPoints:e.heightPoints.join(' / '),diagonals:e.diagonals.join(' / '),installGap:e.installGapMm,opening:e.opening,coupling:e.coupling,glass:e.glass}))$(id).value=v;$('color').value=e.colorHex;$('bars').checked=e.options.muntins;$('shutter').checked=e.options.rollerShutterBox;renderElements();update()};const remove=document.createElement('button');remove.className='rounded border border-rose-700 px-2 py-1 text-xs text-rose-300';remove.textContent='Entfernen';remove.onclick=()=>{elements.splice(i,1);activeElement=-1;renderElements();update();put('draft',project()).catch(()=>{})};const actions=document.createElement('div');actions.className='flex gap-2';actions.append(load,remove);row.append(info,actions);list.append(row)});$('elementCount').textContent=`${elements.length} gespeicherte Elemente · ${activeElement>=0?'Element wird bearbeitet':'neues Element'}`;$('addElement').textContent=activeElement>=0?'Änderungen am Element übernehmen':'Element zum Projekt hinzufügen'}
-  function capturePhoto(){if(video.srcObject&&video.readyState>=2){const c=document.createElement('canvas');c.width=video.videoWidth;c.height=video.videoHeight;c.getContext('2d').drawImage(video,0,0);return c.toDataURL('image/jpeg',.78)}if(img.src&&img.classList.contains('hidden')===false){const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);return c.toDataURL('image/jpeg',.78)}return null}
-  function project(){const el=current(),all=[...elements];if(activeElement>=0)all[activeElement]=el;else if(currentUnsaved)all.push(el);return{app:'ProFitAR',schemaVersion:2,exportedAt:new Date().toISOString(),customer:{name:$('customer').value,address:$('address').value,projectId:$('project').value.trim(),contact:$('contact').value},elements:all,element:el,validation:$('validity').textContent,overlay:{offset,size,opacity:$('opacity').value,calibration},scenePhoto:capturePhoto(),visualization:canvas.toDataURL('image/png')}}
-  async function syncData(data){const k=sessionStorage.getItem('appApiKey');if(!k)throw Error('Monteur- oder Admin-Schlüssel fehlt');const apiData={...data};delete apiData.scenePhoto;delete apiData.visualization;const r=await fetch('/api/projects',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+k},body:JSON.stringify(apiData)});if(!r.ok)throw Error((await r.json()).error||'API-Fehler');await del('pending')}
-  async function syncPending(){const p=await get('pending');if(!p)return;try{await syncData(p);$('save').textContent='Synchronisiert ✓'}catch{}}
-  
-  $('addElement').onclick=()=>{const el=current();if(activeElement>=0)elements[activeElement]=el;else elements.push(el);activeElement=-1;currentUnsaved=false;$('elementLabel').value='';renderElements();update();const d=project();put('draft',d).then(()=>put('pending',d)).catch(()=>{})};
-  const point=e=>{const r=stage.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}};
-  canvas.addEventListener('pointerdown',e=>{const p=point(e);if(calibrating){calPoints.push(p);if(calPoints.length===2){const d=Math.hypot(calPoints[1].x-calPoints[0].x,calPoints[1].y-calPoints[0].y),mm=+$('referenceMm').value;if(d>5&&mm>0){calibration={pxPerMm:d/mm,referenceMm:mm};$('calibrationStatus').textContent=`Kalibriert: ${mm} mm entsprechen ${d.toFixed(0)} px. Perspektive ist noch nicht korrigiert.`;calibrating=false;calPoints=[];draw()}else $('calibrationStatus').textContent='Punkte zu nah beieinander oder Referenzmaß ungültig.'}return}const f=JSON.parse(canvas.dataset.frame||'{}');if(!f.fw)return;drag={kind:p.x>f.x+f.fw-22&&p.y>f.y+f.fh-22?'resize':'move',start:p,off:{...offset}};canvas.setPointerCapture(e.pointerId)});
-  canvas.addEventListener('pointermove',e=>{if(!drag)return;const p=point(e),{w,h}=stageSize();if(drag.kind==='move'){offset.x=Math.max(.05,Math.min(.95,drag.off.x+(p.x-drag.start.x)/w));offset.y=Math.max(.05,Math.min(.95,drag.off.y+(p.y-drag.start.y)/h))}else size.w=Math.max(.16,Math.min(.85,size.w+(p.x-drag.start.x)/w));draw()});['pointerup','pointercancel'].forEach(n=>canvas.addEventListener(n,()=>drag=null));
-  $('calibrate').onclick=()=>{if(img.classList.contains('hidden')&&!video.srcObject){$('calibrationStatus').textContent='Lade zuerst ein Baustellenfoto oder starte die Kamera.';return}calibrating=true;calPoints=[];$('calibrationStatus').textContent='Tippe zwei Punkte mit bekanntem Abstand im Foto an.'};
-  $('photo').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;if(!f.type.startsWith('image/'))return alert('Bitte ein Bild auswählen.');if(img.src.startsWith('blob:'))URL.revokeObjectURL(img.src);img.src=URL.createObjectURL(f);img.classList.remove('hidden');video.classList.add('hidden');$('emptyHint').classList.add('hidden');img.onload=draw});
-  $('camera').onclick=async()=>{try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});video.srcObject=stream;video.classList.remove('hidden');img.classList.add('hidden');$('emptyHint').classList.add('hidden');$('cameraMsg').textContent='Live-Kamera aktiv'}catch{$('cameraMsg').textContent='Kamera nicht verfügbar. Nutze HTTPS oder localhost und erlaube Kamerazugriff.'}};$('stopCamera').onclick=()=>{stream?.getTracks().forEach(t=>t.stop());stream=null;video.srcObject=null;video.classList.add('hidden');$('cameraMsg').textContent='Kamera gestoppt'};
-  let autoSaveTimer;fieldIds.forEach(id=>$(id).addEventListener('input',()=>{if(elementInputIds.includes(id))currentUnsaved=true;update();clearTimeout(autoSaveTimer);autoSaveTimer=setTimeout(()=>{const d=project();put('draft',d).then(()=>put('pending',d)).catch(()=>{})},500)}));$('opacity').addEventListener('input',()=>{$('opacityLabel').textContent=$('opacity').value+'%';draw()});
-  $('export').onclick=()=>{const d=project();const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(d,null,2)],{type:'application/json'}));a.download=`ProFitAR-${d.customer.projectId||'Aufmass'}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};
-  $('save').onclick=async()=>{try{const data=project();await put('draft',data);await put('pending',data);$('save').textContent='Offline gespeichert ✓';try{await syncData(data);$('save').textContent='Mit Server synchronisiert ✓'}catch(e){$('save').title=e.message;$('save').textContent='Offline vorgemerkt'}setTimeout(()=>$('save').textContent='Entwurf speichern',2500)}catch(e){alert('Speichern fehlgeschlagen: '+e.message)}};
-  $('print').onclick=()=>window.print();
-  async function restore(){try{const d=await get('draft');if(!d)return;const c=d.customer||{},el=d.element||{},v={customer:c.name,project:c.projectId,address:c.address,contact:c.contact,elementLabel:el.label,type:el.type,width:el.widthMm,height:el.heightMm,widthPoints:(el.widthPoints||[]).join(' / '),heightPoints:(el.heightPoints||[]).join(' / '),diagonals:(el.diagonals||[]).join(' / '),installGap:el.installGapMm,opening:el.opening,coupling:el.coupling,glass:el.glass};Object.entries(v).forEach(([id,val])=>{if(val!==undefined&&$(id))$(id).value=val});if(el.colorHex)$('color').value=el.colorHex;$('bars').checked=!!el.options?.muntins;$('shutter').checked=!!el.options?.rollerShutterBox;elements=d.elements||[];activeElement=elements.length?elements.length-1:-1;currentUnsaved=false;if(d.overlay){offset=d.overlay.offset||offset;size=d.overlay.size||size;calibration=d.overlay.calibration||null;$('opacity').value=d.overlay.opacity||75;$('opacityLabel').textContent=$('opacity').value+'%'}if(d.scenePhoto){img.src=d.scenePhoto;img.classList.remove('hidden');$('emptyHint').classList.add('hidden')}renderElements();update()}catch(e){console.warn('Entwurf konnte nicht geladen werden',e)}}
-  window.addEventListener('online',()=>syncPending().catch(()=>{}));window.addEventListener('resize',resize);restore().then(()=>{resize();syncPending()});requestAnimationFrame(resize);window.addEventListener('beforeunload',()=>stream?.getTracks().forEach(t=>t.stop()));
+(async () => {
+  const { $, $$, esc, toast, errText, fmtDate, uid } = FB;
+  try { await FB.init(); } catch (e) { if (e.message !== 'redirect') $('#app').innerHTML = `<div class="card"><p>${esc(errText(e))}</p></div>`; return; }
+  FB.header('profitar', 'Digitales Aufmaß');
+  const app = $('#app');
+  const STATUS = { aufmass: ['Aufmaß', 'accent'], angebot: ['Angebot', ''], bestellt: ['Bestellt', 'warn'], montage: ['Montage', 'warn'], abgenommen: ['Abgenommen', 'ok'] };
+  const TYPEN = ['Dreh-Kipp-Fenster', 'Festverglasung', 'Stulpfenster (2-flügelig)', 'Kippfenster', 'Balkontür', 'Hebe-Schiebetür', 'Parallel-Schiebe-Kipp-Tür', 'Haustür', 'Nebeneingangstür', 'Rollladen / Sonnenschutz'];
+  const OEFF = ['DIN links', 'DIN rechts', 'Kipp', 'fest', 'links + rechts (2-flg.)'];
+  const FARBEN = [['Weiß', '#f4f5f2'], ['RAL 7016 Anthrazit', '#3b4148'], ['RAL 9005 Schwarz', '#16181a'], ['Golden Oak', '#b07a3a'], ['Eiche', '#a8794f'], ['Nussbaum', '#6b4529'], ['Cremeweiß', '#ece6d3'], ['andere', '#8a929c']];
+  const GLAS = ['2-fach Wärmeschutz', '3-fach Wärmeschutz', '3-fach mit Sicherheitsglas (VSG)', 'Schallschutz', 'Ornamentglas', 'Milchglas / satiniert'];
+  const ROLL = ['kein', 'Aufsatzkasten', 'Vorbaukasten', 'Bestand bleibt'];
+  let P = null, active = 0, saveT = null, filter = 'alle', search = '';
+
+  window.addEventListener('hashchange', route);
+  document.addEventListener('fb:synced', e => { if (P && e.detail.id === P.id) { P.version = e.detail.version; P.pass_token = e.detail.pass_token; } });
+  route();
+
+  function route() {
+    const m = location.hash.match(/^#p=([\w-]+)/);
+    if (m) return openProjekt(m[1]);
+    P = null; listView();
+  }
+
+  /* ================= Projektliste ================= */
+  async function listView() {
+    app.innerHTML = `<div class="head"><div><p class="eyebrow">Aufmaß</p><h1>Projekte</h1></div>
+      <div class="row">${FB.canEdit() ? '<button class="btn" id="neu">+ Neues Aufmaß</button>' : ''}</div></div>
+      <div class="card"><div class="row" style="margin-bottom:10px"><input class="field" id="q" placeholder="Suchen: Kunde, Adresse, Nummer" value="${esc(search)}" style="margin:0;flex:1;min-width:200px" aria-label="Suchen">
+        <div class="seg" id="flt">${[['alle', 'Alle'], ...Object.entries(STATUS).map(([k, v]) => [k, v[0]])].map(([k, l]) => `<button data-f="${k}" aria-pressed="${filter === k}">${l}</button>`).join('')}</div></div>
+        <div id="list"><div class="skel"></div></div></div>`;
+    $('#neu')?.addEventListener('click', neu);
+    $('#q').oninput = e => { search = e.target.value; draw(); };
+    $$('#flt button').forEach(b => b.onclick = () => { filter = b.dataset.f; $$('#flt button').forEach(x => x.setAttribute('aria-pressed', x === b)); draw(); });
+    let list = [];
+    try { list = await FB.listProjekte(); } catch (e) { $('#list').innerHTML = `<p class="note crit">${esc(errText(e))}</p>`; return; }
+    draw();
+    function draw() {
+      const q = search.trim().toLowerCase();
+      const l = list.filter(p => (filter === 'alle' || p.status === filter) && (!q || [p.nummer, p.kunde?.name, p.kunde?.adresse].join(' ').toLowerCase().includes(q)));
+      $('#list').innerHTML = l.length ? `<div class="list">${l.map(p => { const n = p.aufmass?.elemente?.length || 0, s = STATUS[p.status] || ['', '']; return `<a class="item" href="#p=${p.id}"><span class="pos">${n}</span><div class="grow"><b>${esc(p.kunde?.name || 'Ohne Kundenname')}</b><span class="small muted">${esc([p.nummer, p.kunde?.adresse].filter(Boolean).join(' · ') || '—')}</span></div><div style="text-align:right"><span class="chip ${s[1]}">${s[0]}</span><div class="tiny muted">${fmtDate(p.updated_at)}</div></div></a>`; }).join('')}</div>`
+        : `<div class="empty">${list.length ? 'Nichts gefunden.' : 'Noch keine Projekte. Leg mit „Neues Aufmaß“ los.'}</div>`;
+    }
+  }
+  async function neu() {
+    const p = FB.neuesProjekt(), list = await FB.listProjekte().catch(() => []), y = new Date().getFullYear();
+    const nr = list.map(x => (x.nummer || '').match(new RegExp('^A-' + y + '-(\\d+)$'))).filter(Boolean).map(m => +m[1]);
+    p.nummer = `A-${y}-${String((nr.length ? Math.max(...nr) : 0) + 1).padStart(3, '0')}`;
+    p.aufmass.elemente.push(neuesElement(1));
+    await FB.saveProjekt(p); location.hash = '#p=' + p.id;
+  }
+  function neuesElement(n) {
+    return { id: uid(), label: `Position ${n}`, type: 'Dreh-Kipp-Fenster', anzahl: 1, widthPoints: [], heightPoints: [], diagonals: [], installGapMm: 10, bestellB: null, bestellH: null,
+      opening: 'DIN links', coupling: 'keine', profil: '', color: 'Weiß', colorHex: '#f4f5f2', colorAussen: '', glass: '3-fach Wärmeschutz', rollladen: 'kein',
+      options: { muntins: false, fbInnen: false, fbAussen: false, insekt: false }, notiz: '', foto: null, overlay: null };
+  }
+
+  /* ================= Projekt bearbeiten ================= */
+  async function openProjekt(id) {
+    app.innerHTML = '<div class="skel"></div>';
+    P = await FB.getProjekt(id);
+    if (!P) { app.innerHTML = `<div class="card"><p>Projekt nicht gefunden.</p><a class="btn ghost" href="#">Zur Liste</a></div>`; return; }
+    P.aufmass ||= { elemente: [] }; P.aufmass.elemente ||= [];
+    if (!P.aufmass.elemente.length) P.aufmass.elemente.push(neuesElement(1));
+    active = Math.min(active, P.aufmass.elemente.length - 1);
+    const ro = !FB.canEdit(), k = P.kunde || (P.kunde = {});
+    app.innerHTML = `
+      <div class="head"><div><p class="eyebrow"><a href="#" style="color:inherit">← Projekte</a></p><h1 id="ttl">${esc(k.name || 'Neues Aufmaß')}</h1></div>
+        <div class="row no-print"><select class="field" id="status" style="margin:0;width:auto" aria-label="Status" ${ro ? 'disabled' : ''}>${Object.entries(STATUS).map(([s, [l]]) => `<option value="${s}" ${P.status === s ? 'selected' : ''} ${s === 'abgenommen' ? 'disabled' : ''}>${l}</option>`).join('')}</select>
+          <button class="btn ghost" id="more" aria-label="Weitere Aktionen">⋯</button></div></div>
+      <div class="cols"><div>
+        <section class="card"><h2>Kunde</h2><div class="grid g2">
+          <label class="f">Kundenname<input data-k="name" value="${esc(k.name)}" autocomplete="off"></label>
+          <label class="f">Projekt-Nr.<input id="nummer" value="${esc(P.nummer)}" autocomplete="off"></label>
+          <label class="f span2">Adresse der Baustelle<input data-k="adresse" value="${esc(k.adresse)}" autocomplete="off"></label>
+          <label class="f">Telefon<input data-k="telefon" type="tel" value="${esc(k.telefon)}" autocomplete="off"></label>
+          <label class="f">E-Mail<input data-k="email" type="email" value="${esc(k.email)}" autocomplete="off"></label>
+          <label class="f">Aufmaß am<input id="datum" type="date" value="${esc(P.aufmass.datum || FB.today())}"></label>
+          <label class="f">Aufgenommen von<input id="von" value="${esc(P.aufmass.von || FB.S.me?.name || '')}"></label>
+          <label class="f span2">Hinweise zur Baustelle<textarea data-k="notiz" rows="2" placeholder="z. B. Altbau, Zugang, Parken, Gerüst">${esc(k.notiz)}</textarea></label>
+        </div></section>
+        <section class="card"><div class="row between" style="margin-bottom:8px"><h2 style="margin:0">Positionen</h2>${ro ? '' : '<button class="btn soft sm" id="addEl">+ Position</button>'}</div><div class="list elist" id="elist"></div></section>
+        <section class="card" id="edit"></section>
+      </div>
+      <div class="stick"><section class="card"><div class="row between"><h2 style="margin:0" id="stTitle">Foto & Visualisierung</h2><span class="chip" id="scaleInfo"></span></div>
+        <div class="stage" id="stage" style="margin-top:10px"><img id="ph" alt="" hidden><canvas id="cv" aria-label="Fenster-Visualisierung"></canvas><div class="hintx" id="stHint">Ohne Foto: maßstäbliche Skizze. Mit Foto: Fenster ziehen, Griff unten rechts zum Skalieren.</div></div>
+        <div class="tools no-print">
+          <label class="btn soft sm">Foto aufnehmen<input type="file" accept="image/*" capture="environment" id="cam" hidden></label>
+          <label class="btn ghost sm">Foto wählen<input type="file" accept="image/*" id="pick" hidden></label>
+          <button class="btn ghost sm" id="cal">Maßstab: 2 Punkte</button><button class="btn ghost sm" id="persp">Ecken: 4 Punkte</button>
+          <button class="btn ghost sm" id="reset">Zurücksetzen</button><button class="btn ghost sm" id="fotoDel">Foto entfernen</button></div>
+        <div class="row" style="margin-top:8px"><label class="f" style="flex:1">Referenzmaß für „2 Punkte“ (mm)<input id="refMm" type="number" min="10" value="1000"></label>
+          <label class="f" style="flex:1">Deckkraft <span id="opL">70 %</span><input id="op" type="range" min="15" max="100" value="70"></label></div>
+        <p class="small muted" id="calSt" style="margin-top:6px"></p>
+        <div class="kv" id="sum" style="margin-top:12px"></div></section></div>
+      </div>
+      <div class="dock no-print"><button class="btn ghost" id="pdfBtn">Aufmaßblatt (PDF)</button><button class="btn" id="toPF">Zur Abnahme</button></div>`;
+    $$('[data-k]').forEach(i => i.oninput = () => { k[i.dataset.k] = i.value; if (i.dataset.k === 'name') $('#ttl').textContent = i.value || 'Neues Aufmaß'; dirty(); });
+    $('#nummer').oninput = e => { P.nummer = e.target.value; dirty(); };
+    $('#datum').onchange = e => { P.aufmass.datum = e.target.value; dirty(); };
+    $('#von').oninput = e => { P.aufmass.von = e.target.value; dirty(); };
+    $('#status').onchange = e => { P.status = e.target.value; dirty(true); };
+    $('#addEl')?.addEventListener('click', () => { P.aufmass.elemente.push(neuesElement(P.aufmass.elemente.length + 1)); active = P.aufmass.elemente.length - 1; renderEl(); dirty(); $('#edit').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    $('#pdfBtn').onclick = () => pdfAufmass().catch(e => toast(errText(e)));
+    $('#toPF').onclick = async () => { if (!FB.canEdit()) return (location.href = './passfort.html#p=' + P.id); if (['aufmass', 'angebot', 'bestellt'].includes(P.status)) P.status = 'montage'; await saveNow(); location.href = './passfort.html#p=' + P.id; };
+    $('#more').onclick = more;
+    if (ro) $$('#app input, #app textarea, #app select').forEach(x => x.disabled = true);
+    stageInit(); renderEl();
+  }
+  function dirty(now) { clearTimeout(saveT); if (!FB.canEdit()) return; saveT = setTimeout(saveNow, now ? 10 : 900); }
+  async function saveNow() { clearTimeout(saveT); if (!P || !FB.canEdit()) return; try { await FB.saveProjekt(P); } catch (e) { toast(errText(e)); } }
+  window.addEventListener('beforeunload', () => { if (saveT) saveNow(); });
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && saveT) saveNow(); });
+
+  function renderEl() {
+    const L = P.aufmass.elemente, ro = !FB.canEdit();
+    $('#elist').innerHTML = L.map((e, i) => { const b = bestell(e); return `<button class="item" data-i="${i}" aria-current="${i === active}"><span class="pos">${i + 1}</span><div class="grow"><b>${esc(e.label || 'Position ' + (i + 1))}</b><span class="small muted">${esc(e.type)}${e.anzahl > 1 ? ' · ' + e.anzahl + ' Stück' : ''}${b.B ? ` · ${b.B} × ${b.H} mm` : ' · Maße fehlen'}</span></div>${pruef(e).length ? '<span class="chip warn">prüfen</span>' : b.B ? '<span class="chip ok">✓</span>' : ''}</button>`; }).join('');
+    $$('#elist [data-i]').forEach(b => b.onclick = () => { active = +b.dataset.i; renderEl(); });
+    const e = L[active], b = bestell(e), sel = (id, opts, v) => `<select id="${id}">${opts.map(o => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+    const pts = a => (a || []).join(' / ');
+    $('#edit').innerHTML = `<div class="row between" style="margin-bottom:12px"><h2 style="margin:0">Position ${active + 1}</h2>${ro ? '' : `<div class="row"><button class="btn ghost sm" id="dup">Duplizieren</button>${L.length > 1 ? '<button class="btn danger sm" id="delEl">Löschen</button>' : ''}</div>`}</div>
+      <div class="grid g2">
+        <label class="f span2">Bezeichnung / Raum<input id="eLabel" value="${esc(e.label)}" placeholder="z. B. EG Wohnzimmer links"></label>
+        <label class="f">Elementtyp${sel('eType', TYPEN, e.type)}</label>
+        <label class="f">Stückzahl<input id="eAnz" type="number" min="1" max="99" value="${e.anzahl || 1}"></label>
+        <label class="f">Breite oben / Mitte / unten (mm)<input id="eWp" inputmode="decimal" value="${esc(pts(e.widthPoints))}" placeholder="1230 / 1228 / 1231"></label>
+        <label class="f">Höhe links / Mitte / rechts (mm)<input id="eHp" inputmode="decimal" value="${esc(pts(e.heightPoints))}" placeholder="1410 / 1412 / 1409"></label>
+        <label class="f">Diagonalen (mm)<input id="eDg" inputmode="decimal" value="${esc(pts(e.diagonals))}" placeholder="1868 / 1871"></label>
+        <label class="f">Einbaufuge je Seite (mm)<input id="eGap" type="number" min="0" max="60" value="${e.installGapMm ?? 10}"></label>
+        <div class="span2 note"><div class="row between"><div><span class="small muted">Bestellmaß (Rahmenaußenmaß)</span><div class="bm tnum" id="bm">${b.B ? `${b.B} × ${b.H} mm` : '—'}</div><span class="tiny muted" id="bmHow">${b.how}</span></div>
+          <div class="row"><label class="f" style="width:110px">Breite fest<input id="eBB" type="number" value="${e.bestellB ?? ''}" placeholder="auto"></label><label class="f" style="width:110px">Höhe fest<input id="eBH" type="number" value="${e.bestellH ?? ''}" placeholder="auto"></label></div></div></div>
+        <div class="span2 warnings" id="warn"></div>
+        <label class="f">Öffnung / Anschlag${sel('eOpen', OEFF, e.opening)}</label>
+        <label class="f">Kopplung${sel('eCoup', ['keine', 'links', 'rechts', 'oben', 'beidseitig'], e.coupling)}</label>
+        <label class="f">Profil / System<input id="eProf" value="${esc(e.profil)}" placeholder="z. B. Kunststoff 82 mm, 6 Kammern"></label>
+        <label class="f">Verglasung${sel('eGlass', GLAS, e.glass)}</label>
+        <label class="f">Farbe innen${sel('eColor', FARBEN.map(f => f[0]), e.color)}</label>
+        <label class="f">Farbe außen<input id="eColA" value="${esc(e.colorAussen)}" placeholder="wie innen"></label>
+        <label class="f">Rollladen${sel('eRoll', ROLL, e.rollladen)}</label>
+        <div class="stack" style="justify-content:center">
+          <label class="check"><input type="checkbox" id="oMun" ${e.options?.muntins ? 'checked' : ''}>Sprossen</label>
+          <label class="check"><input type="checkbox" id="oIns" ${e.options?.insekt ? 'checked' : ''}>Insektenschutz</label></div>
+        <label class="check"><input type="checkbox" id="oFbi" ${e.options?.fbInnen ? 'checked' : ''}>Fensterbank innen</label>
+        <label class="check"><input type="checkbox" id="oFba" ${e.options?.fbAussen ? 'checked' : ''}>Fensterbank außen</label>
+        <label class="f span2">Notiz zur Position<textarea id="eNote" rows="2" placeholder="z. B. Altfenster ausbauen, Anschluss mit Kompriband">${esc(e.notiz)}</textarea></label>
+      </div>`;
+    const num = s => String(s || '').replace(/,/g, '.').split(/[\s/;]+/).map(Number).filter(n => Number.isFinite(n) && n > 0).slice(0, 3);
+    const bind = (id, fn, ev = 'input') => { const el = $('#' + id); if (el) el.addEventListener(ev, () => { fn(el); upd(); }); };
+    const upd = () => { const bb = bestell(e); $('#bm').textContent = bb.B ? `${bb.B} × ${bb.H} mm` : '—'; $('#bmHow').textContent = bb.how; warn(); summary(); draw(); dirty(); const it = $(`#elist [data-i="${active}"]`); if (it) { it.querySelector('b').textContent = e.label || 'Position ' + (active + 1); it.querySelector('.small').textContent = `${e.type}${e.anzahl > 1 ? ' · ' + e.anzahl + ' Stück' : ''}${bb.B ? ` · ${bb.B} × ${bb.H} mm` : ' · Maße fehlen'}`; } };
+    bind('eLabel', x => e.label = x.value); bind('eType', x => e.type = x.value, 'change'); bind('eAnz', x => e.anzahl = Math.max(1, +x.value || 1));
+    bind('eWp', x => e.widthPoints = num(x.value)); bind('eHp', x => e.heightPoints = num(x.value)); bind('eDg', x => e.diagonals = num(x.value).slice(0, 2));
+    bind('eGap', x => e.installGapMm = Math.max(0, +x.value || 0)); bind('eBB', x => e.bestellB = x.value ? +x.value : null); bind('eBH', x => e.bestellH = x.value ? +x.value : null);
+    bind('eOpen', x => e.opening = x.value, 'change'); bind('eCoup', x => e.coupling = x.value, 'change'); bind('eProf', x => e.profil = x.value); bind('eGlass', x => e.glass = x.value, 'change');
+    bind('eColor', x => { e.color = x.value; e.colorHex = (FARBEN.find(f => f[0] === x.value) || [0, '#8a929c'])[1]; }, 'change'); bind('eColA', x => e.colorAussen = x.value); bind('eRoll', x => e.rollladen = x.value, 'change');
+    e.options ||= {};
+    bind('oMun', x => e.options.muntins = x.checked, 'change'); bind('oIns', x => e.options.insekt = x.checked, 'change'); bind('oFbi', x => e.options.fbInnen = x.checked, 'change'); bind('oFba', x => e.options.fbAussen = x.checked, 'change');
+    bind('eNote', x => e.notiz = x.value);
+    $('#dup')?.addEventListener('click', () => { const c = JSON.parse(JSON.stringify(e)); c.id = uid(); c.label = (e.label || '') + ' (Kopie)'; c.foto = null; c.overlay = null; L.splice(active + 1, 0, c); active++; renderEl(); dirty(); });
+    $('#delEl')?.addEventListener('click', async () => { if (!(await FB.confirmDlg(`Position „${e.label}“ löschen?`, 'Löschen', true))) return; if (e.foto) FB.removeFile(e.foto); L.splice(active, 1); active = Math.max(0, active - 1); renderEl(); dirty(true); });
+    if (ro) $$('#edit input, #edit select, #edit textarea').forEach(x => x.disabled = true);
+    warn(); summary(); loadPhoto();
+  }
+  function bestell(e) {
+    const g = +e.installGapMm || 0, w = e.widthPoints || [], h = e.heightPoints || [];
+    const B = e.bestellB || (w.length ? Math.min(...w) - 2 * g : 0), H = e.bestellH || (h.length ? Math.min(...h) - 2 * g : 0);
+    const how = e.bestellB || e.bestellH ? 'fest eingetragen' : w.length && h.length ? `kleinstes Maß − 2 × ${g} mm Fuge – bitte gegen Herstellervorgabe prüfen` : 'trägt sich ein, sobald Breite und Höhe gemessen sind';
+    return { B: B > 0 ? Math.round(B) : 0, H: H > 0 ? Math.round(H) : 0, how };
+  }
+  function pruef(e) {
+    const out = [], w = e.widthPoints || [], h = e.heightPoints || [], d = e.diagonals || [], b = bestell(e);
+    if (w.length && w.length < 3) out.push('Breite an drei Stellen messen (oben, Mitte, unten).');
+    if (h.length && h.length < 3) out.push('Höhe an drei Stellen messen (links, Mitte, rechts).');
+    if (w.length > 1 && Math.max(...w) - Math.min(...w) > 5) out.push(`Breite schwankt um ${Math.max(...w) - Math.min(...w)} mm – Öffnung nicht parallel.`);
+    if (h.length > 1 && Math.max(...h) - Math.min(...h) > 5) out.push(`Höhe schwankt um ${Math.max(...h) - Math.min(...h)} mm – Sturz oder Brüstung prüfen.`);
+    if (d.length === 2 && Math.abs(d[0] - d[1]) > 10) out.push(`Diagonalen weichen um ${Math.abs(d[0] - d[1])} mm ab – Öffnung nicht rechtwinklig.`);
+    if (b.B && (b.B < 300 || b.B > 6000)) out.push('Breite außerhalb des üblichen Bereichs.');
+    if (b.H && (b.H < 300 || b.H > 3500)) out.push('Höhe außerhalb des üblichen Bereichs.');
+    if (b.B > 2600 && /Fenster/.test(e.type) && e.coupling === 'keine') out.push('Sehr breites Fenster ohne Kopplung – Pfosten oder Teilung prüfen.');
+    if (/Haustür|Nebeneingang/.test(e.type) && b.B > 1400) out.push('Ungewöhnlich breite Tür – Seitenteil oder Statik prüfen.');
+    if (/Haustür|Nebeneingang|Balkon|Schiebe/.test(e.type) && b.H && b.H < 1900) out.push('Türhöhe unter 1.900 mm – Durchgangshöhe prüfen.');
+    return out;
+  }
+  function warn() { const e = P.aufmass.elemente[active], w = pruef(e); $('#warn').innerHTML = w.map(x => `<div class="note warn">⚠ ${esc(x)}</div>`).join(''); }
+  function summary() {
+    const e = P.aufmass.elemente[active], b = bestell(e);
+    $('#stTitle').textContent = e.label || 'Position ' + (active + 1);
+    $('#sum').innerHTML = [['Typ', e.type], ['Bestellmaß', b.B ? `${b.B} × ${b.H} mm` : '—'], ['Öffnung', e.opening], ['Farbe', e.color + (e.colorAussen ? ' / ' + e.colorAussen : '')], ['Glas', e.glass], ['Rollladen', e.rollladen || 'kein'], ['Stück', e.anzahl || 1]]
+      .map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join('');
+  }
+
+  /* ================= Foto + Overlay ================= */
+  let cv, ctx, img, stage, mode = null, pts = [], drag = null;
+  const ov = () => { const e = P.aufmass.elemente[active]; e.overlay ||= { x: .5, y: .5, w: .45, opacity: 70, cal: null, persp: null }; return e.overlay; };
+  function stageInit() {
+    stage = $('#stage'); cv = $('#cv'); ctx = cv.getContext('2d'); img = $('#ph');
+    const fit = () => { const r = stage.getBoundingClientRect(), d = devicePixelRatio || 1; cv.width = Math.max(1, r.width * d); cv.height = Math.max(1, r.height * d); ctx.setTransform(d, 0, 0, d, 0, 0); draw(); };
+    new ResizeObserver(fit).observe(stage);
+    const onFile = async ev => {
+      const f = ev.target.files[0]; ev.target.value = ''; if (!f) return;
+      if (!f.type.startsWith('image/')) return toast('Bitte ein Bild wählen.');
+      try { const blob = await FB.compress(f, 1800, .8), e = P.aufmass.elemente[active]; if (e.foto) FB.removeFile(e.foto); e.foto = await FB.saveFile(P.id, blob); e.overlay = null; await loadPhoto(); dirty(true); } catch (er) { toast(errText(er)); }
+    };
+    $('#cam').onchange = onFile; $('#pick').onchange = onFile;
+    $('#cal').onclick = () => { if (img.hidden) return toast('Erst ein Foto aufnehmen.'); mode = 'cal'; pts = []; $('#calSt').textContent = 'Tippe zwei Punkte im Foto an, deren Abstand du kennst (z. B. Breite der Öffnung).'; };
+    $('#persp').onclick = () => { if (img.hidden) return toast('Erst ein Foto aufnehmen.'); mode = 'persp'; pts = []; $('#calSt').textContent = 'Tippe die vier Ecken der Öffnung im Uhrzeigersinn an: links oben, rechts oben, rechts unten, links unten.'; draw(); };
+    $('#reset').onclick = () => { const e = P.aufmass.elemente[active]; e.overlay = null; mode = null; pts = []; $('#calSt').textContent = ''; draw(); dirty(); };
+    $('#fotoDel').onclick = async () => { const e = P.aufmass.elemente[active]; if (!e.foto) return; if (!(await FB.confirmDlg('Foto dieser Position entfernen?', 'Entfernen', true))) return; FB.removeFile(e.foto); e.foto = null; e.overlay = null; loadPhoto(); dirty(true); };
+    $('#op').oninput = ev => { ov().opacity = +ev.target.value; $('#opL').textContent = ev.target.value + ' %'; draw(); dirty(); };
+    const pos = ev => { const r = stage.getBoundingClientRect(); return { x: (ev.clientX - r.left) / r.width, y: (ev.clientY - r.top) / r.height, px: ev.clientX - r.left, py: ev.clientY - r.top, W: r.width, H: r.height }; };
+    cv.addEventListener('pointerdown', ev => {
+      if (!FB.canEdit()) return;
+      const p = pos(ev), o = ov();
+      if (mode === 'cal') { pts.push(p); if (pts.length === 2) { const d = Math.hypot((pts[1].x - pts[0].x) * p.W, (pts[1].y - pts[0].y) * p.H), mm = +$('#refMm').value; if (d > 8 && mm > 0) { o.cal = { pxPerMmRel: d / p.W / mm, mm }; o.persp = null; $('#calSt').textContent = `Maßstab gesetzt: ${mm} mm entsprechen der markierten Strecke. Das Fenster wird jetzt maßstäblich gezeigt.`; } else $('#calSt').textContent = 'Punkte zu nah beieinander. Bitte erneut.'; mode = null; pts = []; dirty(); } draw(); return; }
+      if (mode === 'persp') { pts.push({ x: p.x, y: p.y }); if (pts.length === 4) { if (validQuad(pts)) { o.persp = pts.slice(); o.cal = null; $('#calSt').textContent = 'Fenster an die Perspektive angepasst. Ecken lassen sich weiter ziehen.'; } else $('#calSt').textContent = 'Die vier Punkte ergeben kein gültiges Viereck. Bitte im Uhrzeigersinn erneut antippen.'; mode = null; pts = []; dirty(); } draw(); return; }
+      if (img.hidden) return;
+      if (o.persp) { const near = o.persp.map((q, i) => ({ i, d: Math.hypot((q.x - p.x) * p.W, (q.y - p.y) * p.H) })).sort((a, b) => a.d - b.d)[0]; drag = near.d < 28 ? { k: 'corner', i: near.i } : { k: 'pmove', s: p, q: o.persp.map(q => ({ ...q })) }; }
+      else { const f = frame(p.W, p.H); drag = { k: p.px > f.x + f.w - 26 && p.py > f.y + f.h - 26 ? 'size' : 'move', s: p, o: { ...o } }; }
+      cv.setPointerCapture(ev.pointerId);
+    });
+    cv.addEventListener('pointermove', ev => {
+      if (!drag) return; const p = pos(ev), o = ov(), cl = v => Math.max(0, Math.min(1, v));
+      if (drag.k === 'corner') o.persp[drag.i] = { x: cl(p.x), y: cl(p.y) };
+      else if (drag.k === 'pmove') o.persp = drag.q.map(q => ({ x: cl(q.x + p.x - drag.s.x), y: cl(q.y + p.y - drag.s.y) }));
+      else if (drag.k === 'move') { o.x = Math.max(.05, Math.min(.95, drag.o.x + p.x - drag.s.x)); o.y = Math.max(.05, Math.min(.95, drag.o.y + p.y - drag.s.y)); }
+      else { o.w = Math.max(.1, Math.min(.95, drag.o.w + (p.x - drag.s.x) * 2)); if (o.cal) o.cal = null; }
+      draw();
+    });
+    ['pointerup', 'pointercancel'].forEach(n => cv.addEventListener(n, () => { if (drag) { drag = null; dirty(); } }));
+  }
+  async function loadPhoto() {
+    const e = P.aufmass.elemente[active], o = ov(); $('#op').value = o.opacity; $('#opL').textContent = o.opacity + ' %';
+    mode = null; pts = []; $('#calSt').textContent = '';
+    if (e.foto) { const u = await FB.fileUrl(e.foto); if (u) { img.src = u; img.hidden = false; await img.decode().catch(() => {}); } else img.hidden = true; } else { img.hidden = true; img.removeAttribute('src'); }
+    $('#stHint').textContent = img.hidden ? 'Ohne Foto: maßstäbliche Skizze mit Bemaßung.' : 'Fenster ziehen · Griff unten rechts zum Skalieren · oder Ecken antippen (4 Punkte).';
+    ['cal', 'persp', 'reset', 'fotoDel'].forEach(id => $('#' + id).disabled = img.hidden || !FB.canEdit());
+    draw();
+  }
+  function validQuad(q) { const c = []; for (let i = 0; i < 4; i++) { const a = q[i], b = q[(i + 1) % 4], d = q[(i + 2) % 4]; c.push((b.x - a.x) * (d.y - b.y) - (b.y - a.y) * (d.x - b.x)); } return c.every(v => v > 1e-5) || c.every(v => v < -1e-5); }
+  function quad(p) {
+    const [p0, p1, p2, p3] = p, dx1 = p1.x - p2.x, dx2 = p3.x - p2.x, dx3 = p0.x - p1.x + p2.x - p3.x, dy1 = p1.y - p2.y, dy2 = p3.y - p2.y, dy3 = p0.y - p1.y + p2.y - p3.y;
+    let g = 0, h = 0; if (Math.abs(dx3) + Math.abs(dy3) > 1e-9) { const den = dx1 * dy2 - dx2 * dy1; if (Math.abs(den) < 1e-9) return null; g = (dx3 * dy2 - dx2 * dy3) / den; h = (dx1 * dy3 - dx3 * dy1) / den; }
+    const a = p1.x - p0.x + g * p1.x, b = p3.x - p0.x + h * p3.x, c = p0.x, d = p1.y - p0.y + g * p1.y, e = p3.y - p0.y + h * p3.y, f = p0.y;
+    return (u, v) => { const q = g * u + h * v + 1; return { x: (a * u + b * v + c) / q, y: (d * u + e * v + f) / q }; };
+  }
+  function frame(W, H, e = P.aufmass.elemente[active], o = ov(), photo = !img.hidden) {
+    const b = bestell(e), bw = b.B || 1200, bh = b.H || 1400, r = bw / bh;
+    if (!photo) { const m = 46, s = Math.min((W - 2 * m) / bw, (H - 2 * m) / bh); const w = bw * s, h = bh * s; return { x: (W - w) / 2 + 10, y: (H - h) / 2 - 6, w, h }; }
+    let w = o.cal ? bw * o.cal.pxPerMmRel * W : o.w * W, h = w / r; if (h > H * .92) { h = H * .92; w = h * r; }
+    return { x: o.x * W - w / 2, y: o.y * H - h / 2, w, h };
+  }
+  /* Zeichnet Element als Overlay oder Skizze; auch für das PDF verwendet (eigener Canvas) */
+  function paint(c, W, H, e, o, photo) {
+    const b = bestell(e), map = photo && o.persp ? quad(o.persp.map(p => ({ x: p.x * W, y: p.y * H }))) : null;
+    const f = frame(W, H, e, o, photo), M = map || ((u, v) => ({ x: f.x + u * f.w, y: f.y + v * f.h }));
+    const poly = q => { c.beginPath(); q.forEach((p, i) => i ? c.lineTo(p.x, p.y) : c.moveTo(p.x, p.y)); c.closePath(); };
+    const rect = (u1, v1, u2, v2) => [M(u1, v1), M(u2, v1), M(u2, v2), M(u1, v2)];
+    const line = (u1, v1, u2, v2) => { const a = M(u1, v1), z = M(u2, v2); c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(z.x, z.y); c.stroke(); };
+    const alpha = photo ? (o.opacity || 70) / 100 : 1, frameCol = e.colorHex || '#f4f5f2', ink = photo ? '#22c55e' : '#1e293b';
+    c.save(); c.lineJoin = 'round';
+    if (e.rollladen && !/kein|Bestand/.test(e.rollladen)) { c.globalAlpha = alpha; c.fillStyle = '#475569'; poly(rect(-.03, -.12, 1.03, -.01)); c.fill(); }
+    c.globalAlpha = alpha; c.fillStyle = frameCol; poly(rect(0, 0, 1, 1)); c.fill(); c.globalAlpha = 1; c.lineWidth = 2.5; c.strokeStyle = ink; poly(rect(0, 0, 1, 1)); c.stroke();
+    const two = /Stulp|2-flg|Schiebe/.test(e.type + e.opening), m = .07;
+    const sashes = two ? [[m, m, .5 - m / 3, 1 - m], [.5 + m / 3, m, 1 - m, 1 - m]] : [[m, m, 1 - m, 1 - m]];
+    sashes.forEach(([u1, v1, u2, v2], si) => {
+      c.globalAlpha = alpha * .85; c.fillStyle = photo ? 'rgba(56,163,221,.42)' : '#dbeafe'; poly(rect(u1, v1, u2, v2)); c.fill(); c.globalAlpha = 1; c.lineWidth = 1.5; c.strokeStyle = photo ? '#bae6fd' : '#334155'; poly(rect(u1, v1, u2, v2)); c.stroke();
+      c.setLineDash([6, 4]); c.lineWidth = 1.2; c.strokeStyle = photo ? '#f8fafc' : '#475569';
+      const op = two ? (si === 0 ? 'DIN links' : 'DIN rechts') : e.opening, tilt = /Dreh-Kipp|Kipp|Balkon|Stulp/.test(e.type) || op === 'Kipp';
+      if (/Haustür|Nebeneingang/.test(e.type)) { c.setLineDash([]); const hx = op === 'DIN rechts' ? u1 + .08 : u2 - .08; line(hx, .5, hx, .58); }
+      else if (/Schiebe/.test(e.type)) { c.setLineDash([]); const yy = .5; line(u1 + .1, yy, u2 - .1, yy); line(u2 - .16, yy - .04, u2 - .1, yy); line(u2 - .16, yy + .04, u2 - .1, yy); }
+      else if (op !== 'fest' && e.type !== 'Festverglasung') {
+        if (op === 'DIN links' || op === 'links + rechts (2-flg.)') { line(u2, v1, u1, (v1 + v2) / 2); line(u1, (v1 + v2) / 2, u2, v2); }
+        else if (op === 'DIN rechts') { line(u1, v1, u2, (v1 + v2) / 2); line(u2, (v1 + v2) / 2, u1, v2); }
+        if (tilt) { line(u1, v1, (u1 + u2) / 2, v2); line((u1 + u2) / 2, v2, u2, v1); }
+      } else { c.setLineDash([]); c.font = '600 12px Figtree, sans-serif'; c.fillStyle = photo ? '#f8fafc' : '#475569'; const p = M((u1 + u2) / 2, (v1 + v2) / 2); c.textAlign = 'center'; c.fillText('F', p.x, p.y + 4); }
+      c.setLineDash([]);
+      if (e.options?.muntins) { c.lineWidth = 2; c.strokeStyle = frameCol; line((u1 + u2) / 2, v1, (u1 + u2) / 2, v2); line(u1, (v1 + v2) / 2, u2, (v1 + v2) / 2); }
+    });
+    // Bemaßung
+    c.strokeStyle = ink; c.fillStyle = photo ? '#f8fafc' : '#0f172a'; c.lineWidth = 1.2; c.font = '700 13px Figtree, sans-serif'; c.textAlign = 'center';
+    const dim = (a, z, label, rot) => { c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(z.x, z.y); c.stroke(); [a, z].forEach(p => { c.beginPath(); c.arc(p.x, p.y, 2.5, 0, 7); c.fill(); }); const mx = (a.x + z.x) / 2, my = (a.y + z.y) / 2; c.save(); c.translate(mx, my); c.rotate(rot ? Math.atan2(z.y - a.y, z.x - a.x) : 0); if (photo) { const w = c.measureText(label).width + 10; c.fillStyle = 'rgba(15,23,42,.75)'; c.fillRect(-w / 2, -21, w, 18); c.fillStyle = '#f8fafc'; } c.fillText(label, 0, -7); c.restore(); };
+    if (b.B) dim(M(0, 1.06), M(1, 1.06), `${b.B} mm`, true);
+    if (b.H) dim(M(-.06, 1), M(-.06, 0), `${b.H} mm`, true);
+    if (photo && o.persp) o.persp.forEach(p => { c.beginPath(); c.fillStyle = '#22c55e'; c.arc(p.x * W, p.y * H, 7, 0, 7); c.fill(); });
+    if (photo && !o.persp) { const g = M(1, 1); c.fillStyle = '#22c55e'; c.fillRect(g.x - 9, g.y - 9, 18, 18); }
+    c.restore();
+  }
+  function draw() {
+    if (!ctx || !P) return; const r = stage.getBoundingClientRect(), W = r.width, H = r.height, e = P.aufmass.elemente[active], o = ov();
+    ctx.clearRect(0, 0, W, H);
+    if (img.hidden) { ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--card') || '#fff'; ctx.fillStyle = '#f8fafc'; ctx.fillRect(0, 0, W, H); }
+    paint(ctx, W, H, e, o, !img.hidden);
+    (mode ? pts : []).forEach((p, i) => { ctx.beginPath(); ctx.fillStyle = '#facc15'; ctx.arc(p.x * W, p.y * H, 7, 0, 7); ctx.fill(); ctx.fillStyle = '#0f172a'; ctx.font = '700 11px sans-serif'; ctx.fillText(String(i + 1), p.x * W, p.y * H + 4); });
+    const b = bestell(e); $('#scaleInfo').textContent = img.hidden ? 'Skizze' : o.persp ? 'perspektivisch' : o.cal ? 'maßstäblich' : 'Vorschau';
+    if (!b.B) $('#scaleInfo').textContent += ' · Maße fehlen';
+  }
+  /* Bild einer Position für das PDF: Foto mit Overlay oder Skizze */
+  async function elementImage(e, wPx = 1200, hPx = 900) {
+    const c = document.createElement('canvas'); c.width = wPx; c.height = hPx; const x = c.getContext('2d'); const o = e.overlay || { x: .5, y: .5, w: .45, opacity: 70 };
+    let photo = false;
+    if (e.foto) { const blob = await FB.fileBlob(e.foto).catch(() => null); if (blob) { const bm = await createImageBitmap(blob); const s = Math.min(wPx / bm.width, hPx / bm.height); x.fillStyle = '#0b1220'; x.fillRect(0, 0, wPx, hPx); const dw = bm.width * s, dh = bm.height * s; x.drawImage(bm, (wPx - dw) / 2, (hPx - dh) / 2, dw, dh); photo = true; } }
+    if (!photo) { x.fillStyle = '#ffffff'; x.fillRect(0, 0, wPx, hPx); }
+    x.scale(2, 2); paint(x, wPx / 2, hPx / 2, e, o, photo);
+    return c.toDataURL('image/jpeg', .85);
+  }
+
+  /* ================= Export ================= */
+  async function pdfAufmass() {
+    await saveNow(); toast('PDF wird erstellt …');
+    const doc = await FB.pdf(), F = FB.S.firma, k = P.kunde || {}, L = P.aufmass.elemente, W = 210, M = 16;
+    const font = (s, b) => { doc.setFont(doc.getFontList().Noto ? 'Noto' : 'helvetica', b ? 'bold' : 'normal'); doc.setFontSize(s); };
+    const headr = () => {
+      let x = M; if (F.logo && /^data:image\/(png|jpe?g)/.test(F.logo)) { try { const pr = doc.getImageProperties(F.logo); const h = 12, w = Math.min(40, h * pr.width / pr.height); doc.addImage(F.logo, M, 10, w, h); x = M + w + 4; } catch {} }
+      font(11, true); doc.text(F.name || '', x, 15); font(8); doc.setTextColor(90); doc.text([F.anschrift, [F.telefon, F.email].filter(Boolean).join(' · ')].filter(Boolean), x, 19.5); doc.setTextColor(0);
+      doc.setDrawColor(200); doc.line(M, 26, W - M, 26);
+    };
+    const foot = () => { const n = doc.getNumberOfPages(); for (let i = 1; i <= n; i++) { doc.setPage(i); font(7.5); doc.setTextColor(120); doc.text(`Aufmaß ${P.nummer || ''} · ${k.name || ''} · erstellt mit ProFitAR am ${fmtDate(new Date().toISOString())} · Seite ${i}/${n}`, M, 290); doc.setTextColor(0); } };
+    headr(); font(18, true); doc.text('Aufmaß', M, 38); font(10); doc.text(`Nr. ${P.nummer || '—'} · Aufmaß am ${fmtDate(P.aufmass.datum)}${P.aufmass.von ? ' · aufgenommen von ' + P.aufmass.von : ''}`, M, 44);
+    font(9, true); doc.text('Kunde / Baustelle', M, 54); font(10); doc.text([k.name, k.adresse, [k.telefon, k.email].filter(Boolean).join(' · ')].filter(Boolean), M, 59);
+    if (k.notiz) { font(9); doc.setTextColor(80); doc.text(doc.splitTextToSize('Hinweis: ' + k.notiz, W - 2 * M), M, 74); doc.setTextColor(0); }
+    let y = k.notiz ? 84 : 76;
+    const cols = [['Pos', 10], ['Bezeichnung', 44], ['Typ', 36], ['Stk', 9], ['Bestellmaß B × H', 30], ['Öffnung', 22], ['Farbe / Glas', 27]];
+    const th = () => { doc.setFillColor(238, 241, 246); doc.rect(M, y - 4.5, W - 2 * M, 7, 'F'); font(8, true); let x = M + 1; cols.forEach(([t, w]) => { doc.text(t, x, y); x += w; }); y += 6; };
+    th();
+    L.forEach((e, i) => {
+      const b = bestell(e), cells = [String(i + 1), e.label || '', e.type, String(e.anzahl || 1), b.B ? `${b.B} × ${b.H} mm` : '—', e.opening, `${e.color}${e.colorAussen ? ' / ' + e.colorAussen : ''}\n${e.glass}`];
+      font(8.5); const lines = cells.map((c, j) => doc.splitTextToSize(String(c), cols[j][1] - 2)); const h = Math.max(...lines.map(l => l.length)) * 4 + 2;
+      if (y + h > 280) { doc.addPage(); headr(); y = 36; th(); }
+      let x = M + 1; lines.forEach((l, j) => { doc.text(l, x, y); x += cols[j][1]; }); y += h; doc.setDrawColor(225); doc.line(M, y - 3, W - M, y - 3);
+    });
+    font(8); doc.setTextColor(90); y += 2; doc.text(doc.splitTextToSize('Bestellmaß = kleinstes gemessenes Maß abzüglich Einbaufuge je Seite, sofern nicht fest eingetragen. Vor Bestellung gegen Herstellervorgaben und Anschlussdetail prüfen.', W - 2 * M), M, y); doc.setTextColor(0);
+    for (let i = 0; i < L.length; i++) {
+      const e = L[i], b = bestell(e); doc.addPage(); headr();
+      font(14, true); doc.text(`Pos. ${i + 1} · ${e.label || ''}`, M, 38); font(9); doc.setTextColor(90); doc.text(`${e.type}${e.anzahl > 1 ? ' · ' + e.anzahl + ' Stück' : ''}`, M, 43.5); doc.setTextColor(0);
+      const im = await elementImage(e); doc.addImage(im, 'JPEG', M, 48, W - 2 * M, (W - 2 * M) * .75);
+      let yy = 48 + (W - 2 * M) * .75 + 8;
+      const rows = [['Breite oben / Mitte / unten', (e.widthPoints || []).join(' / ') || '—'], ['Höhe links / Mitte / rechts', (e.heightPoints || []).join(' / ') || '—'], ['Diagonalen', (e.diagonals || []).join(' / ') || '—'], ['Einbaufuge je Seite', (e.installGapMm ?? '—') + ' mm'],
+        ['Bestellmaß', b.B ? `${b.B} × ${b.H} mm (${b.how.split(' – ')[0]})` : '—'], ['Öffnung / Kopplung', `${e.opening} · Kopplung ${e.coupling}`], ['Profil', e.profil || '—'], ['Farbe innen / außen', `${e.color} / ${e.colorAussen || 'wie innen'}`], ['Verglasung', e.glass], ['Rollladen', e.rollladen || 'kein'],
+        ['Zubehör', [e.options?.muntins && 'Sprossen', e.options?.insekt && 'Insektenschutz', e.options?.fbInnen && 'Fensterbank innen', e.options?.fbAussen && 'Fensterbank außen'].filter(Boolean).join(', ') || '—']];
+      rows.forEach(([a, v]) => { font(8.5, true); doc.text(a, M, yy); font(8.5); doc.text(doc.splitTextToSize(String(v), 110), M + 60, yy); yy += 5; });
+      const w = pruef(e); if (w.length) { yy += 2; font(8.5, true); doc.setTextColor(150, 90, 0); doc.text('Bitte prüfen:', M, yy); font(8.5); doc.text(doc.splitTextToSize(w.join(' '), W - 2 * M - 25), M + 25, yy); doc.setTextColor(0); yy += 10; }
+      if (e.notiz) { font(8.5, true); doc.text('Notiz', M, yy); font(8.5); doc.text(doc.splitTextToSize(e.notiz, W - 2 * M - 60), M + 60, yy); }
+    }
+    foot();
+    FB.download(doc.output('blob'), `Aufmass_${FB.safeName(P.nummer)}_${FB.safeName(k.name)}.pdf`);
+  }
+  function exportJSON() {
+    const out = { app: 'ProFitAR', schema: 3, exportiert: new Date().toISOString(), projekt: { id: P.id, nummer: P.nummer, status: P.status, kunde: P.kunde, aufmass_datum: P.aufmass.datum, aufgenommen_von: P.aufmass.von || '' },
+      positionen: P.aufmass.elemente.map((e, i) => { const b = bestell(e); return { pos: i + 1, bezeichnung: e.label, typ: e.type, stueck: e.anzahl || 1, bestellmass_b_mm: b.B || null, bestellmass_h_mm: b.H || null, breite_messpunkte_mm: e.widthPoints, hoehe_messpunkte_mm: e.heightPoints, diagonalen_mm: e.diagonals, einbaufuge_mm: e.installGapMm, oeffnung: e.opening, kopplung: e.coupling, profil: e.profil, farbe_innen: e.color, farbe_aussen: e.colorAussen || e.color, verglasung: e.glass, rollladen: e.rollladen, sprossen: !!e.options?.muntins, insektenschutz: !!e.options?.insekt, fensterbank_innen: !!e.options?.fbInnen, fensterbank_aussen: !!e.options?.fbAussen, notiz: e.notiz, hinweise: pruef(e) }; }) };
+    FB.download(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }), `Aufmass_${FB.safeName(P.nummer)}.json`);
+  }
+  function exportCSV() {
+    const h = ['Pos', 'Bezeichnung', 'Typ', 'Stück', 'Bestellmaß B (mm)', 'Bestellmaß H (mm)', 'Breite Messpunkte', 'Höhe Messpunkte', 'Diagonalen', 'Fuge (mm)', 'Öffnung', 'Kopplung', 'Profil', 'Farbe innen', 'Farbe außen', 'Verglasung', 'Rollladen', 'Sprossen', 'Insektenschutz', 'Fensterbank innen', 'Fensterbank außen', 'Notiz'];
+    const q = v => { const s = String(v ?? ''); return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const rows = P.aufmass.elemente.map((e, i) => { const b = bestell(e); return [i + 1, e.label, e.type, e.anzahl || 1, b.B || '', b.H || '', (e.widthPoints || []).join('/'), (e.heightPoints || []).join('/'), (e.diagonals || []).join('/'), e.installGapMm, e.opening, e.coupling, e.profil, e.color, e.colorAussen, e.glass, e.rollladen, e.options?.muntins ? 'ja' : 'nein', e.options?.insekt ? 'ja' : 'nein', e.options?.fbInnen ? 'ja' : 'nein', e.options?.fbAussen ? 'ja' : 'nein', e.notiz].map(q).join(';'); });
+    FB.download(new Blob(['﻿' + [h.join(';'), ...rows].join('\r\n')], { type: 'text/csv;charset=utf-8' }), `Aufmass_${FB.safeName(P.nummer)}.csv`);
+  }
+  function more() {
+    const d = FB.sheet(`<h2>Projekt ${esc(P.nummer || '')}</h2><div class="stack" style="margin-top:12px">
+      <button class="btn ghost" data-a="pdf">Aufmaßblatt als PDF</button><button class="btn ghost" data-a="csv">Positionen als Excel-Tabelle (CSV)</button><button class="btn ghost" data-a="json">Export für Branchensoftware (JSON)</button>
+      <button class="btn ghost" data-a="pf">In PassFort öffnen (Abnahme)</button>
+      ${FB.canAdmin() && FB.canEdit() ? '<button class="btn danger" data-a="del">Projekt löschen</button>' : ''}<button class="btn ghost" data-close>Schließen</button></div>
+      <p class="tiny muted" style="margin-top:10px">Der JSON-Export ist eine offene Struktur. Für einen direkten Import in eure Branchensoftware gleichen wir die Felder gern ab.</p>`);
+    d.el.addEventListener('click', async ev => {
+      const a = ev.target.closest('[data-a]')?.dataset.a; if (!a) return; d.close();
+      if (a === 'pdf') pdfAufmass().catch(e => toast(errText(e))); if (a === 'csv') exportCSV(); if (a === 'json') exportJSON(); if (a === 'pf') location.href = './passfort.html#p=' + P.id;
+      if (a === 'del') { if (!(await FB.confirmDlg(`Projekt ${P.nummer || ''} mit allen Fotos löschen?`, 'Löschen', true))) return; try { const files = P.aufmass.elemente.map(e => e.foto).filter(Boolean); await FB.deleteProjekt(P.id); files.forEach(f => FB.removeFile(f)); toast('Gelöscht'); location.hash = ''; } catch (e) { toast(errText(e)); } }
+    });
+  }
 })();
-</script><script>if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});</script></body></html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+</script>
+</body>
+</html>
