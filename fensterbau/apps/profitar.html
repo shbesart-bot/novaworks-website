@@ -9,7 +9,7 @@
 <link rel="manifest" href="./profitar.webmanifest">
 <link rel="icon" href="./icon-profitar.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icon-profitar-180.png">
-<link rel="stylesheet" href="./fb.css?v=2026-11-04c">
+<link rel="stylesheet" href="./fb.css?v=2026-11-09a">
 <style>
   .elist .item { padding: 10px 8px; border-radius: 10px; }
   .elist .item[aria-current="true"] { background: var(--accent-soft); }
@@ -23,7 +23,7 @@
 <body>
 <main id="app"><div class="skel"></div></main>
 <script src="./vendor/supabase.js"></script>
-<script src="./fb-core.js?v=2026-11-04c"></script>
+<script src="./fb-core.js?v=2026-11-09a"></script>
 <script src="./vendor/jspdf.umd.min.js" defer></script>
 <script>
 (async () => {
@@ -31,7 +31,7 @@
   try { await FB.init(); } catch (e) { if (e.message !== 'redirect') $('#app').innerHTML = `<div class="card"><p>${esc(errText(e))}</p></div>`; return; }
   FB.header('profitar', 'Digitales Aufmaß');
   const app = $('#app');
-  const STATUS = { aufmass: ['Aufmaß', 'accent'], angebot: ['Angebot', ''], bestellt: ['Bestellt', 'warn'], montage: ['Montage', 'warn'], abgenommen: ['Abgenommen', 'ok'] };
+  const STATUS = { aufmass: ['Aufmaß', 'accent'], angebot: ['Angebot', ''], beauftragt: ['Beauftragt', 'ok'], bestellt: ['Bestellt', 'warn'], montage: ['Montage', 'warn'], abgenommen: ['Abgenommen', 'ok'] };
   const TYPEN = ['Dreh-Kipp-Fenster', 'Festverglasung', 'Stulpfenster (2-flügelig)', 'Kippfenster', 'Balkontür', 'Hebe-Schiebetür', 'Parallel-Schiebe-Kipp-Tür', 'Haustür', 'Nebeneingangstür', 'Rollladen / Sonnenschutz'];
   const OEFF = ['DIN links', 'DIN rechts', 'Kipp', 'fest', 'links + rechts (2-flg.)'];
   const FARBEN = [['Weiß', '#f4f5f2'], ['RAL 7016 Anthrazit', '#3b4148'], ['RAL 9005 Schwarz', '#16181a'], ['Golden Oak', '#b07a3a'], ['Eiche', '#a8794f'], ['Nussbaum', '#6b4529'], ['Cremeweiß', '#ece6d3'], ['andere', '#8a929c']];
@@ -40,7 +40,7 @@
   let P = null, active = 0, saveT = null, filter = 'alle', search = '';
 
   window.addEventListener('hashchange', route);
-  document.addEventListener('fb:synced', e => { if (P && e.detail.id === P.id) { P.version = e.detail.version; P.pass_token = e.detail.pass_token; } });
+  document.addEventListener('fb:synced', e => { if (P && e.detail.id === P.id) { P.version = e.detail.version; P.pass_token = e.detail.pass_token; if (e.detail.status === 'beauftragt' && P.status !== e.detail.status) { P.status = e.detail.status; const s = $('#status'); if (s) s.value = P.status; toast('Der Kunde hat das Angebot online angenommen – Status: Beauftragt.', 5000); } } });
   route();
 
   function route() {
@@ -131,7 +131,7 @@
     $('#addEl')?.addEventListener('click', () => { P.aufmass.elemente.push(neuesElement(P.aufmass.elemente.length + 1)); active = P.aufmass.elemente.length - 1; renderEl(); dirty(); $('#edit').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     $('#pdfBtn').onclick = () => pdfAufmass().catch(e => toast(errText(e)));
     $('#angBtn').onclick = angebot;
-    $('#toPF').onclick = async () => { if (!FB.canEdit()) return (location.href = './passfort.html#p=' + P.id); if (['aufmass', 'angebot', 'bestellt'].includes(P.status)) P.status = 'montage'; await saveNow(); location.href = './passfort.html#p=' + P.id; };
+    $('#toPF').onclick = async () => { if (!FB.canEdit()) return (location.href = './passfort.html#p=' + P.id); if (['aufmass', 'angebot', 'beauftragt', 'bestellt'].includes(P.status)) P.status = 'montage'; await saveNow(); location.href = './passfort.html#p=' + P.id; };
     $('#more').onclick = more;
     if (ro) $$('#app input, #app textarea, #app select').forEach(x => x.disabled = true);
     stageInit(); renderEl();
@@ -159,7 +159,7 @@
         <div class="span2 note"><div class="row between"><div><span class="small muted">Bestellmaß (Rahmenaußenmaß)</span><div class="bm tnum" id="bm">${b.B ? `${b.B} × ${b.H} mm` : '—'}</div><span class="tiny muted" id="bmHow">${b.how}</span></div>
           <div class="row"><label class="f" style="width:110px">Breite fest<input id="eBB" type="number" value="${e.bestellB ?? ''}" placeholder="auto"></label><label class="f" style="width:110px">Höhe fest<input id="eBH" type="number" value="${e.bestellH ?? ''}" placeholder="auto"></label></div></div></div>
         <div class="span2 warnings" id="warn"></div>
-        <label class="f">Öffnung / Anschlag${sel('eOpen', OEFF, e.opening)}</label>
+        ${FB.mitTeilung(e) ? '<div class="span2" id="tlg"></div>' : `<label class="f">Öffnung / Anschlag${sel('eOpen', OEFF, e.opening)}</label>`}
         <label class="f">Kopplung${sel('eCoup', ['keine', 'links', 'rechts', 'oben', 'beidseitig'], e.coupling)}</label>
         <label class="f">Profil / System<input id="eProf" value="${esc(e.profil)}" placeholder="z. B. Kunststoff 82 mm, 6 Kammern"></label>
         <label class="f">Verglasung${sel('eGlass', GLAS, e.glass)}</label>
@@ -178,7 +178,7 @@
     const num = s => String(s || '').replace(/,/g, '.').split(/[\s/;]+/).map(Number).filter(n => Number.isFinite(n) && n > 0).slice(0, 3);
     const bind = (id, fn, ev = 'input') => { const el = $('#' + id); if (el) el.addEventListener(ev, () => { fn(el); upd(); }); };
     const upd = () => { const bb = bestell(e); $('#bm').textContent = bb.B ? `${bb.B} × ${bb.H} mm` : '—'; $('#bmHow').textContent = bb.how; warn(); summary(); draw(); dirty(); const it = $(`#elist [data-i="${active}"]`); if (it) { it.querySelector('b').textContent = e.label || 'Position ' + (active + 1); it.querySelector('.small').textContent = `${e.type}${e.anzahl > 1 ? ' · ' + e.anzahl + ' Stück' : ''}${bb.B ? ` · ${bb.B} × ${bb.H} mm` : ' · Maße fehlen'}`; } };
-    bind('eLabel', x => e.label = x.value); bind('eType', x => e.type = x.value, 'change'); bind('eAnz', x => e.anzahl = Math.max(1, +x.value || 1));
+    bind('eLabel', x => e.label = x.value); bind('eType', x => { const vor = FB.mitTeilung(e); e.type = x.value; if (FB.mitTeilung(e) !== vor) setTimeout(renderEl, 0); else if (FB.mitTeilung(e)) e.opening = FB.oeffnungText(e); }, 'change'); bind('eAnz', x => e.anzahl = Math.max(1, +x.value || 1));
     bind('eWp', x => e.widthPoints = num(x.value)); bind('eHp', x => e.heightPoints = num(x.value)); bind('eDg', x => e.diagonals = num(x.value).slice(0, 2));
     bind('eGap', x => e.installGapMm = Math.max(0, +x.value || 0)); bind('eBB', x => e.bestellB = x.value ? +x.value : null); bind('eBH', x => e.bestellH = x.value ? +x.value : null);
     bind('eOpen', x => e.opening = x.value, 'change'); bind('eCoup', x => e.coupling = x.value, 'change'); bind('eProf', x => e.profil = x.value); bind('eGlass', x => e.glass = x.value, 'change');
@@ -188,6 +188,23 @@
     bind('eNote', x => e.notiz = x.value);
     $('#dup')?.addEventListener('click', () => { const c = JSON.parse(JSON.stringify(e)); c.id = uid(); c.label = (e.label || '') + ' (Kopie)'; c.foto = null; c.overlay = null; L.splice(active + 1, 0, c); active++; renderEl(); dirty(); });
     $('#delEl')?.addEventListener('click', async () => { if (!(await FB.confirmDlg(`Position „${e.label}“ löschen?`, 'Löschen', true))) return; if (e.foto) FB.removeFile(e.foto); L.splice(active, 1); active = Math.max(0, active - 1); renderEl(); dirty(true); });
+    tlgUI();
+    function tlgUI() {
+      const box = $('#tlg'); if (!box) return;
+      const T = FB.teilung(e), o = (v, list) => list.map(x => `<option ${x === v ? 'selected' : ''}>${esc(x)}</option>`).join('');
+      box.innerHTML = `<div class="note"><div class="row between" style="align-items:flex-end;gap:10px;flex-wrap:wrap">
+        <label class="f" style="width:150px;margin:0">Teilung<select id="tN">${[1, 2, 3, 4].map(n => `<option value="${n}" ${n === T.felder.length ? 'selected' : ''}>${n === 1 ? '1 Feld' : n + ' Felder'}</option>`).join('')}</select></label>
+        <label class="f" style="width:150px;margin:0">Oberlicht<select id="tO"><option value="">kein</option>${o(T.oberlicht, ['fest', 'Kipp'])}</select></label>
+        ${T.oberlicht ? `<label class="f" style="width:130px;margin:0">Höhe Oberlicht (mm)<input id="tOH" type="number" min="150" max="1500" value="${T.oberlichtMm}"></label>` : ''}</div>
+        <div class="grid g${Math.min(T.felder.length, 4) > 2 ? 2 : T.felder.length}" style="margin-top:8px">${T.felder.map((f, i) => `<label class="f" style="margin:0">Feld ${i + 1}${T.felder.length > 1 ? (i === 0 ? ' (links)' : i === T.felder.length - 1 ? ' (rechts)' : '') : ''}<select data-tf="${i}">${o(f, FB.FELD_OEFF)}</select></label>`).join('')}</div>
+        <p class="tiny muted" style="margin:6px 0 0">Ansicht von innen. Symbol nach DIN: die Spitze zeigt zur Bandseite.</p></div>`;
+      const save = (T2) => { e.teilung = T2; e.opening = FB.oeffnungText(e); upd(); };
+      $('#tN').onchange = ev => { const n = +ev.target.value, f = T.felder.slice(0, n); while (f.length < n) f.push('fest'); if (n > 1 && T.felder.length < n) f[n - 1] = 'Dreh-Kipp rechts'; save({ ...T, felder: f }); tlgUI(); };
+      $('#tO').onchange = ev => { save({ ...T, oberlicht: ev.target.value || null }); tlgUI(); };
+      $('#tOH')?.addEventListener('input', ev => save({ ...T, oberlichtMm: Math.max(150, +ev.target.value || 400) }));
+      $$('[data-tf]', box).forEach(x => x.onchange = () => { const f = T.felder.slice(); f[+x.dataset.tf] = x.value; T.felder = f; save({ ...T, felder: f }); });
+      if (ro) $$('#tlg select, #tlg input').forEach(x => x.disabled = true);
+    }
     if (ro) $$('#edit input, #edit select, #edit textarea').forEach(x => x.disabled = true);
     e.fotos ||= [];
     const onD = async ev => { const fs = [...ev.target.files]; ev.target.value = ''; for (const f of fs.slice(0, 12)) { if (!f.type.startsWith('image/')) continue; try { const bl = await FB.compress(f, 1600, .8); e.fotos.push({ pfad: await FB.saveFile(P.id, bl), text: '' }); } catch (er) { toast(errText(er)); } } dThumbs(); dirty(true); };
@@ -227,7 +244,7 @@
   function summary() {
     const e = P.aufmass.elemente[active], b = bestell(e);
     $('#stTitle').textContent = e.label || 'Position ' + (active + 1);
-    $('#sum').innerHTML = [['Typ', e.type], ['Bestellmaß', b.B ? `${b.B} × ${b.H} mm` : '—'], ['Öffnung', e.opening], ['Farbe', e.color + (e.colorAussen ? ' / ' + e.colorAussen : '')], ['Glas', e.glass], ['Rollladen', e.rollladen || 'kein'], ['Stück', e.anzahl || 1]]
+    $('#sum').innerHTML = [['Typ', e.type], ['Bestellmaß', b.B ? `${b.B} × ${b.H} mm` : '—'], ['Öffnung', FB.oeffnungText(e)], ['Farbe', e.color + (e.colorAussen ? ' / ' + e.colorAussen : '')], ['Glas', e.glass], ['Rollladen', e.rollladen || 'kein'], ['Stück', e.anzahl || 1]]
       .map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join('');
   }
 
@@ -302,22 +319,39 @@
     c.save(); c.lineJoin = 'round';
     if (e.rollladen && !/kein|Bestand/.test(e.rollladen)) { c.globalAlpha = alpha; c.fillStyle = '#475569'; poly(rect(-.03, -.12, 1.03, -.01)); c.fill(); }
     c.globalAlpha = alpha; c.fillStyle = frameCol; poly(rect(0, 0, 1, 1)); c.fill(); c.globalAlpha = 1; c.lineWidth = 2.5; c.strokeStyle = ink; poly(rect(0, 0, 1, 1)); c.stroke();
-    const two = /Stulp|2-flg|Schiebe/.test(e.type + e.opening), m = .07;
-    const sashes = two ? [[m, m, .5 - m / 3, 1 - m], [.5 + m / 3, m, 1 - m, 1 - m]] : [[m, m, 1 - m, 1 - m]];
-    sashes.forEach(([u1, v1, u2, v2], si) => {
-      c.globalAlpha = alpha * .85; c.fillStyle = photo ? 'rgba(56,163,221,.42)' : '#dbeafe'; poly(rect(u1, v1, u2, v2)); c.fill(); c.globalAlpha = 1; c.lineWidth = 1.5; c.strokeStyle = photo ? '#bae6fd' : '#334155'; poly(rect(u1, v1, u2, v2)); c.stroke();
+    const m = .07, glas = (u1, v1, u2, v2) => { c.globalAlpha = alpha * .85; c.fillStyle = photo ? 'rgba(56,163,221,.42)' : '#dbeafe'; poly(rect(u1, v1, u2, v2)); c.fill(); c.globalAlpha = 1; c.lineWidth = 1.5; c.strokeStyle = photo ? '#bae6fd' : '#334155'; poly(rect(u1, v1, u2, v2)); c.stroke(); };
+    const sym = (u1, v1, u2, v2, op) => {
       c.setLineDash([6, 4]); c.lineWidth = 1.2; c.strokeStyle = photo ? '#f8fafc' : '#475569';
-      const op = two ? (si === 0 ? 'DIN links' : 'DIN rechts') : e.opening, tilt = /Dreh-Kipp|Kipp|Balkon|Stulp/.test(e.type) || op === 'Kipp';
-      if (/Haustür|Nebeneingang/.test(e.type)) { c.setLineDash([]); const hx = op === 'DIN rechts' ? u1 + .08 : u2 - .08; line(hx, .5, hx, .58); }
-      else if (/Schiebe/.test(e.type)) { c.setLineDash([]); const yy = .5; line(u1 + .1, yy, u2 - .1, yy); line(u2 - .16, yy - .04, u2 - .1, yy); line(u2 - .16, yy + .04, u2 - .1, yy); }
-      else if (op !== 'fest' && e.type !== 'Festverglasung') {
-        if (op === 'DIN links' || op === 'links + rechts (2-flg.)') { line(u2, v1, u1, (v1 + v2) / 2); line(u1, (v1 + v2) / 2, u2, v2); }
-        else if (op === 'DIN rechts') { line(u1, v1, u2, (v1 + v2) / 2); line(u2, (v1 + v2) / 2, u1, v2); }
-        if (tilt) { line(u1, v1, (u1 + u2) / 2, v2); line((u1 + u2) / 2, v2, u2, v1); }
-      } else { c.setLineDash([]); c.font = '600 12px Figtree, sans-serif'; c.fillStyle = photo ? '#f8fafc' : '#475569'; const p = M((u1 + u2) / 2, (v1 + v2) / 2); c.textAlign = 'center'; c.fillText('F', p.x, p.y + 4); }
+      // Öffnungssymbol nach DIN: die Spitze zeigt zur Bandseite
+      if (/links/.test(op) && /Dreh/.test(op)) { line(u2, v1, u1, (v1 + v2) / 2); line(u1, (v1 + v2) / 2, u2, v2); }
+      if (/rechts/.test(op) && /Dreh/.test(op)) { line(u1, v1, u2, (v1 + v2) / 2); line(u2, (v1 + v2) / 2, u1, v2); }
+      if (/Kipp/.test(op)) { line(u1, v1, (u1 + u2) / 2, v2); line((u1 + u2) / 2, v2, u2, v1); }
       c.setLineDash([]);
+      if (op === 'fest') { c.font = '600 12px Figtree, sans-serif'; c.fillStyle = photo ? '#f8fafc' : '#475569'; const p = M((u1 + u2) / 2, (v1 + v2) / 2); c.textAlign = 'center'; c.fillText('F', p.x, p.y + 4); }
       if (e.options?.muntins) { c.lineWidth = 2; c.strokeStyle = frameCol; line((u1 + u2) / 2, v1, (u1 + u2) / 2, v2); line(u1, (v1 + v2) / 2, u2, (v1 + v2) / 2); }
-    });
+    };
+    if (FB.mitTeilung(e)) {
+      const T = FB.teilung(e), n = T.felder.length, hMm = b.H || 1400;
+      let top = m;
+      if (T.oberlicht) {
+        const vs = m + (1 - 2 * m) * Math.max(.12, Math.min(.5, T.oberlichtMm / hMm));
+        glas(m, m, 1 - m, vs - m / 4); sym(m, m, 1 - m, vs - m / 4, T.oberlicht === 'Kipp' ? 'Kipp' : 'fest');
+        top = vs + m / 4;
+      }
+      const gap = m / 2, w = (1 - 2 * m - (n - 1) * gap) / n;
+      T.felder.forEach((op, i) => { const u1 = m + i * (w + gap), u2 = u1 + w; glas(u1, top, u2, 1 - m); sym(u1, top, u2, 1 - m, op); });
+    } else {
+      const two = /Stulp|2-flg|Schiebe/.test(e.type + e.opening);
+      const sashes = two ? [[m, m, .5 - m / 3, 1 - m], [.5 + m / 3, m, 1 - m, 1 - m]] : [[m, m, 1 - m, 1 - m]];
+      sashes.forEach(([u1, v1, u2, v2], si) => {
+        glas(u1, v1, u2, v2);
+        c.setLineDash([6, 4]); c.lineWidth = 1.2; c.strokeStyle = photo ? '#f8fafc' : '#475569';
+        const op = two ? (si === 0 ? 'DIN links' : 'DIN rechts') : e.opening;
+        if (/Haustür|Nebeneingang/.test(e.type)) { c.setLineDash([]); const hx = op === 'DIN rechts' ? u1 + .08 : u2 - .08; line(hx, .5, hx, .58); }
+        else if (/Schiebe/.test(e.type)) { c.setLineDash([]); const yy = .5; line(u1 + .1, yy, u2 - .1, yy); line(u2 - .16, yy - .04, u2 - .1, yy); line(u2 - .16, yy + .04, u2 - .1, yy); }
+        c.setLineDash([]);
+      });
+    }
     // Bemaßung
     c.strokeStyle = ink; c.fillStyle = photo ? '#f8fafc' : '#0f172a'; c.lineWidth = 1.2; c.font = '700 13px Figtree, sans-serif'; c.textAlign = 'center';
     const dim = (a, z, label, rot) => { c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(z.x, z.y); c.stroke(); [a, z].forEach(p => { c.beginPath(); c.arc(p.x, p.y, 2.5, 0, 7); c.fill(); }); const mx = (a.x + z.x) / 2, my = (a.y + z.y) / 2; c.save(); c.translate(mx, my); c.rotate(rot ? Math.atan2(z.y - a.y, z.x - a.x) : 0); if (photo) { const w = c.measureText(label).width + 10; c.fillStyle = 'rgba(15,23,42,.75)'; c.fillRect(-w / 2, -21, w, 18); c.fillStyle = '#f8fafc'; } c.fillText(label, 0, -7); c.restore(); };
@@ -346,6 +380,13 @@
     return c.toDataURL('image/jpeg', .85);
   }
 
+  /* Kleine Ansichtszeichnung einer Position (ohne Foto) – für Angebot, Bestellliste und Kundenlink */
+  function skizze(e, px = 520, type = 'image/jpeg') {
+    const c = document.createElement('canvas'); c.width = px; c.height = px; const x = c.getContext('2d');
+    x.fillStyle = '#ffffff'; x.fillRect(0, 0, px, px); const k = px / 340; x.scale(k, k); paint(x, 340, 340, e, {}, false);
+    return c.toDataURL(type, .9);
+  }
+
   /* ================= Export ================= */
   async function pdfAufmass() {
     await saveNow(); toast('PDF wird erstellt …');
@@ -365,7 +406,7 @@
     const th = () => { doc.setFillColor(238, 241, 246); doc.rect(M, y - 4.5, W - 2 * M, 7, 'F'); font(8, true); let x = M + 1; cols.forEach(([t, w]) => { doc.text(t, x, y); x += w; }); y += 6; };
     th();
     L.forEach((e, i) => {
-      const b = bestell(e), cells = [String(i + 1), e.label || '', e.type, String(e.anzahl || 1), b.B ? `${b.B} × ${b.H} mm` : '—', e.opening, `${e.color}${e.colorAussen ? ' / ' + e.colorAussen : ''}\n${e.glass}`];
+      const b = bestell(e), cells = [String(i + 1), e.label || '', e.type, String(e.anzahl || 1), b.B ? `${b.B} × ${b.H} mm` : '—', FB.oeffnungText(e), `${e.color}${e.colorAussen ? ' / ' + e.colorAussen : ''}\n${e.glass}`];
       font(8.5); const lines = cells.map((c, j) => doc.splitTextToSize(String(c), cols[j][1] - 2)); const h = Math.max(...lines.map(l => l.length)) * 4 + 2;
       if (y + h > 280) { doc.addPage(); headr(); y = 36; th(); }
       let x = M + 1; lines.forEach((l, j) => { doc.text(l, x, y); x += cols[j][1]; }); y += h; doc.setDrawColor(225); doc.line(M, y - 3, W - M, y - 3);
@@ -377,7 +418,7 @@
       const im = await elementImage(e); doc.addImage(im, 'JPEG', M, 48, W - 2 * M, (W - 2 * M) * .75);
       let yy = 48 + (W - 2 * M) * .75 + 8;
       const rows = [['Breite oben / Mitte / unten', (e.widthPoints || []).join(' / ') || '—'], ['Höhe links / Mitte / rechts', (e.heightPoints || []).join(' / ') || '—'], ['Diagonalen', (e.diagonals || []).join(' / ') || '—'], ['Einbaufuge je Seite', (e.installGapMm ?? '—') + ' mm'],
-        ['Bestellmaß', b.B ? `${b.B} × ${b.H} mm (${b.how.split(' – ')[0]})` : '—'], ['Öffnung / Kopplung', `${e.opening} · Kopplung ${e.coupling}`], ['Profil', e.profil || '—'], ['Farbe innen / außen', `${e.color} / ${e.colorAussen || 'wie innen'}`], ['Verglasung', e.glass], ['Rollladen', e.rollladen || 'kein'],
+        ['Bestellmaß', b.B ? `${b.B} × ${b.H} mm (${b.how.split(' – ')[0]})` : '—'], ['Öffnung / Kopplung', `${FB.oeffnungText(e)} · Kopplung ${e.coupling}`], ['Profil', e.profil || '—'], ['Farbe innen / außen', `${e.color} / ${e.colorAussen || 'wie innen'}`], ['Verglasung', e.glass], ['Rollladen', e.rollladen || 'kein'],
         ['Zubehör', [e.options?.muntins && 'Sprossen', e.options?.insekt && 'Insektenschutz', e.options?.fbInnen && 'Fensterbank innen', e.options?.fbAussen && 'Fensterbank außen'].filter(Boolean).join(', ') || '—']];
       rows.forEach(([a, v]) => { font(8.5, true); doc.text(a, M, yy); font(8.5); doc.text(doc.splitTextToSize(String(v), 110), M + 60, yy); yy += 5; });
       const w = pruef(e); if (w.length) { yy += 2; font(8.5, true); doc.setTextColor(150, 90, 0); doc.text('Bitte prüfen:', M, yy); font(8.5); doc.text(doc.splitTextToSize(w.join(' '), W - 2 * M - 25), M + 25, yy); doc.setTextColor(0); yy += 10; }
@@ -389,7 +430,7 @@
   }
   function exportJSON() {
     const out = { app: 'ProFitAR', schema: 3, exportiert: new Date().toISOString(), projekt: { id: P.id, nummer: P.nummer, status: P.status, kunde: P.kunde, aufmass_datum: P.aufmass.datum, aufgenommen_von: P.aufmass.von || '' },
-      positionen: P.aufmass.elemente.map((e, i) => { const b = bestell(e); return { pos: i + 1, bezeichnung: e.label, typ: e.type, stueck: e.anzahl || 1, bestellmass_b_mm: b.B || null, bestellmass_h_mm: b.H || null, breite_messpunkte_mm: e.widthPoints, hoehe_messpunkte_mm: e.heightPoints, diagonalen_mm: e.diagonals, einbaufuge_mm: e.installGapMm, oeffnung: e.opening, kopplung: e.coupling, profil: e.profil, farbe_innen: e.color, farbe_aussen: e.colorAussen || e.color, verglasung: e.glass, rollladen: e.rollladen, sprossen: !!e.options?.muntins, insektenschutz: !!e.options?.insekt, fensterbank_innen: !!e.options?.fbInnen, fensterbank_aussen: !!e.options?.fbAussen, notiz: e.notiz, hinweise: pruef(e) }; }) };
+      positionen: P.aufmass.elemente.map((e, i) => { const b = bestell(e); return { pos: i + 1, bezeichnung: e.label, typ: e.type, stueck: e.anzahl || 1, bestellmass_b_mm: b.B || null, bestellmass_h_mm: b.H || null, breite_messpunkte_mm: e.widthPoints, hoehe_messpunkte_mm: e.heightPoints, diagonalen_mm: e.diagonals, einbaufuge_mm: e.installGapMm, oeffnung: FB.oeffnungText(e), teilung: FB.mitTeilung(e) ? FB.teilung(e) : null, kopplung: e.coupling, profil: e.profil, farbe_innen: e.color, farbe_aussen: e.colorAussen || e.color, verglasung: e.glass, rollladen: e.rollladen, sprossen: !!e.options?.muntins, insektenschutz: !!e.options?.insekt, fensterbank_innen: !!e.options?.fbInnen, fensterbank_aussen: !!e.options?.fbAussen, notiz: e.notiz, hinweise: pruef(e) }; }) };
     FB.download(new Blob([JSON.stringify(out, null, 2)], { type: 'application/json' }), `Aufmass_${FB.safeName(P.nummer)}.json`);
   }
   function exportCSV(projekte = [P], name) {
@@ -403,42 +444,61 @@
     const doc = await FB.pdf({ unit: 'mm', format: 'a4', orientation: 'landscape' }), F = FB.S.firma, k = P.kunde || {}, W = 297, M = 12, fam = doc.getFontList().Noto ? 'Noto' : 'helvetica';
     const font = (z, bd) => { doc.setFont(fam, bd ? 'bold' : 'normal'); doc.setFontSize(z); };
     font(14, true); doc.text(`Bestellliste ${P.nummer || ''}`, M, 16); font(9); doc.text(`${F.name} · ${k.name || ''}${k.adresse ? ' · ' + k.adresse : ''} · Stand ${fmtDate(new Date().toISOString())}`, M, 22);
-    const cols = [['Pos', 9], ['Bezeichnung', 38], ['Typ', 32], ['Stk', 9], ['B × H (mm)', 24], ['Öffnung', 22], ['Profil', 30], ['Farbe innen / außen', 34], ['Verglasung', 32], ['Zubehör', 43]];
+    const cols = [['Pos', 9], ['Ansicht', 22], ['Bezeichnung', 34], ['Typ', 28], ['Stk', 9], ['B × H (mm)', 22], ['Öffnung', 28], ['Profil', 26], ['Farbe innen / außen', 30], ['Verglasung', 28], ['Zubehör', 37]];
     let y = 32; const th = () => { doc.setFillColor(238, 241, 246); doc.rect(M, y - 4.5, W - 2 * M, 7, 'F'); font(8, true); let x = M + 1; cols.forEach(([t, w]) => { doc.text(t, x, y); x += w; }); y += 6; }; th();
     P.aufmass.elemente.forEach((e, i) => {
       const b = bestell(e), z = [e.rollladen && e.rollladen !== 'kein' && 'Rollladen: ' + e.rollladen, e.options?.muntins && 'Sprossen', e.options?.insekt && 'Insektenschutz', e.options?.fbInnen && 'Fensterbank innen', e.options?.fbAussen && 'Fensterbank außen', e.coupling && !/^keine$/i.test(e.coupling) && 'Kopplung ' + e.coupling].filter(Boolean).join(', ');
-      const cells = [i + 1, e.label, e.type, e.anzahl || 1, b.B ? `${b.B} × ${b.H}` : 'FEHLT', e.opening, e.profil || '—', `${e.color} / ${e.colorAussen || 'wie innen'}`, e.glass, z || '—'];
-      font(8.5); const lines = cells.map((c, j) => doc.splitTextToSize(String(c), cols[j][1] - 2)), h = Math.max(...lines.map(l => l.length)) * 4 + 2;
+      const cells = [i + 1, '', e.label, e.type, e.anzahl || 1, b.B ? `${b.B} × ${b.H}` : 'FEHLT', FB.oeffnungText(e), e.profil || '—', `${e.color} / ${e.colorAussen || 'wie innen'}`, e.glass, z || '—'];
+      font(8.5); const lines = cells.map((c, j) => doc.splitTextToSize(String(c), cols[j][1] - 2)), h = Math.max(Math.max(...lines.map(l => l.length)) * 4 + 2, 22);
       if (y + h > 196) { doc.addPage(); y = 16; th(); }
-      let x = M + 1; lines.forEach((l, j) => { doc.text(l, x, y); x += cols[j][1]; }); y += h; doc.setDrawColor(225); doc.line(M, y - 3, W - M, y - 3);
+      let x = M + 1; lines.forEach((l, j) => { if (j === 1) { try { doc.addImage(skizze(e), 'JPEG', x, y - 3, 19, 19); } catch {} } else doc.text(l, x, y); x += cols[j][1]; }); y += h; doc.setDrawColor(225); doc.line(M, y - 3, W - M, y - 3);
     });
     font(8); doc.setTextColor(100); doc.text('Bestellmaße = Rahmenaußenmaß nach Aufmaß. Vor Bestellung gegen Herstellervorgaben, Anschlussdetail und Einbausituation prüfen.', M, Math.min(y + 4, 203)); doc.setTextColor(0);
     FB.download(doc.output('blob'), `Bestellliste_${FB.safeName(P.nummer)}.pdf`);
   }
 
   /* ================= Angebot ================= */
-  function angebot() {
+  function angebotDaten() {
     const A = P.aufmass.angebot ||= { nr: (P.nummer || '').replace(/^A-/, 'AN-') || 'AN-' + FB.today().replace(/-/g, ''), datum: FB.today(), gueltig: '', rabatt: 0, preis: {}, text: '' };
-    A.preis ||= {}; const L = P.aufmass.elemente, PR = FB.preise(), F = FB.S.firma, mw = +F.mwst || 0, ro = !FB.canEdit();
+    A.preis ||= {}; if (!A.gueltig) { const d = new Date((A.datum || FB.today()) + 'T12:00:00'); d.setDate(d.getDate() + 30); A.gueltig = d.toISOString().slice(0, 10); }
+    return A;
+  }
+  function calcAngebot() {
+    const A = angebotDaten(), L = P.aufmass.elemente, PR = FB.preise(), mw = +FB.S.firma.mwst || 0;
+    const pos = L.map(e => { const auto = FB.positionPreis(e, PR); const ep = A.preis[e.id] != null && A.preis[e.id] !== '' ? +A.preis[e.id] : auto.einzel; return { e, auto, ep, gp: Math.round(ep * (e.anzahl || 1) * 100) / 100 }; });
+    const r2 = n => Math.round(n * 100) / 100, sum = r2(pos.reduce((x, p) => x + p.gp, 0)), rab = r2(sum * (+A.rabatt || 0) / 100), netto = r2(sum - rab), st = r2(netto * mw / 100);
+    return { pos, sum, rab, netto, st, brutto: r2(netto + st), mw };
+  }
+  /* Positionstexte wie im Angebot (auch für Rechnung und Kundenlink) */
+  function posText(e) {
+    const b = bestell(e);
+    return [`${e.type}${b.B ? `, ${b.B} × ${b.H} mm` : ''}`, [e.profil, e.color + (e.colorAussen ? ' / außen ' + e.colorAussen : ''), e.glass].filter(Boolean).join(', '),
+      [FB.oeffnungText(e) && 'Öffnung ' + FB.oeffnungText(e), e.rollladen && e.rollladen !== 'kein' && 'Rollladen ' + e.rollladen, e.options?.muntins && 'Sprossen', e.options?.insekt && 'Insektenschutz', e.options?.fbInnen && 'Fensterbank innen', e.options?.fbAussen && 'Fensterbank außen'].filter(Boolean).join(', ')].filter(Boolean);
+  }
+  function angebot() {
+    const A = angebotDaten(), L = P.aufmass.elemente, PR = FB.preise(), F = FB.S.firma, mw = +F.mwst || 0, ro = !FB.canEdit();
     const leer = !Object.values(PR.typen).some(t => +t.m2 || +t.min);
-    const calc = () => { const pos = L.map(e => { const auto = FB.positionPreis(e, PR); const ep = A.preis[e.id] != null && A.preis[e.id] !== '' ? +A.preis[e.id] : auto.einzel; return { e, auto, ep, gp: ep * (e.anzahl || 1) }; }); const sum = pos.reduce((x, p) => x + p.gp, 0), rab = sum * (+A.rabatt || 0) / 100, netto = sum - rab, st = netto * mw / 100; return { pos, sum, rab, netto, st, brutto: netto + st }; };
+    const calc = calcAngebot;
     const d = FB.sheet(`<div class="row between"><h2>Angebot ${esc(P.nummer || '')}</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
       ${leer ? `<p class="note warn" style="margin-top:10px">Noch keine Preise hinterlegt. ${FB.canAdmin() ? '<a href="./konto.html#preise">Preisliste unter Konto anlegen</a> – oder' : ''} Einzelpreise hier direkt eintragen.</p>` : ''}
-      <div class="grid g3" style="margin-top:10px"><label class="f">Angebots-Nr.<input id="anNr" value="${esc(A.nr)}"></label><label class="f">Datum<input id="anDat" type="date" value="${esc(A.datum)}"></label><label class="f">Rabatt (%)<input id="anRab" type="number" min="0" max="50" step="0.5" value="${+A.rabatt || 0}"></label></div>
+      <div class="grid g2" style="margin-top:10px"><label class="f">Angebots-Nr.<input id="anNr" value="${esc(A.nr)}"></label><label class="f">Datum<input id="anDat" type="date" value="${esc(A.datum)}"></label><label class="f">Gültig bis<input id="anGlt" type="date" value="${esc(A.gueltig)}"></label><label class="f">Rabatt (%)<input id="anRab" type="number" min="0" max="50" step="0.5" value="${+A.rabatt || 0}"></label></div>
       <div class="list" id="anPos" style="margin-top:10px"></div><div id="anSum" class="kv" style="margin-top:10px"></div>
       <label class="f" style="margin-top:10px">Zusätzlicher Text im Angebot<textarea id="anTxt" rows="2" placeholder="z. B. Lieferzeit ca. 6 Wochen">${esc(A.text)}</textarea></label>
-      <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ghost" data-close>Schließen</button><button class="btn" id="anPdf">Angebot als PDF</button></div>`);
+      <div id="anOnline" style="margin-top:12px"></div>
+      <div class="row" style="margin-top:12px;justify-content:flex-end;flex-wrap:wrap"><button class="btn ghost" data-close>Schließen</button><button class="btn ghost" id="anPdf">Als PDF</button>${FB.canAdmin() && !ro ? '<button class="btn" id="anSend">An Kunden senden …</button>' : ''}</div>`);
     const draw = () => { const c = calc();
       $('#anPos', d.el).innerHTML = c.pos.map(({ e, auto, ep }, i) => `<div class="item" style="cursor:default"><span class="pos">${i + 1}</span><div class="grow"><b>${esc(e.label)}</b><span class="small muted">${esc(e.type)} · ${e.anzahl || 1} Stk.${auto.m2 ? ' · ' + auto.m2.toFixed(2).replace('.', ',') + ' m²' : ''}${auto.einzel ? ' · Preisliste ' + FB.eur(auto.einzel) : ''}</span></div><label class="f" style="width:130px">Einzelpreis<input type="number" step="0.01" min="0" data-ep="${e.id}" value="${A.preis[e.id] ?? ''}" placeholder="${auto.einzel ? auto.einzel.toFixed(2) : '0,00'}" ${ro ? 'disabled' : ''}></label></div>`).join('');
       $('#anSum', d.el).innerHTML = `<div><span>Summe</span><b>${FB.eur(c.sum)}</b></div>${c.rab ? `<div><span>Rabatt ${A.rabatt} %</span><b>− ${FB.eur(c.rab)}</b></div>` : ''}<div><span>Netto</span><b>${FB.eur(c.netto)}</b></div><div><span>${mw ? 'MwSt. ' + mw + ' %' : 'ohne USt.'}</span><b>${FB.eur(c.st)}</b></div><div><span>Gesamt</span><b>${FB.eur(c.brutto)}</b></div>`;
       $$('[data-ep]', d.el).forEach(i => i.oninput = () => { A.preis[i.dataset.ep] = i.value === '' ? null : +i.value; dirty(); drawSum(); }); };
     const drawSum = () => { const c = calc(); $('#anSum', d.el).innerHTML = `<div><span>Summe</span><b>${FB.eur(c.sum)}</b></div>${c.rab ? `<div><span>Rabatt ${A.rabatt} %</span><b>− ${FB.eur(c.rab)}</b></div>` : ''}<div><span>Netto</span><b>${FB.eur(c.netto)}</b></div><div><span>${mw ? 'MwSt. ' + mw + ' %' : 'ohne USt.'}</span><b>${FB.eur(c.st)}</b></div><div><span>Gesamt</span><b>${FB.eur(c.brutto)}</b></div>`; };
     draw();
-    $('#anNr', d.el).oninput = e => { A.nr = e.target.value; dirty(); }; $('#anDat', d.el).onchange = e => { A.datum = e.target.value; dirty(); };
+    $('#anNr', d.el).oninput = e => { A.nr = e.target.value; dirty(); }; $('#anDat', d.el).onchange = e => { A.datum = e.target.value; dirty(); }; $('#anGlt', d.el).onchange = e => { A.gueltig = e.target.value; dirty(); };
+    $('#anSend', d.el)?.addEventListener('click', () => angebotSenden(d));
+    onlineListe($('#anOnline', d.el));
     $('#anRab', d.el).oninput = e => { A.rabatt = Math.max(0, Math.min(50, +e.target.value || 0)); dirty(); drawSum(); }; $('#anTxt', d.el).oninput = e => { A.text = e.target.value; dirty(); };
     $('#anPdf', d.el).onclick = async () => { try { await pdfAngebot(calc()); if (['aufmass'].includes(P.status) && FB.canEdit()) { P.status = 'angebot'; $('#status').value = 'angebot'; dirty(true); } } catch (er) { toast(errText(er)); } };
   }
-  async function pdfAngebot(c) {
+  async function pdfAngebot(c, { herunterladen = true } = {}) {
     await saveNow();
     const A = P.aufmass.angebot, doc = await FB.pdf(), F = FB.S.firma, k = P.kunde || {}, W = 210, M = 18, mw = +F.mwst || 0, fam = doc.getFontList().Noto ? 'Noto' : 'helvetica';
     const font = (z, bd) => { doc.setFont(fam, bd ? 'bold' : 'normal'); doc.setFontSize(z); };
@@ -446,20 +506,23 @@
     font(7.5); doc.setTextColor(110); doc.text([F.name, F.anschrift].filter(Boolean).join(' · '), M, 46); doc.setTextColor(0);
     font(10); doc.text([k.name, ...(k.adresse || '').split(/,\s*/)].filter(Boolean), M, 52);
     font(9); doc.text([F.name, F.anschrift, F.telefon && 'Tel. ' + F.telefon, F.email, F.web].filter(Boolean), W - M, 34, { align: 'right' });
-    font(9); doc.text([`Angebot Nr. ${A.nr}`, `Datum: ${fmtDate(A.datum)}`, `Bauvorhaben: ${k.adresse || '—'}`], W - M, 66, { align: 'right' });
+    font(9); doc.text([`Angebot Nr. ${A.nr}`, `Datum: ${fmtDate(A.datum)}`, A.gueltig ? `Gültig bis: ${fmtDate(A.gueltig)}` : '', `Bauvorhaben: ${k.adresse || '—'}`].filter(Boolean), W - M, 66, { align: 'right' });
     font(16, true); doc.text('Angebot', M, 82); font(9.5); const intro = doc.splitTextToSize(F.angebot_text || '', W - 2 * M); doc.text(intro, M, 89);
     let y = 89 + intro.length * 4.6 + 6;
     const cols = [['Pos', 10], ['Leistung', 96], ['Menge', 18], ['Einzelpreis', 25], ['Gesamt', 25]];
     const th = () => { doc.setFillColor(238, 241, 246); doc.rect(M, y - 4.5, W - 2 * M, 7, 'F'); font(8.5, true); let x = M + 1; cols.forEach(([t, w], i) => { doc.text(t, i >= 2 ? x + w - 2 : x, y, i >= 2 ? { align: 'right' } : {}); x += w; }); y += 7; };
     th();
-    c.pos.forEach(({ e, ep, gp }, i) => {
-      const b = bestell(e), det = [`${e.type}${b.B ? `, ${b.B} × ${b.H} mm` : ''}`, [e.profil, e.color + (e.colorAussen ? ' / außen ' + e.colorAussen : ''), e.glass].filter(Boolean).join(', '), [e.opening !== 'fest' && 'Öffnung ' + e.opening, e.rollladen && e.rollladen !== 'kein' && 'Rollladen ' + e.rollladen, e.options?.muntins && 'Sprossen', e.options?.insekt && 'Insektenschutz', e.options?.fbInnen && 'Fensterbank innen', e.options?.fbAussen && 'Fensterbank außen'].filter(Boolean).join(', ')].filter(Boolean);
-      font(9, true); const t1 = doc.splitTextToSize(e.label || '', cols[1][1] - 2); font(8.5); const t2 = doc.splitTextToSize(det.join('\n'), cols[1][1] - 2); const h = (t1.length + t2.length) * 4.2 + 3;
+    for (const [i, { e, ep, gp }] of c.pos.entries()) {
+      const b = bestell(e), det = [`${e.type}${b.B ? `, ${b.B} × ${b.H} mm` : ''}`, [e.profil, e.color + (e.colorAussen ? ' / außen ' + e.colorAussen : ''), e.glass].filter(Boolean).join(', '), [FB.oeffnungText(e) && 'Öffnung ' + FB.oeffnungText(e), e.rollladen && e.rollladen !== 'kein' && 'Rollladen ' + e.rollladen, e.options?.muntins && 'Sprossen', e.options?.insekt && 'Insektenschutz', e.options?.fbInnen && 'Fensterbank innen', e.options?.fbAussen && 'Fensterbank außen'].filter(Boolean).join(', ')].filter(Boolean);
+      const SK = 24, tw = cols[1][1] - SK - 4;
+      font(9, true); const t1 = doc.splitTextToSize(e.label || '', tw); font(8.5); const t2 = doc.splitTextToSize(det.join('\n'), tw); const h = Math.max((t1.length + t2.length) * 4.2 + 3, SK + 4);
       if (y + h > 262) { doc.addPage(); y = 24; th(); }
-      let x = M + 1; font(9); doc.text(String(i + 1), x, y); x += cols[0][1]; font(9, true); doc.text(t1, x, y); font(8.5); doc.setTextColor(70); doc.text(t2, x, y + t1.length * 4.2); doc.setTextColor(0); x += cols[1][1];
+      let x = M + 1; font(9); doc.text(String(i + 1), x, y); x += cols[0][1];
+      try { doc.addImage(skizze(e), 'JPEG', x, y - 3.2, SK, SK); } catch {}
+      const tx = x + SK + 3; font(9, true); doc.text(t1, tx, y); font(8.5); doc.setTextColor(70); doc.text(t2, tx, y + t1.length * 4.2); doc.setTextColor(0); x += cols[1][1];
       font(9); doc.text(`${e.anzahl || 1} Stk.`, x + cols[2][1] - 2, y, { align: 'right' }); x += cols[2][1]; doc.text(FB.eur(ep), x + cols[3][1] - 2, y, { align: 'right' }); x += cols[3][1]; doc.text(FB.eur(gp), x + cols[4][1] - 2, y, { align: 'right' });
       y += h; doc.setDrawColor(225); doc.line(M, y - 3, W - M, y - 3);
-    });
+    }
     if (y > 235) { doc.addPage(); y = 24; }
     const line = (l, v, bd) => { font(9.5, bd); doc.text(l, W - M - 52, y); doc.text(v, W - M, y, { align: 'right' }); y += 5.5; };
     y += 3; line('Summe', FB.eur(c.sum)); if (c.rab) line(`abzüglich ${A.rabatt} % Rabatt`, '− ' + FB.eur(c.rab)); line('Nettobetrag', FB.eur(c.netto));
@@ -468,19 +531,206 @@
     if (A.text) { y += 3; font(9); const t = doc.splitTextToSize(A.text, W - 2 * M); doc.text(t, M, y); y += t.length * 4.5; }
     font(9); y += 6; doc.text(['Wir freuen uns auf Ihren Auftrag.', '', 'Mit freundlichen Grüßen', F.name], M, y);
     const n = doc.getNumberOfPages(); for (let i = 1; i <= n; i++) { doc.setPage(i); font(7.5); doc.setTextColor(120); doc.text(`Angebot ${A.nr} · ${F.name} · Seite ${i}/${n}`, M, 290); doc.setTextColor(0); }
-    FB.download(doc.output('blob'), `Angebot_${FB.safeName(A.nr)}_${FB.safeName(k.name)}.pdf`);
+    const blob = doc.output('blob'); if (herunterladen) FB.download(blob, `Angebot_${FB.safeName(A.nr)}_${FB.safeName(k.name)}.pdf`);
+    return blob;
   }
+  /* ================= Angebot an den Kunden senden (Online-Annahme) ================= */
+  const AN_STATUS = a => a.angenommen_at ? ['Angenommen', 'ok'] : a.zurueckgezogen_at ? ['Ersetzt / zurückgezogen', ''] : a.abgelehnt_at ? ['Abgelehnt', 'crit'] : a.gueltig_bis && a.gueltig_bis < FB.today() ? ['Abgelaufen', 'warn'] : a.geoeffnet_at ? ['Vom Kunden geöffnet', 'accent'] : ['Gesendet', 'accent'];
+  async function onlineListe(box) {
+    if (!box) return;
+    let l = []; try { l = await FB.listAngebote(P.id); } catch (e) { box.innerHTML = `<p class="note crit">${esc(errText(e))}</p>`; return; }
+    if (!l.length) { box.innerHTML = FB.canAdmin() ? '<p class="tiny muted">Über „An Kunden senden“ bekommt der Kunde das Angebot per E-Mail und kann es online mit seiner Unterschrift annehmen.</p>' : ''; return; }
+    box.innerHTML = `<h3 style="margin:0 0 6px;font-size:15px">Gesendete Angebote</h3><div class="list">${l.map(a => { const [t, c] = AN_STATUS(a); const url = new URL('./angebot.html?' + (FB.demo ? 'demo=1&' : '') + 't=' + encodeURIComponent(a.token), location.href).href; return `<div class="item" style="cursor:default;flex-wrap:wrap"><div class="grow"><b>${esc(a.nr)}</b> <span class="chip ${c}">${t}</span><span class="small muted">an ${esc(a.email)} · ${FB.fmtDT(a.created_at)}${a.gueltig_bis ? ' · gültig bis ' + fmtDate(a.gueltig_bis) : ''}</span>${a.angenommen_at ? `<span class="small">Angenommen von <b>${esc(a.angenommen_name)}</b> am ${FB.fmtDT(a.angenommen_at)}</span>` : ''}${a.abgelehnt_at ? `<span class="small">Abgelehnt am ${FB.fmtDT(a.abgelehnt_at)}${a.abgelehnt_grund ? ': ' + esc(a.abgelehnt_grund) : ''}</span>` : ''}</div>
+      <div class="row"><a class="btn ghost sm" href="${esc(url)}" target="_blank" rel="noopener">Ansehen</a>${!a.angenommen_at && !a.zurueckgezogen_at && FB.canAdmin() ? `<button class="btn ghost sm" data-zr="${a.id}">Zurückziehen</button>` : ''}</div></div>`; }).join('')}</div>`;
+    $$('[data-zr]', box).forEach(b => b.onclick = async () => { if (!(await FB.confirmDlg('Angebot zurückziehen? Der Kunde kann es dann nicht mehr annehmen.', 'Zurückziehen', true))) return; try { await FB.angebotZurueckziehen(b.dataset.zr); onlineListe(box); } catch (e) { toast(errText(e)); } });
+  }
+  async function angebotSenden(parent) {
+    const A = angebotDaten(), c = calcAngebot(), k = P.kunde || {};
+    if (!c.pos.length || c.brutto <= 0) return toast('Bitte zuerst Preise eintragen.');
+    const d = FB.sheet(`<div class="row between"><h2>Angebot ${esc(A.nr)} senden</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
+      <p class="small muted" style="margin-top:6px">Der Kunde bekommt das Angebot als PDF und einen Link. Dort kann er es ansehen und mit Name und Unterschrift verbindlich annehmen. Das Projekt springt dann auf „Beauftragt“ und ihr bekommt eine E-Mail.</p>
+      <label class="f" style="margin-top:10px">E-Mail des Kunden<input id="snM" type="email" value="${esc(k.email || '')}" autocomplete="off"></label>
+      <label class="f">Persönliche Nachricht (optional)<textarea id="snT" rows="3" placeholder="z. B. wie besprochen inklusive Montage und Entsorgung"></textarea></label>
+      <div class="kv"><div><span>Gesamtbetrag</span><b>${FB.eur(c.brutto)}</b></div><div><span>Gültig bis</span><b>${fmtDate(A.gueltig)}</b></div></div>
+      <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ghost" data-close>Abbrechen</button><button class="btn" id="snGo">Jetzt senden</button></div>`);
+    $('#snGo', d.el).onclick = async ev => {
+      const email = $('#snM', d.el).value.trim(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Bitte eine gültige E-Mail-Adresse eingeben.');
+      ev.target.disabled = true; ev.target.textContent = 'Wird gesendet …';
+      try {
+        if (!k.email) { k.email = email; dirty(); }
+        const blob = await pdfAngebot(c, { herunterladen: false }), pdf = (await FB.blobToDataUrl(blob)).split(',')[1];
+        const daten = { nr: A.nr, datum: A.datum, gueltig: A.gueltig, intro: FB.S.firma.angebot_text || '', text: A.text || '', kunde: { name: k.name || '', adresse: k.adresse || '' }, bauvorhaben: k.adresse || '',
+          positionen: c.pos.map(({ e, ep, gp }, i) => ({ pos: i + 1, titel: e.label || '', details: posText(e), menge: e.anzahl || 1, ep, gp, bild: skizze(e, 360) })),
+          summen: { sum: c.sum, rabatt: +A.rabatt || 0, rab: c.rab, netto: c.netto, mwst: c.mw, st: c.st, brutto: c.brutto } };
+        const r = await FB.angebotSenden({ projekt_id: P.id, email, nr: A.nr, gueltig_bis: A.gueltig, text: $('#snT', d.el).value.trim(), pdf, daten });
+        d.close();
+        if (P.status === 'aufmass') { P.status = 'angebot'; $('#status').value = 'angebot'; dirty(true); }
+        toast(r.demo ? 'Demo: nichts versendet – der Kundenlink öffnet sich zum Ausprobieren.' : r.mail ? 'Angebot gesendet.' : 'Angebot angelegt, aber die E-Mail ging nicht raus. Link bitte selbst schicken.', 5000);
+        if (r.demo) window.open(r.link, '_blank');
+        onlineListe($('#anOnline', parent.el));
+      } catch (e) { toast(errText(e)); ev.target.disabled = false; ev.target.textContent = 'Jetzt senden'; }
+    };
+  }
+
+  /* ================= Rechnungen: Anzahlung, Schlussrechnung, Storno ================= */
+  const ART_R = { anzahlung: 'Anzahlungsrechnung', schluss: 'Schlussrechnung', rechnung: 'Rechnung', storno: 'Stornorechnung' };
+  const r2 = n => Math.round((+n || 0) * 100) / 100;
+  function firmaFehlt() {
+    const F = FB.S.firma, f = [];
+    if (!F.anschrift) f.push('Anschrift'); if (!(F.steuernummer || F.ustid)) f.push('Steuernummer oder USt-IdNr.');
+    return f;
+  }
+  async function rechnungen() {
+    await saveNow();
+    const d = FB.sheet(`<div class="row between"><h2>Rechnungen ${esc(P.nummer || '')}</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div><div id="reBox" style="margin-top:10px"><div class="skel"></div></div>`);
+    const box = $('#reBox', d.el);
+    const draw = async () => {
+      let l = []; try { l = await FB.listRechnungen(P.id); } catch (e) { box.innerHTML = `<p class="note crit">${esc(errText(e))}</p>`; return; }
+      const c = calcAngebot(), gueltig = l.filter(r => r.art !== 'storno' && !r.storniert_durch), anz = gueltig.filter(r => r.art === 'anzahlung'), schluss = gueltig.find(r => r.art === 'schluss' || r.art === 'rechnung');
+      const fehlt = firmaFehlt(), darf = FB.canAdmin() && FB.canEdit();
+      box.innerHTML = `${fehlt.length ? `<p class="note warn">Für Rechnungen fehlen in den Firmendaten: ${fehlt.join(', ')}. ${FB.canAdmin() ? '<a href="./konto.html#firma">Unter Konto ergänzen</a>' : ''}</p>` : ''}
+        <div class="kv"><div><span>Auftragssumme (brutto)</span><b>${FB.eur(c.brutto)}</b></div><div><span>Angezahlt (berechnet)</span><b>${FB.eur(anz.reduce((x, r) => x + +r.brutto, 0))}</b></div><div><span>Bezahlt</span><b>${FB.eur(gueltig.filter(r => r.bezahlt_at).reduce((x, r) => x + +r.brutto, 0))}</b></div></div>
+        <div class="list" style="margin-top:10px">${l.length ? l.map(r => `<div class="item" style="cursor:default;flex-wrap:wrap"><div class="grow"><b>${esc(r.nr)}</b> <span class="chip ${r.art === 'storno' ? 'crit' : r.storniert_durch ? '' : r.bezahlt_at ? 'ok' : 'warn'}">${r.art === 'storno' ? 'Storno' : r.storniert_durch ? 'storniert' : r.bezahlt_at ? 'bezahlt ' + fmtDate(r.bezahlt_at) : 'offen'}</span><span class="small muted">${ART_R[r.art]} · ${fmtDate(r.datum)} · ${FB.eur(r.brutto)}${r.faellig && !r.bezahlt_at && r.art !== 'storno' ? ' · fällig ' + fmtDate(r.faellig) : ''}</span></div>
+          <div class="row"><button class="btn ghost sm" data-pdf="${r.id}">PDF</button>${darf && r.art !== 'storno' && !r.storniert_durch ? `<button class="btn ghost sm" data-bez="${r.id}">${r.bezahlt_at ? 'Zahlung zurücknehmen' : 'Als bezahlt markieren'}</button><button class="btn ghost sm" data-sto="${r.id}">Stornieren</button>` : ''}</div></div>`).join('') : '<p class="small muted">Noch keine Rechnungen.</p>'}</div>
+        ${darf ? `<div class="row" style="margin-top:12px;flex-wrap:wrap">${!schluss ? `<button class="btn soft" id="reAnz">+ Anzahlungsrechnung</button><button class="btn" id="reSchluss">${anz.length ? '+ Schlussrechnung' : '+ Rechnung'}</button>` : '<p class="small muted">Schlussrechnung ist erstellt. Für Änderungen bitte stornieren und neu erstellen.</p>'}<button class="btn ghost" id="reCsv">Export für Kontora (CSV)</button></div>` : ''}
+        <p class="tiny muted" style="margin-top:10px">Rechnungen erhalten eine fortlaufende Nummer und lassen sich danach nicht mehr ändern oder löschen – Korrekturen nur per Storno. Grundlage sind die Positionen und Preise aus dem Angebot.</p>`;
+      $$('[data-pdf]', box).forEach(b => b.onclick = () => rechnungPdfOeffnen(l.find(r => r.id === b.dataset.pdf)).catch(e => toast(errText(e))));
+      $$('[data-bez]', box).forEach(b => b.onclick = async () => { const r = l.find(x => x.id === b.dataset.bez); try { await FB.rechnungUpdate(r.id, { bezahlt_at: r.bezahlt_at ? null : FB.today() }); draw(); } catch (e) { toast(errText(e)); } });
+      $$('[data-sto]', box).forEach(b => b.onclick = async () => { const r = l.find(x => x.id === b.dataset.sto); if (!(await FB.confirmDlg(`Rechnung ${r.nr} stornieren? Es wird eine Stornorechnung mit negativen Beträgen erstellt.`, 'Stornieren', true))) return; try { await neueRechnung({ art: 'storno', original: r }); draw(); } catch (e) { toast(errText(e)); } });
+      $('#reAnz', box)?.addEventListener('click', () => rechnungDialog('anzahlung', c, anz, draw));
+      $('#reSchluss', box)?.addEventListener('click', () => rechnungDialog(anz.length ? 'schluss' : 'rechnung', c, anz, draw));
+      $('#reCsv', box)?.addEventListener('click', () => kontoraCsv(l, `Rechnungen_${FB.safeName(P.nummer)}.csv`));
+    };
+    draw();
+  }
+  function rechnungDialog(art, c, anz, done) {
+    if (firmaFehlt().length) return toast('Bitte zuerst die Firmendaten ergänzen (Konto → Firma).');
+    if (c.brutto <= 0) return toast('Bitte zuerst im Angebot Preise eintragen.');
+    const schon = r2(anz.reduce((x, r) => x + +r.brutto, 0)), A = angebotDaten();
+    const d = FB.sheet(`<div class="row between"><h2>${ART_R[art]} erstellen</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
+      <div class="grid g2" style="margin-top:10px"><label class="f">Rechnungsdatum<input id="rdD" type="date" value="${FB.today()}"></label>
+      <label class="f">${art === 'anzahlung' ? 'Leistungszeitraum (voraussichtlich)' : 'Leistungsdatum / -zeitraum'}<input id="rdL" value="${esc(art === 'anzahlung' ? '' : (P.abnahme?.datum ? fmtDate(P.abnahme.datum) : fmtDate(FB.today())))}" placeholder="${art === 'anzahlung' ? 'z. B. Kalenderwoche 49/2026' : 'z. B. 12.11.2026'}"></label>
+      ${art === 'anzahlung' ? `<label class="f">Anteil der Auftragssumme (%)<input id="rdP" type="number" min="1" max="100" step="1" value="30"></label><label class="f">oder Betrag brutto (€)<input id="rdB" type="number" min="0" step="0.01" placeholder="${FB.eur(c.brutto * .3)}"></label>` : ''}
+      <label class="f">Zahlungsziel (Tage)<input id="rdZ" type="number" min="0" max="90" value="${+FB.S.firma.zahlungsziel_tage || 14}"></label></div>
+      <div class="kv" id="rdSum" style="margin-top:8px"></div>
+      <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ghost" data-close>Abbrechen</button><button class="btn" id="rdGo">Rechnung erstellen</button></div>`);
+    const betrag = () => { if (art !== 'anzahlung') return r2(c.brutto - schon); const b = +$('#rdB', d.el).value; return r2(b > 0 ? b : c.brutto * (+$('#rdP', d.el).value || 0) / 100); };
+    const show = () => { const b = betrag(); $('#rdSum', d.el).innerHTML = art === 'anzahlung' ? `<div><span>Anzahlung brutto</span><b>${FB.eur(b)}</b></div>` : `<div><span>Gesamtleistung brutto</span><b>${FB.eur(c.brutto)}</b></div>${schon ? `<div><span>abzüglich Anzahlungen</span><b>− ${FB.eur(schon)}</b></div>` : ''}<div><span>Zu zahlen</span><b>${FB.eur(b)}</b></div>`; };
+    $$('input', d.el).forEach(i => i.oninput = show); show();
+    $('#rdGo', d.el).onclick = async ev => {
+      const b = betrag(); if (art === 'anzahlung' && (b <= 0 || b > c.brutto - schon + .001)) return toast('Der Anzahlungsbetrag passt nicht zur Auftragssumme.');
+      ev.target.disabled = true;
+      try { await neueRechnung({ art, c, anz, betrag: b, datum: $('#rdD', d.el).value || FB.today(), leistung: $('#rdL', d.el).value.trim(), ziel: +$('#rdZ', d.el).value || 0, angebot: A }); d.close(); done(); toast('Rechnung erstellt.'); }
+      catch (e) { toast(errText(e)); ev.target.disabled = false; }
+    };
+  }
+  async function neueRechnung(o) {
+    const F = FB.S.firma, k = P.kunde || {}, mw = +F.mwst || 0;
+    const firma = { name: F.name, anschrift: F.anschrift, telefon: F.telefon, email: F.email, web: F.web, inhaber: F.inhaber, steuernummer: F.steuernummer, ustid: F.ustid, bank: F.bank, iban: F.iban, bic: F.bic, logo: F.logo && F.logo.length < 300000 ? F.logo : null, mwst: mw, text: F.rechnung_text || '' };
+    let row;
+    if (o.art === 'storno') {
+      const r = o.original, dd = { ...r.daten, storno_zu: { nr: r.nr, datum: r.datum }, firma: { ...r.daten.firma } };
+      row = { projekt_id: P.id, art: 'storno', datum: FB.today(), daten: dd, netto: -r.netto, steuer: -r.steuer, brutto: -r.brutto, storno_von: r.id };
+    } else {
+      const c = o.c, brutto = r2(o.betrag), netto = r2(brutto / (1 + mw / 100)), steuer = r2(brutto - netto);
+      const faellig = (() => { const x = new Date(o.datum + 'T12:00:00'); x.setDate(x.getDate() + (o.ziel || 0)); return x.toISOString().slice(0, 10); })();
+      const daten = { firma, kunde: { name: k.name || '', adresse: k.adresse || '' }, projekt: P.nummer, bauvorhaben: k.adresse || '', angebot: { nr: o.angebot.nr, datum: o.angebot.datum }, leistung: o.leistung, ziel: o.ziel,
+        positionen: c.pos.map(({ e, ep, gp }, i) => ({ pos: i + 1, titel: e.label || '', details: posText(e), menge: e.anzahl || 1, ep, gp })),
+        summen: { sum: c.sum, rabatt: +o.angebot.rabatt || 0, rab: c.rab, netto: c.netto, mwst: mw, st: c.st, brutto: c.brutto },
+        anzahlungen: o.art === 'anzahlung' ? [] : o.anz.map(r => ({ nr: r.nr, datum: r.datum, netto: +r.netto, steuer: +r.steuer, brutto: +r.brutto })),
+        anteil: o.art === 'anzahlung' ? r2(brutto / c.brutto * 100) : null };
+      row = { projekt_id: P.id, art: o.art, datum: o.datum, daten, netto, steuer, brutto, faellig };
+    }
+    const rech = await FB.rechnungAnlegen(row);
+    const blob = await rechnungPdf(rech);
+    await FB.rechnungPdfAblegen(rech, blob).catch(e => toast('PDF wird beim nächsten Öffnen erneut erzeugt: ' + errText(e)));
+    FB.download(blob, `Rechnung_${FB.safeName(rech.nr)}_${FB.safeName(k.name)}.pdf`);
+    return rech;
+  }
+  async function rechnungPdfOeffnen(r) {
+    let blob = r.pdf_pfad ? await FB.fileBlob(r.pdf_pfad).catch(() => null) : null;
+    if (!blob) { blob = await rechnungPdf(r); if (!r.pdf_pfad) FB.rechnungPdfAblegen(r, blob).catch(() => {}); }
+    FB.download(blob, `Rechnung_${FB.safeName(r.nr)}_${FB.safeName(r.daten?.kunde?.name)}.pdf`);
+  }
+  /* Rechnung als PDF – nur aus den gespeicherten Rechnungsdaten (nicht aus dem aktuellen Projekt) */
+  async function rechnungPdf(r) {
+    const D = r.daten || {}, Fi = D.firma || {}, k = D.kunde || {}, S0 = D.summen || {}, doc = await FB.pdf(), W = 210, M = 18, mw = +Fi.mwst || 0, fam = doc.getFontList().Noto ? 'Noto' : 'helvetica', sto = r.art === 'storno';
+    const font = (z, bd) => { doc.setFont(fam, bd ? 'bold' : 'normal'); doc.setFontSize(z); };
+    const sg = sto ? -1 : 1;
+    if (Fi.logo && /^data:image\/(png|jpe?g)/.test(Fi.logo)) { try { const pr = doc.getImageProperties(Fi.logo); const h = 16, w = Math.min(55, h * pr.width / pr.height); doc.addImage(Fi.logo, W - M - w, 12, w, h); } catch {} }
+    font(7.5); doc.setTextColor(110); doc.text([Fi.name, Fi.anschrift].filter(Boolean).join(' · '), M, 46); doc.setTextColor(0);
+    font(10); doc.text([k.name, ...(k.adresse || '').split(/,\s*/)].filter(Boolean), M, 52);
+    font(9); doc.text([Fi.name, Fi.inhaber && 'Inhaber: ' + Fi.inhaber, Fi.anschrift, Fi.telefon && 'Tel. ' + Fi.telefon, Fi.email, Fi.web].filter(Boolean), W - M, 30, { align: 'right' });
+    const meta = [`Rechnungs-Nr. ${r.nr}`, `Rechnungsdatum: ${fmtDate(r.datum)}`, D.leistung ? `${r.art === 'anzahlung' ? 'Leistungszeitraum (voraussichtlich)' : 'Leistungsdatum'}: ${D.leistung}` : (r.art === 'anzahlung' ? 'Leistung noch nicht erbracht' : ''), D.projekt && `Projekt: ${D.projekt}`, D.angebot?.nr && `Angebot: ${D.angebot.nr} vom ${fmtDate(D.angebot.datum)}`, D.bauvorhaben && `Bauvorhaben: ${D.bauvorhaben}`].filter(Boolean);
+    font(9); doc.text(meta, W - M, 68, { align: 'right' });
+    let y = 68 + meta.length * 4.4 + 8;
+    font(16, true); doc.text(ART_R[r.art], M, y); y += 7;
+    font(9.5);
+    if (sto) { doc.text(doc.splitTextToSize(`Hiermit stornieren wir die Rechnung ${D.storno_zu?.nr} vom ${fmtDate(D.storno_zu?.datum)} in voller Höhe.`, W - 2 * M), M, y); y += 9; }
+    else if (r.art === 'anzahlung') { doc.text(doc.splitTextToSize(`Wie vereinbart berechnen wir für den Auftrag laut Angebot ${D.angebot?.nr || ''} eine Anzahlung von ${String(D.anteil ?? '').replace('.', ',')} % der Auftragssumme.`, W - 2 * M), M, y); y += 9; }
+    else { doc.text('Für die folgenden Leistungen berechnen wir:', M, y); y += 7; }
+    const cols = [['Pos', 10], ['Leistung', 96], ['Menge', 18], ['Einzelpreis', 25], ['Gesamt', 25]];
+    const th = () => { doc.setFillColor(238, 241, 246); doc.rect(M, y - 4.5, W - 2 * M, 7, 'F'); font(8.5, true); let x = M + 1; cols.forEach(([t, w], i) => { doc.text(t, i >= 2 ? x + w - 2 : x, y, i >= 2 ? { align: 'right' } : {}); x += w; }); y += 7; };
+    const LX = W - M - 112, line = (l, v, bd) => { if (y > 270) { doc.addPage(); y = 24; } font(9.5, bd); doc.text(l, LX, y); doc.text(v, W - M, y, { align: 'right' }); y += 5.5; };
+    if (!sto) {
+      th();
+      for (const p of D.positionen || []) {
+        font(9, true); const t1 = doc.splitTextToSize(p.titel || '', cols[1][1] - 2); font(8.5); const t2 = doc.splitTextToSize((p.details || []).join('\n'), cols[1][1] - 2); const h = (t1.length + t2.length) * 4.2 + 3;
+        if (y + h > 262) { doc.addPage(); y = 24; th(); }
+        let x = M + 1; font(9); doc.text(String(p.pos), x, y); x += cols[0][1]; font(9, true); doc.text(t1, x, y); font(8.5); doc.setTextColor(70); doc.text(t2, x, y + t1.length * 4.2); doc.setTextColor(0); x += cols[1][1];
+        font(9); doc.text(`${p.menge} Stk.`, x + cols[2][1] - 2, y, { align: 'right' }); x += cols[2][1]; doc.text(FB.eur(sg * p.ep), x + cols[3][1] - 2, y, { align: 'right' }); x += cols[3][1]; doc.text(FB.eur(sg * p.gp), x + cols[4][1] - 2, y, { align: 'right' });
+        y += h; doc.setDrawColor(225); doc.line(M, y - 3, W - M, y - 3);
+      }
+      y += 3;
+    }
+    const stLabel = mw ? `zzgl. ${String(mw).replace('.', ',')} % Umsatzsteuer` : 'Umsatzsteuer';
+    if (r.art === 'anzahlung') {
+      line('Auftragssumme brutto', FB.eur(S0.brutto)); y += 1;
+      line(`Anzahlung ${String(D.anteil ?? '').replace('.', ',')} % netto`, FB.eur(r.netto)); line(stLabel, mw ? FB.eur(r.steuer) : '—'); doc.setDrawColor(120); doc.line(LX, y - 3.5, W - M, y - 3.5); line('Anzahlungsbetrag', FB.eur(r.brutto), true);
+    } else if (sto) {
+      line(`Stornierter Rechnungsbetrag netto`, FB.eur(r.netto)); line(stLabel, mw ? FB.eur(r.steuer) : '—'); doc.setDrawColor(120); doc.line(LX, y - 3.5, W - M, y - 3.5); line('Storno gesamt', FB.eur(r.brutto), true);
+    } else {
+      line('Summe', FB.eur(S0.sum)); if (S0.rab) line(`abzüglich ${String(S0.rabatt).replace('.', ',')} % Rabatt`, '− ' + FB.eur(S0.rab));
+      line('Nettobetrag Gesamtleistung', FB.eur(S0.netto)); line(stLabel, mw ? FB.eur(S0.st) : '—'); line('Gesamtleistung brutto', FB.eur(S0.brutto), true);
+      for (const a of D.anzahlungen || []) { y += 1; line(`abzgl. Anzahlung ${a.nr} vom ${fmtDate(a.datum)}, netto`, '− ' + FB.eur(a.netto)); if (mw) line(`abzgl. darauf entfallende USt. ${String(mw).replace('.', ',')} %`, '− ' + FB.eur(a.steuer)); }
+      if ((D.anzahlungen || []).length) { y += 1; line('verbleibend netto', FB.eur(r.netto)); if (mw) line('verbleibende Umsatzsteuer', FB.eur(r.steuer)); }
+      doc.setDrawColor(120); doc.line(LX, y - 3.5, W - M, y - 3.5); line('Zu zahlender Betrag', FB.eur(r.brutto), true);
+    }
+    y += 4; font(8.5);
+    const notes = [];
+    if (!mw) notes.push('Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.');
+    if (!sto && r.faellig) notes.push(`Bitte überweisen Sie den Betrag bis zum ${fmtDate(r.faellig)} ohne Abzug unter Angabe der Rechnungsnummer ${r.nr}.`);
+    notes.push('Als Privatperson sind Sie gesetzlich verpflichtet, diese Rechnung, einen Zahlungsbeleg oder eine andere beweiskräftige Unterlage zwei Jahre lang aufzubewahren (§ 14b Abs. 1 Satz 5 UStG).');
+    if (Fi.text) notes.push(Fi.text);
+    for (const t of notes) { const tt = doc.splitTextToSize(t, W - 2 * M); if (y + tt.length * 4.2 > 272) { doc.addPage(); y = 24; } doc.text(tt, M, y); y += tt.length * 4.2 + 1.5; }
+    const fuss = [[Fi.name, Fi.anschrift].filter(Boolean).join(' · '), [Fi.steuernummer && 'Steuernummer ' + Fi.steuernummer, Fi.ustid && 'USt-IdNr. ' + Fi.ustid].filter(Boolean).join(' · '), [Fi.bank, Fi.iban && 'IBAN ' + Fi.iban, Fi.bic && 'BIC ' + Fi.bic].filter(Boolean).join(' · ')].filter(Boolean);
+    const n = doc.getNumberOfPages(); for (let i = 1; i <= n; i++) { doc.setPage(i); font(7.5); doc.setTextColor(110); doc.text(fuss, W / 2, 280, { align: 'center' }); doc.text(`${ART_R[r.art]} ${r.nr} · Seite ${i}/${n}`, W - M, 292, { align: 'right' }); doc.setTextColor(0); }
+    return doc.output('blob');
+  }
+  /* CSV im Format, das Kontora unter „Daten übernehmen → Rechnungen (andere Programme)“ erkennt */
+  function kontoraCsv(l, name) {
+    const weg = l.filter(r => r.art === 'storno' || r.storniert_durch).length; l = l.filter(r => r.art !== 'storno' && !r.storniert_durch);
+    if (weg) FB.toast(`${weg} stornierte Rechnung(en) und Storno(s) sind nicht enthalten – sie heben sich auf. Schon nach Kontora übernommen? Dort per Gutschrift ausgleichen.`, 7000);
+    if (!l.length) return;
+    const q = v => { const t = String(v ?? ''); return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }, num = n => (+n || 0).toFixed(2).replace('.', ',');
+    const head = ['Rechnungsnummer', 'Rechnungsdatum', 'Fälligkeit', 'Kunde', 'Netto', 'Steuer', 'Brutto', 'Steuersatz', 'Status', 'Bezahlt am', 'Betreff'];
+    const rows = l.map(r => [r.nr, fmtDate(r.datum), r.faellig ? fmtDate(r.faellig) : fmtDate(r.datum), r.daten?.kunde?.name || '', num(r.netto), num(r.steuer), num(r.brutto), (r.daten?.firma?.mwst ?? 0) + ' %',
+      r.bezahlt_at || r.art === 'storno' || r.storniert_durch ? 'bezahlt' : 'offen', r.bezahlt_at ? fmtDate(r.bezahlt_at) : (r.art === 'storno' || r.storniert_durch ? fmtDate(r.datum) : ''),
+      `${ART_R[r.art]}${r.daten?.projekt ? ' ' + r.daten.projekt : ''}${r.daten?.storno_zu ? ' zu ' + r.daten.storno_zu.nr : ''}`].map(q).join(';'));
+    FB.download(new Blob(['﻿' + [head.map(q).join(';'), ...rows].join('\r\n')], { type: 'text/csv;charset=utf-8' }), name);
+  }
+
   function more() {
     const d = FB.sheet(`<h2>Projekt ${esc(P.nummer || '')}</h2><div class="stack" style="margin-top:12px">
-      <button class="btn" data-a="ang">Angebot erstellen</button><button class="btn ghost" data-a="pdf">Aufmaßblatt als PDF</button>
+      <button class="btn" data-a="ang">Angebot erstellen / senden</button>${FB.canAdmin() ? '<button class="btn soft" data-a="re">Rechnungen (Anzahlung, Schluss)</button>' : ''}<button class="btn ghost" data-a="pdf">Aufmaßblatt als PDF</button>
       <button class="btn ghost" data-a="best">Bestellliste für den Hersteller (PDF)</button><button class="btn ghost" data-a="csv">Bestellliste als Excel-Tabelle (CSV)</button><button class="btn ghost" data-a="json">Export für Branchensoftware (JSON)</button>
       <button class="btn ghost" data-a="ter">Termin planen</button><button class="btn ghost" data-a="pf">In PassFort öffnen (Abnahme)</button>
       ${FB.canAdmin() && FB.canEdit() ? '<button class="btn danger" data-a="del">Projekt löschen</button>' : ''}<button class="btn ghost" data-close>Schließen</button></div>
       <p class="tiny muted" style="margin-top:10px">Der JSON-Export ist eine offene Struktur. Für einen direkten Import in eure Branchensoftware gleichen wir die Felder gern ab.</p>`);
     d.el.addEventListener('click', async ev => {
       const a = ev.target.closest('[data-a]')?.dataset.a; if (!a) return; d.close();
-      if (a === 'pdf') pdfAufmass().catch(e => toast(errText(e))); if (a === 'csv') exportCSV(); if (a === 'best') pdfBestellung().catch(e => toast(errText(e))); if (a === 'ang') angebot(); if (a === 'ter') { saveNow().then(() => location.href = './planung.html#neu=' + P.id); } if (a === 'json') exportJSON(); if (a === 'pf') location.href = './passfort.html#p=' + P.id;
-      if (a === 'del') { if (!(await FB.confirmDlg(`Projekt ${P.nummer || ''} mit allen Fotos löschen?`, 'Löschen', true))) return; try { const files = P.aufmass.elemente.flatMap(e => [e.foto, ...(e.fotos || []).map(f => f.pfad)]).filter(Boolean); await FB.deleteProjekt(P.id); files.forEach(f => FB.removeFile(f)); toast('Gelöscht'); location.hash = ''; } catch (e) { toast(errText(e)); } }
+      if (a === 'pdf') pdfAufmass().catch(e => toast(errText(e))); if (a === 'csv') exportCSV(); if (a === 'best') pdfBestellung().catch(e => toast(errText(e))); if (a === 'ang') angebot(); if (a === 're') rechnungen(); if (a === 'ter') { saveNow().then(() => location.href = './planung.html#neu=' + P.id); } if (a === 'json') exportJSON(); if (a === 'pf') location.href = './passfort.html#p=' + P.id;
+      if (a === 'del') { if ((await FB.listRechnungen(P.id).catch(() => [])).length) return toast('Zu diesem Projekt gibt es Rechnungen – es bleibt wegen der Aufbewahrungspflicht erhalten.', 5000); if (!(await FB.confirmDlg(`Projekt ${P.nummer || ''} mit allen Fotos löschen?`, 'Löschen', true))) return; try { const files = P.aufmass.elemente.flatMap(e => [e.foto, ...(e.fotos || []).map(f => f.pfad)]).filter(Boolean); await FB.deleteProjekt(P.id); files.forEach(f => FB.removeFile(f)); toast('Gelöscht'); location.hash = ''; } catch (e) { toast(errText(e)); } }
     });
   }
 })();

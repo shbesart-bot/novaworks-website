@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#1e293b">
 <title>Konto – ProFitAR & PassFort</title>
 <link rel="icon" href="./icon-konto.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./fb.css?v=2026-11-04c">
+<link rel="stylesheet" href="./fb.css?v=2026-11-09a">
 <style>
   .auth { max-width: 440px; margin: 28px auto 0; }
   .plans { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
@@ -20,7 +20,7 @@
 <body>
 <main id="app"><div class="auth"><div class="skel"></div></div></main>
 <script src="./vendor/supabase.js"></script>
-<script src="./fb-core.js?v=2026-11-04c"></script>
+<script src="./fb-core.js?v=2026-11-09a"></script>
 <script>
 (async () => {
   const { $, $$, esc, toast, call, errText, fmtDate } = FB;
@@ -152,12 +152,26 @@
           <label class="f">E-Mail für Service<input id="fMail" type="email" maxlength="200" value="${esc(f.email)}" ${adm ? '' : 'disabled'}></label>
           <label class="f span2">Website<input id="fWeb" maxlength="200" value="${esc(f.web)}" placeholder="https://" ${adm ? '' : 'disabled'}></label>
           <div class="span2 row"><img class="logo-prev" id="logoPrev" alt="" ${f.logo ? `src="${esc(f.logo)}"` : 'hidden'}><label class="btn ghost sm" ${adm ? '' : 'hidden'}>Logo wählen<input type="file" id="fLogo" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden></label>${f.logo && adm ? '<button type="button" class="btn ghost sm" id="logoDel">Logo entfernen</button>' : ''}<span class="hint">Erscheint auf Aufmaßblatt, Abnahmeprotokoll und Fensterpass.</span></div>
+          <h3 class="span2" style="margin:8px 0 0;font-size:15px">Angaben für Rechnungen</h3>
+          <label class="f">Inhaber/in (Vor- und Nachname)<input id="fInh" maxlength="120" value="${esc(f.inhaber || '')}" ${adm ? '' : 'disabled'}></label>
+          <label class="f">Steuernummer<input id="fStnr" maxlength="40" value="${esc(f.steuernummer || '')}" placeholder="z. B. 335/5017/1234" ${adm ? '' : 'disabled'}></label>
+          <label class="f">USt-IdNr. (falls vorhanden)<input id="fUid" maxlength="20" value="${esc(f.ustid || '')}" placeholder="DE…" ${adm ? '' : 'disabled'}></label>
+          <label class="f">Zahlungsziel (Tage)<input id="fZiel" type="number" min="0" max="90" value="${+f.zahlungsziel_tage || 14}" ${adm ? '' : 'disabled'}></label>
+          <label class="f">Bank<input id="fBank" maxlength="80" value="${esc(f.bank || '')}" ${adm ? '' : 'disabled'}></label>
+          <label class="f">IBAN<input id="fIban" maxlength="40" value="${esc(f.iban || '')}" ${adm ? '' : 'disabled'}></label>
+          <label class="f">BIC<input id="fBic" maxlength="15" value="${esc(f.bic || '')}" ${adm ? '' : 'disabled'}></label>
+          <label class="f span2">Zusätzlicher Hinweis auf Rechnungen (optional)<input id="fReTxt" maxlength="400" value="${esc(f.rechnung_text || '')}" placeholder="z. B. Vielen Dank für Ihren Auftrag!" ${adm ? '' : 'disabled'}></label>
+          <p class="span2 tiny muted" style="margin:0">Steuersatz und Kleinunternehmer-Regel stellt ihr unter „Preise für Angebote“ ein (Mehrwertsteuer 0 % = § 19 UStG).</p>
           <label class="f span2">Prüfliste für die Abnahme <span class="tiny">(ein Punkt pro Zeile)</span><textarea id="fCheck" rows="6" ${adm ? '' : 'disabled'}>${esc((f.pruefliste || []).join('\n'))}</textarea></label>
           <label class="f span2">Pflegehinweise im Fensterpass<textarea id="fPflege" rows="4" maxlength="2000" ${adm ? '' : 'disabled'}>${esc(f.pflege || '')}</textarea></label>
           ${adm ? '<div class="span2"><button class="btn">Speichern</button></div>' : '<p class="span2 small muted">Ändern können Inhaber und Büro.</p>'}
         </form></section>
       <section class="card" id="preise"><h2>Preise für Angebote</h2><div id="preisBox"></div></section>
       <section class="card" id="kunden"><h2>Kunden: Bewertung und Export</h2><div id="kundenBox"></div></section>
+      ${adm ? `<section class="card" id="rechnungen"><h2>Rechnungen</h2>
+        <p class="small muted">Anzahlungs- und Schlussrechnungen erstellt ihr im Aufmaß unter ⋯ → „Rechnungen“. Hier exportiert ihr alle Rechnungen eines Zeitraums – als CSV für Kontora (Daten übernehmen → Rechnungen) oder für eure Steuerberatung. Rechnungen müsst ihr 10 Jahre aufbewahren; exportiert sie regelmäßig.</p>
+        <div class="row" style="margin-top:10px;align-items:flex-end;flex-wrap:wrap"><label class="f" style="margin:0">von<input id="reVon" type="date" value="${new Date().getFullYear()}-01-01"></label><label class="f" style="margin:0">bis<input id="reBis" type="date" value="${FB.today()}"></label>
+          <button class="btn ghost" id="reCsv">CSV für Kontora</button><button class="btn ghost" id="reZip">Alle PDFs (ZIP)</button></div><p id="reInfo" class="small muted" style="margin-top:8px"></p></section>` : ''}
       <section class="card" id="team"><h2>Team</h2><div id="teamBox"><div class="skel"></div></div></section>
       <section class="card" id="daten"><h2>Daten</h2>
         <p class="small muted">Alle Projekte mit Aufmaß, Abnahme, Servicefällen, Fotos und Unterschriften als ZIP – für eure Ablage oder einen Wechsel.</p>
@@ -182,12 +196,24 @@
     $('#fFirma').onsubmit = async e => {
       e.preventDefault(); if (!adm) return;
       const p = { name: $('#fName').value.trim(), anschrift: $('#fAdr').value.trim(), telefon: $('#fTel').value.trim(), email: $('#fMail').value.trim(), web: $('#fWeb').value.trim(), logo,
-        pruefliste: $('#fCheck').value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 40), pflege: $('#fPflege').value.trim() };
+        pruefliste: $('#fCheck').value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 40), pflege: $('#fPflege').value.trim(),
+        inhaber: $('#fInh').value.trim(), steuernummer: $('#fStnr').value.trim(), ustid: $('#fUid').value.trim().toUpperCase().replace(/\s+/g, ''), zahlungsziel_tage: Math.max(0, Math.min(90, +$('#fZiel').value || 0)),
+        bank: $('#fBank').value.trim(), iban: $('#fIban').value.trim().toUpperCase(), bic: $('#fBic').value.trim().toUpperCase(), rechnung_text: $('#fReTxt').value.trim() };
       if (p.name.length < 2) return toast('Bitte den Namen des Betriebs eintragen.');
       if (!p.pruefliste.length) return toast('Die Prüfliste braucht mindestens einen Punkt.');
       try { await FB.saveFirma(p); toast('Gespeichert'); $('.brand small').textContent = p.name; $('h1').textContent = p.name; } catch (er) { toast(errText(er)); }
     };
     $('#exp').onclick = exportAll;
+    const reListe = async () => { const von = $('#reVon').value, bis = $('#reBis').value; return (await FB.listRechnungen()).filter(r => (!von || r.datum >= von) && (!bis || r.datum <= bis)); };
+    $('#reCsv')?.addEventListener('click', async () => { try { const l = await reListe(); if (!l.length) return toast('Keine Rechnungen im Zeitraum.'); rechnungCsv(l, `Rechnungen_${$('#reVon').value}_bis_${$('#reBis').value}.csv`); $('#reInfo').textContent = `${l.length} Rechnung(en) exportiert.`; } catch (e) { toast(errText(e)); } });
+    $('#reZip')?.addEventListener('click', async ev => { const b = ev.target; b.disabled = true; try {
+      await new Promise((res, rej) => { if (window.JSZip) return res(); const sc = document.createElement('script'); sc.src = './vendor/jszip.min.js'; sc.onload = res; sc.onerror = rej; document.head.append(sc); });
+      const l = await reListe(); if (!l.length) { b.disabled = false; return toast('Keine Rechnungen im Zeitraum.'); }
+      const zip = new JSZip(); let n = 0, fehlt = 0; for (const r of l) { const bl = r.pdf_pfad ? await FB.fileBlob(r.pdf_pfad).catch(() => null) : null; if (bl) { zip.file(`${r.nr}.pdf`, bl); n++; } else fehlt++; }
+      zip.file('rechnungen.json', JSON.stringify(l, null, 2));
+      FB.download(await zip.generateAsync({ type: 'blob' }), `Rechnungen_${$('#reVon').value}_bis_${$('#reBis').value}.zip`);
+      $('#reInfo').textContent = `${n} PDF(s) exportiert${fehlt ? `, ${fehlt} ohne abgelegtes PDF – bitte im Projekt einmal öffnen` : ''}.`;
+    } catch (e) { toast(errText(e)); } b.disabled = false; });
     $('#delBtn')?.addEventListener('click', async () => {
       if ($('#delName').value.trim() !== f.name) return toast(errText('BESTAETIGUNG'));
       if (!(await FB.confirmDlg('Wirklich alle Daten von „' + f.name + '“ endgültig löschen?', 'Endgültig löschen', true))) return;
@@ -274,6 +300,19 @@
     });
   }
 
+  function rechnungCsv(l, name) {
+    const weg = l.filter(r => r.art === 'storno' || r.storniert_durch).length; l = l.filter(r => r.art !== 'storno' && !r.storniert_durch);
+    if (weg) FB.toast(`${weg} stornierte Rechnung(en) und Storno(s) sind nicht enthalten – sie heben sich auf. Schon nach Kontora übernommen? Dort per Gutschrift ausgleichen.`, 7000);
+    if (!l.length) return;
+    const ART = { anzahlung: 'Anzahlungsrechnung', schluss: 'Schlussrechnung', rechnung: 'Rechnung', storno: 'Stornorechnung' };
+    const q = v => { const t = String(v ?? ''); return /[;"\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; }, num = n => (+n || 0).toFixed(2).replace('.', ',');
+    const head = ['Rechnungsnummer', 'Rechnungsdatum', 'Fälligkeit', 'Kunde', 'Netto', 'Steuer', 'Brutto', 'Steuersatz', 'Status', 'Bezahlt am', 'Betreff'];
+    const rows = l.map(r => [r.nr, fmtDate(r.datum), r.faellig ? fmtDate(r.faellig) : fmtDate(r.datum), r.daten?.kunde?.name || '', num(r.netto), num(r.steuer), num(r.brutto), (r.daten?.firma?.mwst ?? 0) + ' %',
+      r.bezahlt_at || r.art === 'storno' || r.storniert_durch ? 'bezahlt' : 'offen', r.bezahlt_at ? fmtDate(r.bezahlt_at) : (r.art === 'storno' || r.storniert_durch ? fmtDate(r.datum) : ''),
+      `${ART[r.art]}${r.daten?.projekt ? ' ' + r.daten.projekt : ''}${r.daten?.storno_zu ? ' zu ' + r.daten.storno_zu.nr : ''}`].map(q).join(';'));
+    FB.download(new Blob(['\ufeff' + [head.map(q).join(';'), ...rows].join('\r\n')], { type: 'text/csv;charset=utf-8' }), name);
+  }
+
   async function exportAll() {
     const btn = $('#exp'); btn.disabled = true; btn.textContent = 'Wird erstellt …';
     try {
@@ -282,8 +321,9 @@
       zip.file('firma.json', JSON.stringify({ ...FB.S.firma, logo: undefined }, null, 2));
       zip.file('projekte.json', JSON.stringify(projekte, null, 2));
       zip.file('service.json', JSON.stringify(service, null, 2));
+      const rech = await FB.listRechnungen().catch(() => []); if (rech.length) zip.file('rechnungen.json', JSON.stringify(rech, null, 2));
       const paths = new Set();
-      for (const p of projekte) { (p.aufmass?.elemente || []).forEach(e => e.foto && paths.add(e.foto)); (p.abnahme?.fotos || []).forEach(x => x.pfad && paths.add(x.pfad)); if (p.abnahme?.unterschrift?.pfad) paths.add(p.abnahme.unterschrift.pfad); }
+      rech.forEach(r => r.pdf_pfad && paths.add(r.pdf_pfad)); for (const p of projekte) { (p.aufmass?.elemente || []).forEach(e => e.foto && paths.add(e.foto)); (p.abnahme?.fotos || []).forEach(x => x.pfad && paths.add(x.pfad)); if (p.abnahme?.unterschrift?.pfad) paths.add(p.abnahme.unterschrift.pfad); }
       let n = 0; for (const path of paths) { const b = await FB.fileBlob(path).catch(() => null); if (b) { zip.file('dateien/' + path.split('/').slice(1).join('/'), b); n++; } btn.textContent = `Dateien ${n}/${paths.size} …`; }
       zip.file('LIESMICH.txt', `Export ProFitAR & PassFort – ${FB.S.firma.name}\nErstellt: ${new Date().toLocaleString('de-DE')}\n\nprojekte.json: alle Projekte mit Aufmaß und Abnahme\nservice.json: Serviceanfragen\ndateien/: Fotos und Unterschriften (Ordner = Projekt-ID)\n`);
       FB.download(await zip.generateAsync({ type: 'blob' }), `Fensterbau-Export_${FB.safeName(FB.S.firma.name)}_${FB.today()}.zip`);

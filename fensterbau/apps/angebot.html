@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0369a1">
+<title>Ihr Angebot</title>
+<link rel="icon" href="./icon-profitar.svg" type="image/svg+xml">
+<link rel="stylesheet" href="./fb.css?v=2026-11-09a">
+<style>
+  main { max-width: 760px; }
+  .hero { border-radius: 18px; padding: 20px; background: linear-gradient(135deg, #0c4a6e, #0f172a); color: #f8fafc; }
+  .hero img { max-height: 48px; max-width: 150px; background: #fff; border-radius: 10px; padding: 5px; }
+  .pos { display: grid; grid-template-columns: 84px 1fr auto; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); align-items: start; }
+  .pos img { width: 84px; height: 84px; object-fit: contain; border-radius: 10px; border: 1px solid var(--line); background: #fff; }
+  .pos .p { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .tot { display: flex; justify-content: space-between; padding: 4px 0; font-variant-numeric: tabular-nums; }
+  .tot.big { font-size: 19px; font-weight: 700; border-top: 2px solid var(--ink, #0f172a); margin-top: 6px; padding-top: 8px; }
+  #sig { width: 100%; height: 180px; border: 2px dashed var(--line); border-radius: 12px; background: #fff; touch-action: none; display: block; }
+  @media (max-width: 520px) { .pos { grid-template-columns: 64px 1fr; } .pos img { width: 64px; height: 64px; } .pos .p { grid-column: 2; text-align: left; } }
+</style>
+</head>
+<body>
+<main id="app"><div class="skel"></div></main>
+<script>
+(async () => {
+  const FN = 'https://brtdtjqinyhsesiqhkkk.supabase.co/functions/v1/fb-kunde', SB_KEY = 'sb_publishable_i5Lf1DJYMBVX0yQOW2_nKQ_bRBbDUD2';
+  const $ = (s, r = document) => r.querySelector(s), esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const fmt = s => s ? new Date(String(s).length === 10 ? s + 'T12:00:00' : s).toLocaleDateString('de-DE') : '—';
+  const fmtDT = s => s ? new Date(s).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+  const eur = n => (Math.round((+n || 0) * 100) / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+  const qs = new URLSearchParams(location.search), token = qs.get('t') || '', demo = qs.get('demo') === '1' || token.startsWith('demo-');
+  const ERR = { ANGEBOT: 'Dieses Angebot wurde nicht gefunden.', SCHON_ANGENOMMEN: 'Dieses Angebot wurde bereits angenommen.', NICHT_OFFEN: 'Dieses Angebot kann nicht mehr angenommen werden.', EINGABE: 'Bitte Namen eintragen, unterschreiben und die Bestätigung ankreuzen.' };
+  document.documentElement.dataset.app = 'profitar';
+  const app = $('#app');
+
+  /* Demo: Angebot liegt im Browser (IndexedDB „fensterbau-demo“) */
+  const demoDb = () => new Promise((res, rej) => { const r = indexedDB.open('fensterbau-demo', 1); r.onupgradeneeded = () => ['projekte', 'outbox', 'files', 'kv'].forEach(n => r.result.objectStoreNames.contains(n) || r.result.createObjectStore(n)); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  const demoKv = async (k, v) => { const d = await demoDb(); return new Promise((res, rej) => { const t = d.transaction('kv', v === undefined ? 'readonly' : 'readwrite'), s = t.objectStore('kv'); const q = v === undefined ? s.get(k) : s.put(v, k); t.oncomplete = () => res(q.result); t.onerror = () => rej(t.error); }); };
+  async function call(action, body = {}) {
+    if (demo) {
+      const l = (await demoKv('angebote')) || [], a = l.find(x => x.token === token); if (!a) throw new Error('ANGEBOT');
+      const st = a.angenommen_at ? 'angenommen' : a.zurueckgezogen_at ? 'zurueckgezogen' : a.abgelehnt_at ? 'abgelehnt' : a.gueltig_bis && a.gueltig_bis < new Date().toISOString().slice(0, 10) ? 'abgelaufen' : 'offen';
+      if (action === 'angebot_laden') return { status: st, nr: a.nr, gueltig_bis: a.gueltig_bis, created_at: a.created_at, angenommen_at: a.angenommen_at, angenommen_name: a.angenommen_name, daten: a.daten, firma: { name: 'Fensterbau Muster (Demo)', anschrift: 'Musterstraße 1, 12345 Musterstadt', telefon: '01234 56789', email: 'service@example.com' }, pdf: null };
+      if (st !== 'offen') throw new Error('NICHT_OFFEN');
+      if (action === 'angebot_annehmen') {
+        a.angenommen_at = new Date().toISOString(); a.angenommen_name = body.name;
+        const d = await demoDb(); await new Promise(res => { const t = d.transaction('projekte', 'readwrite'), st = t.objectStore('projekte'), g = st.get(a.projekt_id); g.onsuccess = () => { const p = g.result; if (p && ['aufmass', 'angebot'].includes(p.status)) { p.status = 'beauftragt'; st.put(p, p.id); } }; t.oncomplete = res; t.onerror = res; });
+      }
+      if (action === 'angebot_ablehnen') { a.abgelehnt_at = new Date().toISOString(); a.abgelehnt_grund = body.grund; }
+      await demoKv('angebote', l); return { ok: true, angenommen_at: a.angenommen_at };
+    }
+    const r = await fetch(FN, { method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SB_KEY }, body: JSON.stringify({ action, token, ...body }) });
+    const j = await r.json().catch(() => ({})); if (!r.ok || j.error) throw new Error(j.error || 'FEHLER'); return j;
+  }
+  const errText = e => ERR[e?.message] || (/fetch|network/i.test(String(e?.message)) ? 'Keine Verbindung. Bitte später erneut versuchen.' : 'Das hat nicht geklappt. Bitte später erneut versuchen.');
+
+  let D;
+  try { D = await call('angebot_laden'); }
+  catch (e) { app.innerHTML = `<div class="card" style="margin-top:24px"><h1>${e.message === 'ANGEBOT' ? 'Angebot nicht gefunden' : 'Keine Verbindung'}</h1><p class="muted" style="margin-top:6px">${esc(errText(e))}</p></div>`; return; }
+  const F = D.firma || {}, A = D.daten || {}, S = A.summen || {}, tel = (F.telefon || '').replace(/[^\d+]/g, '');
+  document.title = `Angebot ${D.nr} – ${F.name || ''}`;
+  const STAT = { offen: '', angenommen: `<p class="note ok">Sie haben dieses Angebot am ${fmtDT(D.angenommen_at)} angenommen${D.angenommen_name ? ' (' + esc(D.angenommen_name) + ')' : ''}. Vielen Dank für Ihren Auftrag!</p>`,
+    abgelehnt: '<p class="note">Sie haben dieses Angebot abgelehnt. Bei Fragen melden Sie sich gern.</p>', zurueckgezogen: `<p class="note warn">Dieses Angebot wurde durch eine neuere Fassung ersetzt oder zurückgezogen. Bitte nutzen Sie den Link aus der neuesten E-Mail von ${esc(F.name)}.</p>`,
+    abgelaufen: `<p class="note warn">Dieses Angebot war bis ${fmt(D.gueltig_bis)} gültig. Bitte wenden Sie sich an ${esc(F.name)}, wenn Sie es noch beauftragen möchten.</p>` };
+  app.innerHTML = `
+    <section class="hero" style="margin-top:8px"><div class="row between"><div><p style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.75">Angebot${demo ? ' · Demo' : ''}</p><h1 style="color:#fff;margin-top:4px">${esc(F.name)}</h1><p style="opacity:.85;font-size:13px">Nr. ${esc(D.nr)} vom ${fmt(A.datum)}${D.gueltig_bis ? ' · gültig bis ' + fmt(D.gueltig_bis) : ''}</p></div>${F.logo ? `<img src="${esc(F.logo)}" alt="Logo ${esc(F.name)}">` : ''}</div>
+      <div class="row" style="margin-top:14px">${tel ? `<a class="btn ghost" style="color:#fff;border-color:rgba(255,255,255,.35)" href="tel:${esc(tel)}">Anrufen</a>` : ''}${F.email ? `<a class="btn ghost" style="color:#fff;border-color:rgba(255,255,255,.35)" href="mailto:${esc(F.email)}?subject=${encodeURIComponent('Frage zum Angebot ' + D.nr)}">Frage stellen</a>` : ''}${D.pdf ? `<a class="btn ghost" style="color:#fff;border-color:rgba(255,255,255,.35)" href="${esc(D.pdf)}" target="_blank" rel="noopener">PDF ansehen</a>` : ''}</div></section>
+    <div style="margin-top:14px">${STAT[D.status] || ''}</div>
+    <section class="card"><h2>${esc(A.kunde?.name || 'Ihr Angebot')}</h2>${A.bauvorhaben ? `<p class="small muted">Bauvorhaben: ${esc(A.bauvorhaben)}</p>` : ''}${A.intro ? `<p style="margin-top:10px;white-space:pre-line">${esc(A.intro)}</p>` : ''}
+      <div style="margin-top:8px">${(A.positionen || []).map(p => `<div class="pos">${p.bild ? `<img src="${esc(p.bild)}" alt="Ansicht Position ${p.pos}">` : '<span></span>'}<div><b>${p.pos}. ${esc(p.titel)}</b><div class="small muted" style="white-space:pre-line">${esc((p.details || []).join('\n'))}</div></div><div class="p"><div>${p.menge} × ${eur(p.ep)}</div><b>${eur(p.gp)}</b></div></div>`).join('')}</div>
+      <div style="margin-top:12px;max-width:360px;margin-left:auto">
+        <div class="tot"><span>Summe</span><span>${eur(S.sum)}</span></div>${S.rab ? `<div class="tot"><span>abzüglich ${String(S.rabatt).replace('.', ',')} % Rabatt</span><span>− ${eur(S.rab)}</span></div>` : ''}
+        <div class="tot"><span>Nettobetrag</span><span>${eur(S.netto)}</span></div><div class="tot"><span>${S.mwst ? `zzgl. ${String(S.mwst).replace('.', ',')} % MwSt.` : 'Umsatzsteuer'}</span><span>${S.mwst ? eur(S.st) : '—'}</span></div>
+        <div class="tot big"><span>Gesamtbetrag</span><span>${eur(S.brutto)}</span></div>${!S.mwst ? '<p class="tiny muted">Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</p>' : ''}</div>
+      ${A.text ? `<p style="margin-top:12px;white-space:pre-line">${esc(A.text)}</p>` : ''}</section>
+    ${D.status === 'offen' ? `<section class="card" id="annehmen"><h2>Angebot annehmen</h2><p class="small muted">Mit Ihrem Namen und Ihrer Unterschrift beauftragen Sie ${esc(F.name)} zu den Bedingungen dieses Angebots. Sie bekommen danach eine Bestätigung per E-Mail.</p>
+      <form id="af" class="stack" novalidate style="margin-top:12px">
+        <label class="f">Vor- und Nachname<input id="aN" autocomplete="name" maxlength="100" value="${esc(A.kunde?.name || '')}"></label>
+        <div><div class="row between"><span class="small" style="font-weight:600">Unterschrift (mit Finger oder Maus)</span><button type="button" class="btn ghost sm" id="sigClr">Löschen</button></div><canvas id="sig" aria-label="Unterschriftsfeld" style="margin-top:6px"></canvas></div>
+        <label class="check"><input type="checkbox" id="aOk"> Ich beauftrage das Angebot Nr. ${esc(D.nr)} über ${eur(S.brutto)} verbindlich.</label>
+        <button class="btn block" id="aGo">Verbindlich beauftragen</button><p id="aR" role="status"></p>
+        <p class="tiny muted">Gespeichert werden Name, Unterschrift, Zeitpunkt und technische Angaben zum Gerät als Nachweis der Annahme. ${F.name ? esc(F.name) + ' ist verantwortlich im Sinne der DSGVO.' : ''}</p></form>
+      <details style="margin-top:14px"><summary class="small">Angebot ablehnen</summary><div class="stack" style="margin-top:8px"><label class="f">Was passt nicht? (optional)<textarea id="rG" rows="2" maxlength="1000"></textarea></label><button class="btn ghost" id="rGo">Angebot ablehnen</button></div></details></section>` : ''}
+    <p class="tiny muted" style="text-align:center;margin:18px 0">${esc([F.name, F.anschrift, F.telefon, F.email].filter(Boolean).join(' · '))}<br>Bereitgestellt mit ProFitAR · NovaWorks</p>`;
+  if (D.status !== 'offen') return;
+
+  // Unterschriftsfeld
+  const cv = $('#sig'), cx = cv.getContext('2d'); let drawn = false, last = null;
+  const fit = () => { const r = cv.getBoundingClientRect(), d = devicePixelRatio || 1; const img = drawn ? cv.toDataURL() : null; cv.width = r.width * d; cv.height = r.height * d; cx.setTransform(d, 0, 0, d, 0, 0); cx.lineWidth = 2.4; cx.lineCap = 'round'; cx.lineJoin = 'round'; cx.strokeStyle = '#0f172a'; if (img) { const i = new Image(); i.onload = () => cx.drawImage(i, 0, 0, r.width, r.height); i.src = img; } };
+  fit(); addEventListener('resize', fit);
+  const pt = e => { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+  cv.onpointerdown = e => { last = pt(e); cv.setPointerCapture(e.pointerId); };
+  cv.onpointermove = e => { if (!last) return; const p = pt(e); cx.beginPath(); cx.moveTo(last.x, last.y); cx.lineTo(p.x, p.y); cx.stroke(); last = p; drawn = true; };
+  cv.onpointerup = cv.onpointercancel = () => { last = null; };
+  $('#sigClr').onclick = () => { cx.clearRect(0, 0, cv.width, cv.height); drawn = false; };
+  $('#af').onsubmit = async ev => {
+    ev.preventDefault(); const r = $('#aR'), name = $('#aN').value.trim();
+    if (name.length < 3) { r.textContent = 'Bitte Ihren vollständigen Namen eintragen.'; return; }
+    if (!drawn) { r.textContent = 'Bitte im Feld unterschreiben.'; return; }
+    if (!$('#aOk').checked) { r.textContent = 'Bitte die Beauftragung bestätigen (Haken setzen).'; return; }
+    // Unterschrift auf weißem Grund als PNG
+    const out = document.createElement('canvas'); out.width = cv.width; out.height = cv.height; const o = out.getContext('2d'); o.fillStyle = '#fff'; o.fillRect(0, 0, out.width, out.height); o.drawImage(cv, 0, 0);
+    $('#aGo').disabled = true; r.textContent = 'Wird übermittelt …';
+    try { await call('angebot_annehmen', { name, zustimmung: true, unterschrift: out.toDataURL('image/png') }); location.reload(); }
+    catch (e) { r.textContent = errText(e); $('#aGo').disabled = false; }
+  };
+  $('#rGo').onclick = async () => {
+    if (!confirm('Angebot wirklich ablehnen?')) return;
+    try { await call('angebot_ablehnen', { grund: $('#rG').value.trim() }); location.reload(); } catch (e) { alert(errText(e)); }
+  };
+})();
+</script>
+</body>
+</html>

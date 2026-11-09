@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0f766e">
 <title>Montageplanung – ProFitAR & PassFort</title>
 <link rel="icon" href="./icon-planung.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./fb.css?v=2026-11-04c">
+<link rel="stylesheet" href="./fb.css?v=2026-11-09a">
 <style>
   :root[data-app="planung"] { --accent: #0f766e; --accent-soft: #dcf3ef; }
   @media (prefers-color-scheme: dark) { :root[data-app="planung"]:not([data-theme="light"]) { --accent: #2dd4bf; --accent-soft: #113a35; } }
@@ -26,7 +26,7 @@
 <body>
 <main id="app"><div class="skel"></div></main>
 <script src="./vendor/supabase.js"></script>
-<script src="./fb-core.js?v=2026-11-04c"></script>
+<script src="./fb-core.js?v=2026-11-09a"></script>
 <script>
 (async () => {
   const { $, $$, esc, toast, errText, fmtDate } = FB;
@@ -50,11 +50,11 @@
       <div class="row"><button class="btn ghost sm" id="prev" aria-label="Vorige Woche">‹</button><button class="btn ghost sm" id="heute">Heute</button><button class="btn ghost sm" id="next" aria-label="Nächste Woche">›</button>
         <label class="check small"><input type="checkbox" id="meine" ${nur ? 'checked' : ''}>nur meine</label>${FB.canEdit() ? '<button class="btn" id="neu">+ Termin</button>' : ''}</div></div>
       <div class="week" id="wk"><div class="skel"></div></div>
-      <div class="row" style="margin-top:14px"><button class="btn ghost sm" id="ics">Woche als Kalender-Datei (ICS)</button></div>`;
+      <div class="row" style="margin-top:14px"><button class="btn soft sm" id="abo">Termine aufs Handy (Kalender-Abo)</button><button class="btn ghost sm" id="ics">Woche als Kalender-Datei (ICS)</button></div>`;
     $('#prev').onclick = () => { start = addDays(start, -7); render(); }; $('#next').onclick = () => { start = addDays(start, 7); render(); }; $('#heute').onclick = () => { start = monday(FB.today()); render(); };
     $('#meine').onchange = e => { nur = e.target.checked; try { localStorage.setItem('fb.plan.meine', nur ? '1' : '0'); } catch {} draw(); };
     $('#neu')?.addEventListener('click', () => edit({ datum: FB.today() < start || FB.today() > end ? start : FB.today(), art: 'montage', monteure: [FB.S.user.id] }));
-    $('#ics').onclick = ics;
+    $('#ics').onclick = ics; $('#abo').onclick = kalenderAbo;
     try { termine = await FB.listTermine(start, end); } catch (e) { $('#wk').innerHTML = `<p class="note crit">${esc(errText(e))}</p>`; return; }
     draw();
   }
@@ -74,9 +74,50 @@
       ${t.notiz ? `<p class="note" style="margin-top:10px;white-space:pre-line">${esc(t.notiz)}</p>` : ''}
       ${pos ? `<h3 style="margin:12px 0 6px">Positionen (Bestellmaß)</h3><div class="kv">${pos}</div>` : ''}
       <div class="row" style="margin-top:14px">${adr ? `<a class="btn" href="${esc(adr)}" target="_blank" rel="noopener">Navigation</a>` : ''}${p ? `<a class="btn ghost" href="./profitar.html#p=${p.id}">Aufmaß</a><a class="btn ghost" href="./passfort.html#p=${p.id}">Abnahme</a>` : ''}
+        ${FB.canEdit() && p ? `<button class="btn ghost" id="tMail">${t.kunde_mail_at ? 'Bestätigung erneut senden' : 'Termin dem Kunden bestätigen'}</button>` : ''}
         ${FB.canEdit() ? `<button class="btn ghost" id="tDone">${t.erledigt ? 'Wieder offen' : 'Erledigt'}</button><button class="btn ghost" id="tEdit">Bearbeiten</button>` : ''}</div>`);
     $('#tDone', d.el)?.addEventListener('click', async () => { try { await FB.saveTermin({ ...t, erledigt: !t.erledigt }); d.close(); render(); } catch (e) { toast(errText(e)); } });
     $('#tEdit', d.el)?.addEventListener('click', () => { d.close(); edit(t); });
+    $('#tMail', d.el)?.addEventListener('click', () => { d.close(); terminMail(t, p); });
+    if (t.kunde_mail_at) d.el.insertAdjacentHTML('beforeend', `<p class="tiny muted" style="margin-top:8px">Dem Kunden bestätigt am ${FB.fmtDT(t.kunde_mail_at)}.</p>`);
+  }
+  /* Terminbestätigung per E-Mail an den Kunden (mit Kalendereintrag im Anhang) */
+  function terminMail(t, p) {
+    const k = p?.kunde || {}, zeit = `${fmtDate(t.datum)}${t.von ? ', ' + t.von.slice(0, 5) + (t.bis ? '–' + t.bis.slice(0, 5) : '') + ' Uhr' : ' (ganztägig)'}`;
+    const d = FB.sheet(`<div class="row between"><h2>Termin bestätigen</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
+      <p class="small muted" style="margin-top:4px">${esc(ART[t.art])} am ${zeit}${k.adresse ? ' · ' + esc(k.adresse) : ''}. Der Kunde bekommt eine E-Mail mit dem Termin und einer Kalenderdatei im Anhang; Antworten gehen an eure Firmen-E-Mail.</p>
+      <label class="f" style="margin-top:10px">E-Mail des Kunden<input id="mE" type="email" value="${esc(k.email || '')}" autocomplete="off"></label>
+      <label class="f">Zusätzlicher Hinweis (optional)<textarea id="mT" rows="3" placeholder="z. B. Bitte Fensterbänke frei räumen. Wir sind ca. 4 Stunden vor Ort.">${t.art === 'montage' ? 'Bitte räumen Sie vor unserer Ankunft die Fensterbänke frei und machen Sie den Zugang zu den Fenstern frei.' : ''}</textarea></label>
+      <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ghost" data-close>Abbrechen</button><button class="btn" id="mGo">Senden</button></div>`);
+    $('#mGo', d.el).onclick = async ev => {
+      const email = $('#mE', d.el).value.trim(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Bitte eine gültige E-Mail-Adresse eingeben.');
+      if (FB.demo) { d.close(); return toast('Demo: Es wird keine E-Mail verschickt.'); }
+      ev.target.disabled = true;
+      try { await FB.callKunde('termin_mail', { termin_id: t.id, email, nachricht: $('#mT', d.el).value.trim() }); d.close(); toast('Terminbestätigung gesendet.'); render(); }
+      catch (e) { toast(errText(e)); ev.target.disabled = false; }
+    };
+  }
+  /* Kalender-Abo: persönlicher Link, den Google, Outlook oder das iPhone regelmäßig abrufen */
+  async function kalenderAbo() {
+    if (FB.demo) return toast('In der Demo gibt es kein Kalender-Abo. Mit eigenem Konto bekommst du hier deinen persönlichen Link.');
+    let url; try { url = (await FB.callKunde('ical_link')).url; } catch (e) { return toast(errText(e)); }
+    const show = u => {
+      const webcal = u.replace(/^https:/, 'webcal:');
+      return `<div class="row between"><h2>Termine aufs Handy</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
+      <p class="small muted" style="margin-top:4px">${FB.S.rolle === 'monteur' ? 'Du siehst deine eigenen Termine' : 'Du siehst alle Termine des Betriebs'} automatisch in deinem Kalender – neue und geänderte Termine kommen von selbst dazu (je nach Kalender alle paar Stunden).</p>
+      <div class="stack" style="margin-top:12px">
+        <a class="btn" href="${esc(webcal)}">iPhone / Mac / Outlook: Kalender abonnieren</a>
+        <a class="btn ghost" href="https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcal)}" target="_blank" rel="noopener">Google Kalender (Android): abonnieren</a>
+        <label class="f">Oder Link kopieren und im Kalender unter „Kalender abonnieren / per URL hinzufügen“ einfügen<input id="aU" readonly value="${esc(u)}"></label>
+        <div class="row"><button class="btn ghost sm" id="aC">Link kopieren</button><button class="btn ghost sm" id="aN">Neuen Link erzeugen</button></div>
+        <p class="tiny muted">Der Link ist persönlich – wer ihn hat, sieht die Termine samt Kundenadresse. Nicht weitergeben. „Neuen Link erzeugen“ macht den alten ungültig.</p></div>`;
+    };
+    const d = FB.sheet(show(url));
+    const bind = () => {
+      $('#aC', d.el).onclick = async () => { try { await navigator.clipboard.writeText($('#aU', d.el).value); toast('Link kopiert'); } catch { $('#aU', d.el).select(); } };
+      $('#aN', d.el).onclick = async () => { if (!(await FB.confirmDlg('Neuen Link erzeugen? Der bisherige Link funktioniert dann nicht mehr.', 'Neu erzeugen'))) return; try { url = (await FB.callKunde('ical_link', { neu: true })).url; d.el.innerHTML = show(url); bind(); } catch (e) { toast(errText(e)); } };
+    };
+    bind();
   }
   function edit(t) {
     const offen = projekte.filter(p => p.id === t.projekt_id || !p.abgeschlossen_at || ['service', 'wartung'].includes(t.art)).slice(0, 300);

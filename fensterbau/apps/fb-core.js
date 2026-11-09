@@ -4,7 +4,8 @@
   const SB_URL = 'https://brtdtjqinyhsesiqhkkk.supabase.co';
   const SB_KEY = 'sb_publishable_i5Lf1DJYMBVX0yQOW2_nKQ_bRBbDUD2';
   const FN = SB_URL + '/functions/v1/fb-konto';
-  const VERSION = '2026-11-04c';
+  const FN_KUNDE = SB_URL + '/functions/v1/fb-kunde';
+  const VERSION = '2026-11-09a';
   const qs = new URLSearchParams(location.search);
   let demo = qs.get('demo') === '1';
   try { if (qs.get('demo') === '0') sessionStorage.removeItem('fb.demo'); else if (demo) sessionStorage.setItem('fb.demo', '1'); else demo = sessionStorage.getItem('fb.demo') === '1'; } catch {}
@@ -20,7 +21,7 @@
     EINGABE: 'Bitte alle Pflichtfelder ausfüllen.', PASSWORT: 'Das Passwort braucht mindestens 10 Zeichen.', AGB: 'Bitte AGB und Auftragsverarbeitung bestätigen.',
     EMAIL_VERGEBEN: 'Diese E-Mail-Adresse ist schon vergeben. Bitte melde dich an oder nutze eine andere Adresse.', LIMIT: 'Gerade zu viele Anfragen. Bitte später erneut versuchen.',
     TEAMLIMIT: 'Euer Tarif erlaubt keine weiteren Personen. Wechsle den Tarif unter „Abo“.', ABO: 'Eure Testphase bzw. euer Abo ist abgelaufen.', RECHTE: 'Das darf nur der Inhaber.',
-    LOGIN: 'Bitte melde dich an.', KEIN_TEAM: 'Dieses Konto gehört zu keinem Betrieb.', BESTAETIGUNG: 'Der eingegebene Firmenname stimmt nicht.', PASS: 'Dieser Fensterpass wurde nicht gefunden.', GELOESCHT: 'Der Betrieb und alle Daten wurden gelöscht.', FEHLER: 'Das hat nicht geklappt. Bitte erneut versuchen.'
+    LOGIN: 'Bitte melde dich an.', KEIN_TEAM: 'Dieses Konto gehört zu keinem Betrieb.', BESTAETIGUNG: 'Der eingegebene Firmenname stimmt nicht.', PASS: 'Dieser Fensterpass wurde nicht gefunden.', ANGEBOT: 'Dieses Angebot wurde nicht gefunden.', SCHON_ANGENOMMEN: 'Dieses Angebot wurde bereits angenommen.', NICHT_OFFEN: 'Dieses Angebot kann nicht mehr angenommen werden.', GELOESCHT: 'Der Betrieb und alle Daten wurden gelöscht.', FEHLER: 'Das hat nicht geklappt. Bitte erneut versuchen.'
   };
   const errText = e => {
     const m = String(e?.code || e?.message || e || '');
@@ -63,20 +64,22 @@
   const sb = !demo && window.supabase ? window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'fensterbau-auth', detectSessionInUrl: false } }) : null;
   const S = { user: null, firma: null, rolle: null, me: null, demo, online: navigator.onLine };
 
-  async function call(action, body = {}) {
+  async function call(action, body = {}, fn = FN) {
     const h = { 'Content-Type': 'application/json', apikey: SB_KEY };
     const t = sb && (await sb.auth.getSession()).data.session?.access_token; if (t) h.Authorization = 'Bearer ' + t;
-    const r = await fetch(FN, { method: 'POST', headers: h, body: JSON.stringify({ action, ...body }) });
+    const r = await fetch(fn, { method: 'POST', headers: h, body: JSON.stringify({ action, ...body }) });
     const j = await r.json().catch(() => ({}));
     if (!r.ok || j.error) throw Object.assign(new Error(j.error || 'FEHLER'), { code: j.error || 'FEHLER' });
     return j;
   }
+  /* Kundenfunktionen (Angebot online, Terminbestätigung, Kalender-Abo) – eigene Edge Function */
+  const callKunde = (action, body = {}) => call(action, body, FN_KUNDE);
 
   /* Demo: Beispielbetrieb, alles bleibt im Browser */
   const DEMO_FIRMA = { id: 'demo', name: 'Fensterbau Muster (Demo)', anschrift: 'Musterstraße 1, 12345 Musterstadt', telefon: '01234 56789', email: 'service@example.com', web: '', logo: null, plan: 'team', testphase_bis: new Date(Date.now() + 14 * 864e5).toISOString(), bezahlt_bis: null,
     pruefliste: ['Fenster und Türen auf leichtgängige Funktion geprüft', 'Dichtungen, Beschläge und Entwässerung kontrolliert', 'Anschlüsse innen und außen sauber ausgeführt', 'Baustelle gereinigt, Verpackung entsorgt', 'Kunde in Bedienung und Pflege eingewiesen'],
     pflege: 'Beschläge einmal im Jahr leicht ölen. Dichtungen mit Wasser und mildem Reiniger säubern, danach mit Pflegestift behandeln. Entwässerungsschlitze frei halten. Rahmen nicht mit scheuernden Mitteln reinigen.',
-    mwst: 19, angebot_text: 'Vielen Dank für Ihre Anfrage. Gern bieten wir Ihnen folgende Leistungen an. Das Angebot gilt 30 Tage. Maße vorbehaltlich der Prüfung vor Bestellung.', bewertung_link: '', bewertung_tage: 3,
+    steuernummer: '123/456/78901', ustid: '', inhaber: 'Max Muster', bank: 'Musterbank', iban: 'DE02 1001 0010 0006 8201 01', bic: '', zahlungsziel_tage: 14, rechnung_text: '', mwst: 19, angebot_text: 'Vielen Dank für Ihre Anfrage. Gern bieten wir Ihnen folgende Leistungen an. Das Angebot gilt 30 Tage. Maße vorbehaltlich der Prüfung vor Bestellung.', bewertung_link: '', bewertung_tage: 3,
     preise: { typen: { 'Dreh-Kipp-Fenster': { m2: 480, min: 390 }, 'Festverglasung': { m2: 380, min: 290 }, 'Stulpfenster (2-flügelig)': { m2: 520, min: 690 }, 'Balkontür': { m2: 520, min: 790 }, 'Hebe-Schiebetür': { m2: 980, min: 3900 }, 'Haustür': { m2: 0, min: 2900 }, 'Nebeneingangstür': { m2: 0, min: 1400 } }, farbe_prozent: 12, rollladen: 290, sprossen: 60, insekt: 85, fb_innen_m: 45, fb_aussen_m: 55, montage: 120, demontage: 60, glas: { '3-fach mit Sicherheitsglas (VSG)': 45, 'Schallschutz': 60 } } };
   async function demoSeed() {
     if (await get('kv', 'seeded')) return;
@@ -332,6 +335,75 @@
     const { data, error } = await sb.from('fb_wartung').select('id,projekt_id,name,email,intervall_monate,naechste,bestaetigt_at,abgemeldet_at,letzte_mail_at,created_at').order('naechste', { nullsFirst: false }); if (error) throw error; return data;
   }
 
+  /* ---------- Teilung und Öffnungsart je Position (für Zeichnung, Angebot, Bestellliste) ---------- */
+  const FELD_OEFF = ['Dreh-Kipp links', 'Dreh-Kipp rechts', 'Dreh links', 'Dreh rechts', 'Kipp', 'fest'];
+  const FELD_KURZ = { 'Dreh-Kipp links': 'DK links', 'Dreh-Kipp rechts': 'DK rechts', 'Dreh links': 'D links', 'Dreh rechts': 'D rechts', 'Kipp': 'Kipp', 'fest': 'fest' };
+  const mitTeilung = e => !/Haustür|Nebeneingang|Schiebe|Rollladen/.test(e.type || '');
+  /* Felder einer Position – aus der Teilung oder (ältere Projekte) aus Typ und Öffnung abgeleitet */
+  function teilung(e) {
+    if (e.teilung?.felder?.length) return { felder: e.teilung.felder.slice(0, 4), oberlicht: e.teilung.oberlicht || null, oberlichtMm: +e.teilung.oberlichtMm || 400 };
+    const t = e.type || '', o = e.opening || '';
+    if (t === 'Festverglasung' || o === 'fest') return { felder: ['fest'], oberlicht: null, oberlichtMm: 400 };
+    if (/Stulp|2-flg/.test(t + o)) return { felder: ['Dreh links', 'Dreh-Kipp rechts'], oberlicht: null, oberlichtMm: 400 };
+    if (t === 'Kippfenster' || o === 'Kipp') return { felder: ['Kipp'], oberlicht: null, oberlichtMm: 400 };
+    return { felder: [o === 'DIN rechts' ? 'Dreh-Kipp rechts' : 'Dreh-Kipp links'], oberlicht: null, oberlichtMm: 400 };
+  }
+  /* Kurzbeschreibung, z. B. „2-teilig: DK links | DK rechts, Oberlicht Kipp“ */
+  function oeffnungText(e) {
+    if (!mitTeilung(e)) return e.opening || '';
+    const t = teilung(e), n = t.felder.length;
+    return `${n > 1 ? n + '-teilig: ' : ''}${t.felder.map(f => FELD_KURZ[f] || f).join(' | ')}${t.oberlicht ? `, Oberlicht ${t.oberlicht}` : ''}`;
+  }
+
+  /* ---------- Angebote (online) und Rechnungen ---------- */
+  async function listAngebote(projektId) {
+    if (demo) return ((await get('kv', 'angebote')) || []).filter(a => a.projekt_id === projektId).sort((a, b) => b.created_at.localeCompare(a.created_at));
+    const { data, error } = await sb.from('fb_angebote').select('id,nr,email,gueltig_bis,created_at,geoeffnet_at,angenommen_at,angenommen_name,unterschrift_pfad,abgelehnt_at,abgelehnt_grund,zurueckgezogen_at,token,daten').eq('projekt_id', projektId).order('created_at', { ascending: false }); if (error) throw error; return data;
+  }
+  async function angebotSenden(body) {
+    if (demo) {
+      const l = (await get('kv', 'angebote')) || []; const now = new Date().toISOString();
+      l.forEach(a => { if (a.projekt_id === body.projekt_id && !a.angenommen_at && !a.zurueckgezogen_at) a.zurueckgezogen_at = now; });
+      const a = { id: uid(), projekt_id: body.projekt_id, nr: body.nr, email: body.email, gueltig_bis: body.gueltig_bis, created_at: now, token: 'demo-' + uid().replace(/-/g, ''), daten: body.daten };
+      l.push(a); await put('kv', 'angebote', l); return { ok: true, link: new URL('./angebot.html?demo=1&t=' + a.token, location.href).href, mail: false, demo: true };
+    }
+    return callKunde('angebot_senden', body);
+  }
+  async function angebotZurueckziehen(id) {
+    if (demo) { const l = (await get('kv', 'angebote')) || []; const a = l.find(x => x.id === id); if (a) a.zurueckgezogen_at = new Date().toISOString(); await put('kv', 'angebote', l); return; }
+    const { error } = await sb.from('fb_angebote').update({ zurueckgezogen_at: new Date().toISOString() }).eq('id', id); if (error) throw error;
+  }
+  async function listRechnungen(projektId) {
+    if (demo) return ((await get('kv', 'rechnungen')) || []).filter(r => !projektId || r.projekt_id === projektId).sort((a, b) => a.created_at.localeCompare(b.created_at));
+    let q = sb.from('fb_rechnungen').select('*').order('created_at'); if (projektId) q = q.eq('projekt_id', projektId);
+    const { data, error } = await q.limit(5000); if (error) throw error; return data;
+  }
+  /* Rechnung anlegen: Nummer vergibt die Datenbank (fortlaufend, unveränderbar) */
+  async function rechnungAnlegen(row) {
+    const r = { firma_id: S.firma.id, projekt_id: row.projekt_id || null, art: row.art, datum: row.datum, daten: row.daten, netto: row.netto, steuer: row.steuer, brutto: row.brutto, faellig: row.faellig || null, storno_von: row.storno_von || null };
+    if (demo) {
+      const l = (await get('kv', 'rechnungen')) || [], y = (row.datum || today()).slice(0, 4);
+      const n = Math.max(0, ...l.map(x => (x.nr.match(new RegExp('^RE-' + y + '-(\\d+)$')) || [])[1]).filter(Boolean).map(Number)) + 1;
+      const out = { ...r, id: uid(), nr: `RE-${y}-${String(n).padStart(4, '0')}`, created_at: new Date().toISOString(), bezahlt_at: null, pdf_pfad: null, storniert_durch: null };
+      if (row.storno_von) { const o = l.find(x => x.id === row.storno_von); if (o) o.storniert_durch = out.id; out.art = 'storno'; }
+      l.push(out); await put('kv', 'rechnungen', l); return out;
+    }
+    const { data, error } = await sb.from('fb_rechnungen').insert(r).select('*').single(); if (error) throw error;
+    if (row.storno_von) { const { error: e2 } = await sb.from('fb_rechnungen').update({ storniert_durch: data.id }).eq('id', row.storno_von); if (e2) throw e2; }
+    return data;
+  }
+  async function rechnungUpdate(id, patch) {
+    if (demo) { const l = (await get('kv', 'rechnungen')) || []; const i = l.findIndex(x => x.id === id); if (i >= 0) l[i] = { ...l[i], ...patch }; await put('kv', 'rechnungen', l); return l[i]; }
+    const { data, error } = await sb.from('fb_rechnungen').update(patch).eq('id', id).select('*').single(); if (error) throw error; return data;
+  }
+  async function rechnungPdfAblegen(rech, blob) {
+    const path = `${S.firma.id}/rechnungen/${rech.id}.pdf`;
+    await put('files', path, blob);
+    if (demo) { await rechnungUpdate(rech.id, { pdf_pfad: path }); return path; }
+    const { error } = await sb.storage.from('fensterbau').upload(path, blob, { contentType: 'application/pdf' }); if (error && !/exists|Duplicate/i.test(error.message)) throw error;
+    await rechnungUpdate(rech.id, { pdf_pfad: path }); return path;
+  }
+
   /* ---------- Bestellmaß, Preise, Export-Spalten (gemeinsam für Aufmaß, Angebot, Bestellliste) ---------- */
   function bestell(e) {
     const g = +e.installGapMm || 0, w = e.widthPoints || [], h = e.heightPoints || [];
@@ -361,7 +433,7 @@
   const eur = n => (Math.round((+n || 0) * 100) / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
   const EXPORT_COLS = [
     ['pos', 'Pos', (e, i) => i + 1], ['bez', 'Bezeichnung', e => e.label], ['typ', 'Typ', e => e.type], ['stk', 'Stück', e => e.anzahl || 1],
-    ['b', 'Breite (mm)', e => bestell(e).B || ''], ['h', 'Höhe (mm)', e => bestell(e).H || ''], ['oeff', 'Öffnung', e => e.opening], ['kopp', 'Kopplung', e => e.coupling],
+    ['b', 'Breite (mm)', e => bestell(e).B || ''], ['h', 'Höhe (mm)', e => bestell(e).H || ''], ['oeff', 'Öffnung', e => oeffnungText(e)], ['kopp', 'Kopplung', e => e.coupling],
     ['profil', 'Profil', e => e.profil], ['fi', 'Farbe innen', e => e.color], ['fa', 'Farbe außen', e => e.colorAussen || e.color], ['glas', 'Verglasung', e => e.glass],
     ['roll', 'Rollladen', e => e.rollladen || 'kein'], ['spr', 'Sprossen', e => e.options?.muntins ? 'ja' : 'nein'], ['ins', 'Insektenschutz', e => e.options?.insekt ? 'ja' : 'nein'],
     ['fbi', 'Fensterbank innen', e => e.options?.fbInnen ? 'ja' : 'nein'], ['fba', 'Fensterbank außen', e => e.options?.fbAussen ? 'ja' : 'nein'],
@@ -409,7 +481,9 @@
 
   window.FB = { S, sb, demo, VERSION, $, $$, esc, uid, today, fmtDate, fmtDT, errText, toast, sheet, confirmDlg, call, init, abo, canEdit, canAdmin,
     listProjekte, getProjekt, neuesProjekt, saveProjekt, deleteProjekt, compress, saveFile, fileUrl, fileBlob, removeFile, flush, header, pdf, blobToDataUrl, sha256, passUrl, download, safeName,
+    callKunde, listAngebote, angebotSenden, angebotZurueckziehen, listRechnungen, rechnungAnlegen, rechnungUpdate, rechnungPdfAblegen,
     listService, updateService, deleteService, listTeam, saveFirma, logLines, listTermine, saveTermin, deleteTermin, listWartung,
+    FELD_OEFF, FELD_KURZ, mitTeilung, teilung, oeffnungText,
     bestell, TYPEN, PREISE_DEFAULT, preise, positionPreis, eur, EXPORT_COLS, exportCols, annotate,
     kv: { get: k => get('kv', k), put: (k, v) => put('kv', k, v) }, DEMO_FIRMA };
 })();

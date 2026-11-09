@@ -9,7 +9,7 @@
 <link rel="manifest" href="./passfort.webmanifest">
 <link rel="icon" href="./icon-passfort.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icon-passfort-180.png">
-<link rel="stylesheet" href="./fb.css?v=2026-11-04c">
+<link rel="stylesheet" href="./fb.css?v=2026-11-09a">
 <style>
   .ck { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
   .ck:first-child { border-top: 0; }
@@ -28,7 +28,7 @@
 <body>
 <main id="app"><div class="skel"></div></main>
 <script src="./vendor/supabase.js"></script>
-<script src="./fb-core.js?v=2026-11-04c"></script>
+<script src="./fb-core.js?v=2026-11-09a"></script>
 <script src="./vendor/qrcode.min.js" defer></script>
 <script src="./vendor/jspdf.umd.min.js" defer></script>
 <script>
@@ -37,7 +37,7 @@
   try { await FB.init(); } catch (e) { if (e.message !== 'redirect') $('#app').innerHTML = `<div class="card"><p>${esc(errText(e))}</p></div>`; return; }
   FB.header('passfort', 'Abnahme & Fensterpass');
   const app = $('#app');
-  const STATUS = { aufmass: ['Aufmaß', ''], angebot: ['Angebot', ''], bestellt: ['Bestellt', ''], montage: ['Montage', 'warn'], abgenommen: ['Abgenommen', 'ok'] };
+  const STATUS = { aufmass: ['Aufmaß', ''], angebot: ['Angebot', ''], beauftragt: ['Beauftragt', 'ok'], bestellt: ['Bestellt', ''], montage: ['Montage', 'warn'], abgenommen: ['Abgenommen', 'ok'] };
   const SST = { neu: ['Neu', 'crit'], in_arbeit: ['In Arbeit', 'warn'], erledigt: ['Erledigt', 'ok'] };
   let P = null, tab = 'offen', saveT = null, team = null;
 
