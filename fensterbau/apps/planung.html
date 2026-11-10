@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#0f766e">
 <title>Montageplanung – ProFitAR & PassFort</title>
 <link rel="icon" href="./icon-planung.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./fb.css?v=2026-11-09a">
+<link rel="stylesheet" href="./fb.css?v=2026-11-09b">
 <style>
   :root[data-app="planung"] { --accent: #0f766e; --accent-soft: #dcf3ef; }
   @media (prefers-color-scheme: dark) { :root[data-app="planung"]:not([data-theme="light"]) { --accent: #2dd4bf; --accent-soft: #113a35; } }
@@ -26,7 +26,7 @@
 <body>
 <main id="app"><div class="skel"></div></main>
 <script src="./vendor/supabase.js"></script>
-<script src="./fb-core.js?v=2026-11-09a"></script>
+<script src="./fb-core.js?v=2026-11-09b"></script>
 <script>
 (async () => {
   const { $, $$, esc, toast, errText, fmtDate } = FB;
@@ -49,12 +49,15 @@
     app.innerHTML = `<div class="head"><div><p class="eyebrow">Planung</p><h1>KW ${kw(start)} · ${fmtDate(start)} – ${fmtDate(end)}</h1></div>
       <div class="row"><button class="btn ghost sm" id="prev" aria-label="Vorige Woche">‹</button><button class="btn ghost sm" id="heute">Heute</button><button class="btn ghost sm" id="next" aria-label="Nächste Woche">›</button>
         <label class="check small"><input type="checkbox" id="meine" ${nur ? 'checked' : ''}>nur meine</label>${FB.canEdit() ? '<button class="btn" id="neu">+ Termin</button>' : ''}</div></div>
+      <div id="liefer"></div>
       <div class="week" id="wk"><div class="skel"></div></div>
       <div class="row" style="margin-top:14px"><button class="btn soft sm" id="abo">Termine aufs Handy (Kalender-Abo)</button><button class="btn ghost sm" id="ics">Woche als Kalender-Datei (ICS)</button></div>`;
     $('#prev').onclick = () => { start = addDays(start, -7); render(); }; $('#next').onclick = () => { start = addDays(start, 7); render(); }; $('#heute').onclick = () => { start = monday(FB.today()); render(); };
     $('#meine').onchange = e => { nur = e.target.checked; try { localStorage.setItem('fb.plan.meine', nur ? '1' : '0'); } catch {} draw(); };
     $('#neu')?.addEventListener('click', () => edit({ datum: FB.today() < start || FB.today() > end ? start : FB.today(), art: 'montage', monteure: [FB.S.user.id] }));
     $('#ics').onclick = ics; $('#abo').onclick = kalenderAbo;
+    const lf = projekte.filter(p => { const b = p.aufmass?.bestellung; return b?.liefertermin && !b.geliefert_am && b.liefertermin <= end && p.status !== 'abgenommen'; }).sort((a, b) => a.aufmass.bestellung.liefertermin.localeCompare(b.aufmass.bestellung.liefertermin));
+    if (lf.length) $('#liefer').innerHTML = `<div class="note warn" style="margin-bottom:12px"><b>Lieferungen ${lf.some(p => p.aufmass.bestellung.liefertermin < start) ? 'überfällig bzw. ' : ''}diese Woche erwartet</b><div class="list" style="margin-top:6px">${lf.map(p => { const b = p.aufmass.bestellung; return `<a class="item" href="./profitar.html#p=${p.id}"><div class="grow"><b>${esc(p.kunde?.name || p.nummer)}</b><span class="small muted">${esc([p.nummer, b.hersteller, b.ab_nr && 'AB ' + b.ab_nr].filter(Boolean).join(' · '))}</span></div><span class="chip ${b.liefertermin < FB.today() ? 'crit' : ''}">${fmtDate(b.liefertermin)}</span></a>`; }).join('')}</div><p class="tiny muted" style="margin-top:6px">Ist die Ware da, im Aufmaß unter ⋯ → „Bestellung“ „Geliefert am“ eintragen – dann schlägt die App den Montagetermin vor.</p></div>`;
     try { termine = await FB.listTermine(start, end); } catch (e) { $('#wk').innerHTML = `<p class="note crit">${esc(errText(e))}</p>`; return; }
     draw();
   }
@@ -74,11 +77,13 @@
       ${t.notiz ? `<p class="note" style="margin-top:10px;white-space:pre-line">${esc(t.notiz)}</p>` : ''}
       ${pos ? `<h3 style="margin:12px 0 6px">Positionen (Bestellmaß)</h3><div class="kv">${pos}</div>` : ''}
       <div class="row" style="margin-top:14px">${adr ? `<a class="btn" href="${esc(adr)}" target="_blank" rel="noopener">Navigation</a>` : ''}${p ? `<a class="btn ghost" href="./profitar.html#p=${p.id}">Aufmaß</a><a class="btn ghost" href="./passfort.html#p=${p.id}">Abnahme</a>` : ''}
+        ${FB.canEdit() && p ? '<button class="btn ghost" id="tZM">Zeit & Material</button>' : ''}
         ${FB.canEdit() && p ? `<button class="btn ghost" id="tMail">${t.kunde_mail_at ? 'Bestätigung erneut senden' : 'Termin dem Kunden bestätigen'}</button>` : ''}
         ${FB.canEdit() ? `<button class="btn ghost" id="tDone">${t.erledigt ? 'Wieder offen' : 'Erledigt'}</button><button class="btn ghost" id="tEdit">Bearbeiten</button>` : ''}</div>`);
     $('#tDone', d.el)?.addEventListener('click', async () => { try { await FB.saveTermin({ ...t, erledigt: !t.erledigt }); d.close(); render(); } catch (e) { toast(errText(e)); } });
     $('#tEdit', d.el)?.addEventListener('click', () => { d.close(); edit(t); });
     $('#tMail', d.el)?.addEventListener('click', () => { d.close(); terminMail(t, p); });
+    $('#tZM', d.el)?.addEventListener('click', async () => { d.close(); try { const fr = await FB.getProjekt(p.id); FB.nachtraegeDialog(fr, async () => { await FB.saveProjekt(fr); Object.assign(p, fr); }); } catch (e) { toast(errText(e)); } });
     if (t.kunde_mail_at) d.el.insertAdjacentHTML('beforeend', `<p class="tiny muted" style="margin-top:8px">Dem Kunden bestätigt am ${FB.fmtDT(t.kunde_mail_at)}.</p>`);
   }
   /* Terminbestätigung per E-Mail an den Kunden (mit Kalendereintrag im Anhang) */

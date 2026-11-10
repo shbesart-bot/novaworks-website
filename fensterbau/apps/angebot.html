@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#0369a1">
 <title>Ihr Angebot</title>
 <link rel="icon" href="./icon-profitar.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./fb.css?v=2026-11-09a">
+<link rel="stylesheet" href="./fb.css?v=2026-11-09b">
 <style>
   main { max-width: 760px; }
   .hero { border-radius: 18px; padding: 20px; background: linear-gradient(135deg, #0c4a6e, #0f172a); color: #f8fafc; }
@@ -75,7 +75,7 @@
         <div class="tot"><span>Summe</span><span>${eur(S.sum)}</span></div>${S.rab ? `<div class="tot"><span>abzüglich ${String(S.rabatt).replace('.', ',')} % Rabatt</span><span>− ${eur(S.rab)}</span></div>` : ''}
         <div class="tot"><span>Nettobetrag</span><span>${eur(S.netto)}</span></div><div class="tot"><span>${S.mwst ? `zzgl. ${String(S.mwst).replace('.', ',')} % MwSt.` : 'Umsatzsteuer'}</span><span>${S.mwst ? eur(S.st) : '—'}</span></div>
         <div class="tot big"><span>Gesamtbetrag</span><span>${eur(S.brutto)}</span></div>${!S.mwst ? '<p class="tiny muted">Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.</p>' : ''}</div>
-      ${A.text ? `<p style="margin-top:12px;white-space:pre-line">${esc(A.text)}</p>` : ''}</section>
+      ${A.text ? `<p style="margin-top:12px;white-space:pre-line">${esc(A.text)}</p>` : ''}${A.foerderung ? `<div class="note" style="margin-top:12px"><b>Steuerförderung nutzen</b><p class="small" style="margin-top:4px">${esc(A.foerderung)}</p></div>` : ''}</section>
     ${D.status === 'offen' ? `<section class="card" id="annehmen"><h2>Angebot annehmen</h2><p class="small muted">Mit Ihrem Namen und Ihrer Unterschrift beauftragen Sie ${esc(F.name)} zu den Bedingungen dieses Angebots. Sie bekommen danach eine Bestätigung per E-Mail.</p>
       <form id="af" class="stack" novalidate style="margin-top:12px">
         <label class="f">Vor- und Nachname<input id="aN" autocomplete="name" maxlength="100" value="${esc(A.kunde?.name || '')}"></label>

@@ -9,7 +9,7 @@
 <link rel="manifest" href="./profitar.webmanifest">
 <link rel="icon" href="./icon-profitar.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="./icon-profitar-180.png">
-<link rel="stylesheet" href="./fb.css?v=2026-11-09a">
+<link rel="stylesheet" href="./fb.css?v=2026-11-09b">
 <style>
   .elist .item { padding: 10px 8px; border-radius: 10px; }
   .elist .item[aria-current="true"] { background: var(--accent-soft); }
@@ -23,8 +23,9 @@
 <body>
 <main id="app"><div class="skel"></div></main>
 <script src="./vendor/supabase.js"></script>
-<script src="./fb-core.js?v=2026-11-09a"></script>
+<script src="./fb-core.js?v=2026-11-09b"></script>
 <script src="./vendor/jspdf.umd.min.js" defer></script>
+<script src="./vendor/qrcode.min.js" defer></script>
 <script>
 (async () => {
   const { $, $$, esc, toast, errText, fmtDate, uid } = FB;
@@ -66,7 +67,7 @@
     function draw() {
       const q = search.trim().toLowerCase();
       const l = list.filter(p => (filter === 'alle' || p.status === filter) && (!q || [p.nummer, p.kunde?.name, p.kunde?.adresse].join(' ').toLowerCase().includes(q)));
-      $('#list').innerHTML = l.length ? `<div class="list">${l.map(p => { const n = p.aufmass?.elemente?.length || 0, s = STATUS[p.status] || ['', '']; return `<a class="item" href="#p=${p.id}"><span class="pos">${n}</span><div class="grow"><b>${esc(p.kunde?.name || 'Ohne Kundenname')}</b><span class="small muted">${esc([p.nummer, p.kunde?.adresse].filter(Boolean).join(' · ') || '—')}</span></div><div style="text-align:right"><span class="chip ${s[1]}">${s[0]}</span><div class="tiny muted">${fmtDate(p.updated_at)}</div></div></a>`; }).join('')}</div>`
+      $('#list').innerHTML = l.length ? `<div class="list">${l.map(p => { const n = p.aufmass?.elemente?.length || 0, s = STATUS[p.status] || ['', '']; return `<a class="item" href="#p=${p.id}"><span class="pos">${n}</span><div class="grow"><b>${esc(p.kunde?.name || 'Ohne Kundenname')}</b><span class="small muted">${esc([p.nummer, p.kunde?.adresse].filter(Boolean).join(' · ') || '—')}</span></div><div style="text-align:right"><span class="chip ${s[1]}">${s[0]}</span>${lieferChip(p)}<div class="tiny muted">${fmtDate(p.updated_at)}</div></div></a>`; }).join('')}</div>`
         : `<div class="empty">${list.length ? 'Nichts gefunden.' : 'Noch keine Projekte. Leg mit „Neues Aufmaß“ los.'}</div>`;
     }
   }
@@ -107,7 +108,7 @@
           <label class="f">Aufgenommen von<input id="von" value="${esc(P.aufmass.von || FB.S.me?.name || '')}"></label>
           <label class="f span2">Hinweise zur Baustelle<textarea data-k="notiz" rows="2" placeholder="z. B. Altbau, Zugang, Parken, Gerüst">${esc(k.notiz)}</textarea></label>
         </div></section>
-        <section class="card"><div class="row between" style="margin-bottom:8px"><h2 style="margin:0">Positionen</h2>${ro ? '' : '<button class="btn soft sm" id="addEl">+ Position</button>'}</div><div class="list elist" id="elist"></div></section>
+        <section class="card"><div class="row between" style="margin-bottom:8px"><h2 style="margin:0">Positionen</h2>${ro ? '' : '<div class="row"><button class="btn ghost sm" id="addTpl">+ aus Vorlage</button><button class="btn soft sm" id="addEl">+ Position</button></div>'}</div><div class="list elist" id="elist"></div></section>
         <section class="card" id="edit"></section>
       </div>
       <div class="stick"><section class="card"><div class="row between"><h2 style="margin:0" id="stTitle">Foto & Visualisierung</h2><span class="chip" id="scaleInfo"></span></div>
@@ -128,6 +129,7 @@
     $('#datum').onchange = e => { P.aufmass.datum = e.target.value; dirty(); };
     $('#von').oninput = e => { P.aufmass.von = e.target.value; dirty(); };
     $('#status').onchange = e => { P.status = e.target.value; dirty(true); };
+    $('#addTpl')?.addEventListener('click', vorlageWaehlen);
     $('#addEl')?.addEventListener('click', () => { P.aufmass.elemente.push(neuesElement(P.aufmass.elemente.length + 1)); active = P.aufmass.elemente.length - 1; renderEl(); dirty(); $('#edit').scrollIntoView({ behavior: 'smooth', block: 'start' }); });
     $('#pdfBtn').onclick = () => pdfAufmass().catch(e => toast(errText(e)));
     $('#angBtn').onclick = angebot;
@@ -147,7 +149,7 @@
     $$('#elist [data-i]').forEach(b => b.onclick = () => { active = +b.dataset.i; renderEl(); });
     const e = L[active], b = bestell(e), sel = (id, opts, v) => `<select id="${id}">${opts.map(o => `<option ${o === v ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
     const pts = a => (a || []).join(' / ');
-    $('#edit').innerHTML = `<div class="row between" style="margin-bottom:12px"><h2 style="margin:0">Position ${active + 1}</h2>${ro ? '' : `<div class="row"><button class="btn ghost sm" id="dup">Duplizieren</button>${L.length > 1 ? '<button class="btn danger sm" id="delEl">Löschen</button>' : ''}</div>`}</div>
+    $('#edit').innerHTML = `<div class="row between" style="margin-bottom:12px"><h2 style="margin:0">Position ${active + 1}</h2>${ro ? '' : `<div class="row">${FB.canAdmin() ? '<button class="btn ghost sm" id="asTpl" title="Diese Position als Vorlage für künftige Aufmaße speichern">Als Vorlage</button>' : ''}<button class="btn ghost sm" id="dup">Duplizieren</button>${L.length > 1 ? '<button class="btn danger sm" id="delEl">Löschen</button>' : ''}</div>`}</div>
       <div class="grid g2">
         <label class="f span2">Bezeichnung / Raum<input id="eLabel" value="${esc(e.label)}" placeholder="z. B. EG Wohnzimmer links"></label>
         <label class="f">Elementtyp${sel('eType', TYPEN, e.type)}</label>
@@ -163,6 +165,7 @@
         <label class="f">Kopplung${sel('eCoup', ['keine', 'links', 'rechts', 'oben', 'beidseitig'], e.coupling)}</label>
         <label class="f">Profil / System<input id="eProf" value="${esc(e.profil)}" placeholder="z. B. Kunststoff 82 mm, 6 Kammern"></label>
         <label class="f">Verglasung${sel('eGlass', GLAS, e.glass)}</label>
+        <label class="f">U-Wert ${/Tür/.test(e.type) && !/Balkon|Schiebe/.test(e.type) ? 'U<sub>D</sub>' : 'U<sub>w</sub>'} (W/m²K, für Förderung)<input id="eUw" inputmode="decimal" value="${e.uw ?? ''}" placeholder="z. B. 0,92"></label>
         <label class="f">Farbe innen${sel('eColor', FARBEN.map(f => f[0]), e.color)}</label>
         <label class="f">Farbe außen<input id="eColA" value="${esc(e.colorAussen)}" placeholder="wie innen"></label>
         <label class="f">Rollladen${sel('eRoll', ROLL, e.rollladen)}</label>
@@ -185,7 +188,8 @@
     bind('eColor', x => { e.color = x.value; e.colorHex = (FARBEN.find(f => f[0] === x.value) || [0, '#8a929c'])[1]; }, 'change'); bind('eColA', x => e.colorAussen = x.value); bind('eRoll', x => e.rollladen = x.value, 'change');
     e.options ||= {};
     bind('oMun', x => e.options.muntins = x.checked, 'change'); bind('oIns', x => e.options.insekt = x.checked, 'change'); bind('oFbi', x => e.options.fbInnen = x.checked, 'change'); bind('oFba', x => e.options.fbAussen = x.checked, 'change');
-    bind('eNote', x => e.notiz = x.value);
+    bind('eNote', x => e.notiz = x.value); bind('eUw', x => { const v = parseFloat(String(x.value).replace(',', '.')); e.uw = Number.isFinite(v) && v > 0 && v < 10 ? v : null; });
+    $('#asTpl')?.addEventListener('click', () => vorlageSpeichern(e));
     $('#dup')?.addEventListener('click', () => { const c = JSON.parse(JSON.stringify(e)); c.id = uid(); c.label = (e.label || '') + ' (Kopie)'; c.foto = null; c.overlay = null; L.splice(active + 1, 0, c); active++; renderEl(); dirty(); });
     $('#delEl')?.addEventListener('click', async () => { if (!(await FB.confirmDlg(`Position „${e.label}“ löschen?`, 'Löschen', true))) return; if (e.foto) FB.removeFile(e.foto); L.splice(active, 1); active = Math.max(0, active - 1); renderEl(); dirty(true); });
     tlgUI();
@@ -484,6 +488,8 @@
       <div class="grid g2" style="margin-top:10px"><label class="f">Angebots-Nr.<input id="anNr" value="${esc(A.nr)}"></label><label class="f">Datum<input id="anDat" type="date" value="${esc(A.datum)}"></label><label class="f">Gültig bis<input id="anGlt" type="date" value="${esc(A.gueltig)}"></label><label class="f">Rabatt (%)<input id="anRab" type="number" min="0" max="50" step="0.5" value="${+A.rabatt || 0}"></label></div>
       <div class="list" id="anPos" style="margin-top:10px"></div><div id="anSum" class="kv" style="margin-top:10px"></div>
       <label class="f" style="margin-top:10px">Zusätzlicher Text im Angebot<textarea id="anTxt" rows="2" placeholder="z. B. Lieferzeit ca. 6 Wochen">${esc(A.text)}</textarea></label>
+      <label class="check"><input type="checkbox" id="anFoe" ${A.foerderung ? 'checked' : ''} ${ro ? 'disabled' : ''}> Hinweis auf die Steuerförderung für Fenstertausch (§ 35c EStG) ins Angebot</label>
+      <div id="anFoeInfo"></div>
       <div id="anOnline" style="margin-top:12px"></div>
       <div class="row" style="margin-top:12px;justify-content:flex-end;flex-wrap:wrap"><button class="btn ghost" data-close>Schließen</button><button class="btn ghost" id="anPdf">Als PDF</button>${FB.canAdmin() && !ro ? '<button class="btn" id="anSend">An Kunden senden …</button>' : ''}</div>`);
     const draw = () => { const c = calc();
@@ -494,6 +500,8 @@
     draw();
     $('#anNr', d.el).oninput = e => { A.nr = e.target.value; dirty(); }; $('#anDat', d.el).onchange = e => { A.datum = e.target.value; dirty(); }; $('#anGlt', d.el).onchange = e => { A.gueltig = e.target.value; dirty(); };
     $('#anSend', d.el)?.addEventListener('click', () => angebotSenden(d));
+    const foeInfo = () => { const f = foerderCheck(); $('#anFoeInfo', d.el).innerHTML = A.foerderung ? (f.fehlt.length ? `<p class="note warn" style="margin-top:6px">Für die Förderung braucht jedes Fenster U<sub>w</sub> ≤ 0,95 und jede Außentür U<sub>D</sub> ≤ 1,3 W/(m²K). Prüfen: ${f.fehlt.map(esc).join(', ')}</p>` : '<p class="note ok" style="margin-top:6px">Alle Positionen erfüllen die U-Werte für die Förderung.</p>') : ''; };
+    $('#anFoe', d.el).onchange = e => { A.foerderung = e.target.checked; dirty(); foeInfo(); }; foeInfo();
     onlineListe($('#anOnline', d.el));
     $('#anRab', d.el).oninput = e => { A.rabatt = Math.max(0, Math.min(50, +e.target.value || 0)); dirty(); drawSum(); }; $('#anTxt', d.el).oninput = e => { A.text = e.target.value; dirty(); };
     $('#anPdf', d.el).onclick = async () => { try { await pdfAngebot(calc()); if (['aufmass'].includes(P.status) && FB.canEdit()) { P.status = 'angebot'; $('#status').value = 'angebot'; dirty(true); } } catch (er) { toast(errText(er)); } };
@@ -529,11 +537,115 @@
     line(mw ? `zzgl. ${mw} % MwSt.` : 'Umsatzsteuer', mw ? FB.eur(c.st) : '—'); doc.setDrawColor(120); doc.line(W - M - 52, y - 3.5, W - M, y - 3.5); line('Gesamtbetrag', FB.eur(c.brutto), true);
     if (!mw) { font(8); doc.text('Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.', M, y); y += 5; }
     if (A.text) { y += 3; font(9); const t = doc.splitTextToSize(A.text, W - 2 * M); doc.text(t, M, y); y += t.length * 4.5; }
+    if (A.foerderung) { y += 3; if (y > 245) { doc.addPage(); y = 24; } font(8.5, true); doc.text('Steuerförderung nutzen', M, y); y += 4.3; font(8.5); const t = doc.splitTextToSize(FOERDER_TEXT, W - 2 * M); doc.text(t, M, y); y += t.length * 4.1; }
     font(9); y += 6; doc.text(['Wir freuen uns auf Ihren Auftrag.', '', 'Mit freundlichen Grüßen', F.name], M, y);
     const n = doc.getNumberOfPages(); for (let i = 1; i <= n; i++) { doc.setPage(i); font(7.5); doc.setTextColor(120); doc.text(`Angebot ${A.nr} · ${F.name} · Seite ${i}/${n}`, M, 290); doc.setTextColor(0); }
     const blob = doc.output('blob'); if (herunterladen) FB.download(blob, `Angebot_${FB.safeName(A.nr)}_${FB.safeName(k.name)}.pdf`);
     return blob;
   }
+  /* ================= Förderung § 35c EStG (energetische Maßnahmen, selbst genutztes Wohneigentum) ================= */
+  const FOERDER_TEXT = 'Der Austausch von Fenstern und Außentüren in selbst genutztem Wohneigentum, dessen Gebäude bei Beginn der Arbeiten älter als zehn Jahre ist, kann nach § 35c EStG gefördert werden: 20 % der Kosten werden über drei Jahre von der Einkommensteuer abgezogen (höchstens 40.000 € je Objekt). Voraussetzungen sind unter anderem die technischen Mindestanforderungen (Fenster Uw ≤ 0,95 W/(m²K), Außentüren UD ≤ 1,3 W/(m²K)), die Zahlung per Überweisung auf unser Konto und unsere Bescheinigung als ausführender Fachbetrieb nach amtlichem Muster. Eine gleichzeitige Förderung über Zuschüsse oder Kredite (z. B. BEG) ist für dieselbe Maßnahme ausgeschlossen. Bitte stimmen Sie die Nutzung mit Ihrer steuerlichen Beratung ab.';
+  function foerderCheck() {
+    const fehlt = [];
+    for (const e of P.aufmass.elemente) {
+      if (/Rollladen/.test(e.type)) continue;
+      const tuer = /Haustür|Nebeneingang/.test(e.type), max = tuer ? 1.3 : 0.95;
+      if (!(e.uw > 0)) fehlt.push(`${e.label || e.type}: U-Wert fehlt`); else if (e.uw > max) fehlt.push(`${e.label || e.type}: ${String(e.uw).replace('.', ',')} > ${String(max).replace('.', ',')}`);
+    }
+    return { fehlt };
+  }
+  function bescheinigungDialog(r, alle) {
+    const k = P.kunde || {}, f = foerderCheck(), anz = alle.filter(x => x.art === 'anzahlung' && !x.storniert_durch);
+    const d = FB.sheet(`<div class="row between"><h2>Bescheinigung § 35c EStG</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
+      <p class="small muted" style="margin-top:4px">Bescheinigung des Fachunternehmens für die Steuerermäßigung des Kunden (Erneuerung der Fenster und Außentüren). Aufgebaut nach dem amtlichen Muster des BMF – bitte vor der Ausgabe mit der aktuellen Fassung abgleichen.</p>
+      ${f.fehlt.length ? `<p class="note warn" style="margin-top:8px">Mindestanforderungen nicht erfüllt oder nicht belegt: ${f.fehlt.map(esc).join(', ')}. Ohne passende U-Werte darf die Bescheinigung nicht ausgestellt werden.</p>` : ''}
+      <div class="grid g2" style="margin-top:10px"><label class="f span2">Steuerpflichtige/r (Eigentümer/in)<input id="bsN" value="${esc(k.name || '')}"></label>
+        <label class="f span2">Anschrift des Wohngebäudes<input id="bsA" value="${esc(k.adresse || '')}"></label>
+        <label class="f">Arbeiten begonnen am<input id="bsV" type="date" value="${esc(P.aufmass.bestellung?.geliefert_am || r.datum)}"></label><label class="f">abgeschlossen am<input id="bsB" type="date" value="${esc(P.abnahme?.datum || r.datum)}"></label>
+        <label class="f span2">Förderfähige Aufwendungen brutto (€)<input id="bsK" type="number" step="0.01" min="0" value="${(+r.daten?.summen?.brutto || 0).toFixed(2)}"></label></div>
+      <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ghost" data-close>Abbrechen</button><button class="btn" id="bsGo" ${f.fehlt.length ? 'disabled title="Erst wenn alle Positionen die U-Werte erfüllen"' : ''}>PDF erstellen</button></div>`);
+    $('#bsGo', d.el).onclick = async () => {
+      if (foerderCheck().fehlt.length) return toast('Die Bescheinigung bestätigt die Mindestanforderungen – bitte erst die U-Werte prüfen.');
+      try {
+        const doc = await FB.pdf(), F = FB.S.firma, W = 210, M = 18, fam = doc.getFontList().Noto ? 'Noto' : 'helvetica', font = (z, b) => { doc.setFont(fam, b ? 'bold' : 'normal'); doc.setFontSize(z); };
+        const v = id => $(id, d.el).value.trim(); let y = 20;
+        font(13, true); doc.text(doc.splitTextToSize('Bescheinigung für die Inanspruchnahme der Steuerermäßigung für energetische Maßnahmen bei zu eigenen Wohnzwecken genutzten Gebäuden (§ 35c EStG)', W - 2 * M), M, y); y += 16;
+        const blk = (t, lines) => { font(9, true); doc.text(t, M, y); y += 5; font(9.5); for (const l of lines.filter(Boolean)) { const tt = doc.splitTextToSize(l, W - 2 * M - 4); doc.text(tt, M + 4, y); y += tt.length * 4.6; } y += 3; };
+        blk('Ausführendes Fachunternehmen', [F.name, F.inhaber && 'Inhaber/in: ' + F.inhaber, F.anschrift, [F.telefon, F.email].filter(Boolean).join(' · '), F.steuernummer && 'Steuernummer: ' + F.steuernummer, F.ustid && 'USt-IdNr.: ' + F.ustid]);
+        blk('Steuerpflichtige/r', [v('#bsN')]);
+        blk('Begünstigtes Objekt (zu eigenen Wohnzwecken genutztes Gebäude)', [v('#bsA')]);
+        blk('Durchgeführte Maßnahme', ['Erneuerung der Fenster oder Außentüren (§ 35c Abs. 1 Satz 3 Nr. 4 EStG)', ...P.aufmass.elemente.filter(e => !/Rollladen/.test(e.type)).map((e, i) => `${i + 1}. ${e.label || ''}: ${e.type}${e.anzahl > 1 ? ', ' + e.anzahl + ' Stück' : ''}${e.uw ? `, U${/Haustür|Nebeneingang/.test(e.type) ? 'D' : 'w'} = ${String(e.uw).replace('.', ',')} W/(m²K)` : ''}`)]);
+        blk('Zeitraum der Ausführung', [`vom ${fmtDate(v('#bsV'))} bis ${fmtDate(v('#bsB'))}`]);
+        blk('Rechnung(en)', [...anz.map(a => `${a.nr} vom ${fmtDate(a.datum)} (Anzahlung) über ${FB.eur(a.brutto)}`), `${r.nr} vom ${fmtDate(r.datum)} (${ART_R[r.art]}) über ${FB.eur(r.brutto)}`]);
+        blk('Aufwendungen für die Maßnahme', [`Förderfähige Aufwendungen einschließlich Umsatzsteuer: ${FB.eur(+v('#bsK') || 0)}`]);
+        font(9.5); const best = doc.splitTextToSize('Hiermit wird bestätigt, dass die oben bezeichnete energetische Maßnahme durch unser Fachunternehmen fachgerecht durchgeführt wurde und die Anforderungen der Energetische Sanierungsmaßnahmen-Verordnung (ESanMV) erfüllt sind. Die Rechnungen sind in deutscher Sprache ausgestellt und weisen die förderfähigen Aufwendungen, die Arbeitsleistung und die Adresse des begünstigten Objekts aus.', W - 2 * M);
+        doc.text(best, M, y); y += best.length * 4.6 + 18;
+        doc.setDrawColor(120); doc.line(M, y, M + 70, y); doc.line(W - M - 70, y, W - M, y); font(8); doc.text('Ort, Datum', M, y + 4); doc.text('Unterschrift / Stempel des Fachunternehmens', W - M - 70, y + 4);
+        font(7.5); doc.setTextColor(120); doc.text('Erstellt mit ProFitAR. Inhalt nach dem amtlichen Muster des Bundesministeriums der Finanzen; maßgeblich ist das jeweils gültige Muster.', M, 288); doc.setTextColor(0);
+        FB.download(doc.output('blob'), `Bescheinigung_35c_${FB.safeName(P.nummer)}_${FB.safeName(v('#bsN'))}.pdf`); d.close();
+      } catch (e) { toast(errText(e)); }
+    };
+  }
+
+  /* ================= Vorlagen ================= */
+  function vorlageSpeichern(e) {
+    const d = FB.sheet(`<div class="row between"><h2>Als Vorlage speichern</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
+      <p class="small muted" style="margin-top:4px">Gespeichert werden Typ, Teilung, Profil, Farben, Glas, Rollladen und Zubehör – keine Maße und Fotos.</p>
+      <label class="f" style="margin-top:10px">Name der Vorlage<input id="vtN" maxlength="80" value="${esc(e.type + (e.profil ? ', ' + e.profil : ''))}"></label>
+      <label class="f">Fester Einzelpreis (optional, sonst Preisliste)<input id="vtP" type="number" min="0" step="0.01" value="${P.aufmass.angebot?.preis?.[e.id] ?? ''}"></label>
+      <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ghost" data-close>Abbrechen</button><button class="btn" id="vtOk">Speichern</button></div>`);
+    $('#vtOk', d.el).onclick = async () => {
+      const name = $('#vtN', d.el).value.trim(); if (name.length < 2) return toast('Bitte einen Namen eintragen.');
+      const el = JSON.parse(JSON.stringify(e)); ['id', 'foto', 'fotos', 'overlay', 'widthPoints', 'heightPoints', 'diagonals', 'bestellB', 'bestellH', 'label', 'notiz'].forEach(k => delete el[k]);
+      const pr = $('#vtP', d.el).value, l = [...(FB.S.firma.vorlagen || []), { id: uid(), name, element: el, preis: pr === '' ? null : +pr }].slice(-60);
+      try { await FB.saveFirma({ vorlagen: l }); d.close(); toast('Vorlage gespeichert'); } catch (er) { toast(errText(er)); }
+    };
+  }
+  function vorlageWaehlen() {
+    const l = FB.S.firma.vorlagen || [];
+    const d = FB.sheet(`<div class="row between"><h2>Position aus Vorlage</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
+      ${l.length ? `<div class="list" style="margin-top:10px">${l.map(v => `<div class="item" style="cursor:default"><button class="grow" data-v="${v.id}" style="text-align:left;background:none;border:0;padding:0;cursor:pointer"><b>${esc(v.name)}</b><span class="small muted">${esc([v.element.type, FB.oeffnungText(v.element), v.element.color, v.element.glass].filter(Boolean).join(' · '))}${v.preis != null ? ' · ' + FB.eur(v.preis) : ''}</span></button>${FB.canAdmin() ? `<button class="iconbtn" data-del="${v.id}" aria-label="Vorlage löschen">✕</button>` : ''}</div>`).join('')}</div>`
+        : '<p class="small muted" style="margin-top:10px">Noch keine Vorlagen. Bei einer fertigen Position auf „Als Vorlage“ tippen – danach steht sie hier für jedes neue Aufmaß bereit.</p>'}`);
+    $$('[data-v]', d.el).forEach(b => b.onclick = () => {
+      const v = l.find(x => x.id === b.dataset.v), e = { ...neuesElement(P.aufmass.elemente.length + 1), ...JSON.parse(JSON.stringify(v.element)), id: uid(), label: v.name, widthPoints: [], heightPoints: [], diagonals: [] };
+      P.aufmass.elemente.push(e); active = P.aufmass.elemente.length - 1;
+      if (v.preis != null) { const A = angebotDaten(); A.preis[e.id] = v.preis; }
+      d.close(); renderEl(); dirty(); $('#edit').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    $$('[data-del]', d.el).forEach(b => b.onclick = async () => { if (!(await FB.confirmDlg('Vorlage löschen?', 'Löschen', true))) return; try { await FB.saveFirma({ vorlagen: l.filter(x => x.id !== b.dataset.del) }); d.close(); vorlageWaehlen(); } catch (e) { toast(errText(e)); } });
+  }
+
+  /* ================= Bestellung beim Hersteller ================= */
+  const kwVon = d => { const t = new Date(d + 'T12:00:00'); t.setDate(t.getDate() + 3 - (t.getDay() + 6) % 7); const w1 = new Date(t.getFullYear(), 0, 4); return 1 + Math.round(((t - w1) / 864e5 - 3 + (w1.getDay() + 6) % 7) / 7); };
+  function lieferChip(p) {
+    const b = p.aufmass?.bestellung; if (!b?.bestellt_am || p.status === 'abgenommen') return '';
+    if (b.geliefert_am) return '<div><span class="chip ok" style="margin-top:3px">geliefert</span></div>';
+    if (b.liefertermin) { const spaet = b.liefertermin < FB.today(); return `<div><span class="chip ${spaet ? 'crit' : 'warn'}" style="margin-top:3px">Lieferung KW ${kwVon(b.liefertermin)}${spaet ? ' – überfällig' : ''}</span></div>`; }
+    return '<div><span class="chip" style="margin-top:3px">bestellt, Termin offen</span></div>';
+  }
+  function bestellung() {
+    const B = P.aufmass.bestellung ||= {}, ro = !FB.canEdit();
+    const d = FB.sheet(`<div class="row between"><h2>Bestellung beim Hersteller</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
+      <div class="grid g2" style="margin-top:10px">
+        <label class="f">Hersteller / Lieferant<input id="bH" value="${esc(B.hersteller || '')}" placeholder="z. B. Fensterwerk Muster"></label>
+        <label class="f">Bestellt am<input id="bD" type="date" value="${esc(B.bestellt_am || '')}"></label>
+        <label class="f">Auftragsbestätigung (AB-Nr.)<input id="bAB" value="${esc(B.ab_nr || '')}"></label>
+        <label class="f">Liefertermin laut AB<input id="bL" type="date" value="${esc(B.liefertermin || '')}"></label>
+        <label class="f">Geliefert am<input id="bG" type="date" value="${esc(B.geliefert_am || '')}"></label>
+        <label class="f">Lieferort<select id="bO">${['Baustelle', 'Lager', 'Abholung'].map(o => `<option ${B.ort === o ? 'selected' : ''}>${o}</option>`).join('')}</select></label>
+        <label class="f span2">Notiz<textarea id="bN" rows="2" placeholder="z. B. Ansprechpartner, Lieferavis, fehlende Teile">${esc(B.notiz || '')}</textarea></label></div>
+      <div class="row" style="margin-top:12px;justify-content:space-between;flex-wrap:wrap"><button class="btn ghost" id="bPdf">Bestellliste (PDF)</button><div class="row"><button class="btn ghost" data-close>Schließen</button>${ro ? '' : '<button class="btn" id="bOk">Speichern</button>'}</div></div>`);
+    if (ro) $$('input,select,textarea', d.el).forEach(x => x.disabled = true);
+    $('#bPdf', d.el).onclick = () => pdfBestellung().catch(e => toast(errText(e)));
+    $('#bOk', d.el)?.addEventListener('click', async () => {
+      const v = id => $(id, d.el).value.trim(), war = !!B.geliefert_am;
+      Object.assign(B, { hersteller: v('#bH'), bestellt_am: v('#bD') || null, ab_nr: v('#bAB'), liefertermin: v('#bL') || null, geliefert_am: v('#bG') || null, ort: v('#bO'), notiz: v('#bN') });
+      if (B.bestellt_am && ['aufmass', 'angebot', 'beauftragt'].includes(P.status)) { P.status = 'bestellt'; $('#status').value = 'bestellt'; }
+      await saveNow(); d.close(); toast('Bestellung gespeichert');
+      if (B.geliefert_am && !war && FB.canEdit()) { if (await FB.confirmDlg('Ware ist da. Jetzt den Montagetermin planen?', 'Termin planen')) location.href = './planung.html#neu=' + P.id + '&art=montage'; }
+    });
+  }
+
   /* ================= Angebot an den Kunden senden (Online-Annahme) ================= */
   const AN_STATUS = a => a.angenommen_at ? ['Angenommen', 'ok'] : a.zurueckgezogen_at ? ['Ersetzt / zurückgezogen', ''] : a.abgelehnt_at ? ['Abgelehnt', 'crit'] : a.gueltig_bis && a.gueltig_bis < FB.today() ? ['Abgelaufen', 'warn'] : a.geoeffnet_at ? ['Vom Kunden geöffnet', 'accent'] : ['Gesendet', 'accent'];
   async function onlineListe(box) {
@@ -559,7 +671,7 @@
       try {
         if (!k.email) { k.email = email; dirty(); }
         const blob = await pdfAngebot(c, { herunterladen: false }), pdf = (await FB.blobToDataUrl(blob)).split(',')[1];
-        const daten = { nr: A.nr, datum: A.datum, gueltig: A.gueltig, intro: FB.S.firma.angebot_text || '', text: A.text || '', kunde: { name: k.name || '', adresse: k.adresse || '' }, bauvorhaben: k.adresse || '',
+        const daten = { nr: A.nr, datum: A.datum, gueltig: A.gueltig, intro: FB.S.firma.angebot_text || '', text: A.text || '', foerderung: A.foerderung ? FOERDER_TEXT : '', kunde: { name: k.name || '', adresse: k.adresse || '' }, bauvorhaben: k.adresse || '',
           positionen: c.pos.map(({ e, ep, gp }, i) => ({ pos: i + 1, titel: e.label || '', details: posText(e), menge: e.anzahl || 1, ep, gp, bild: skizze(e, 360) })),
           summen: { sum: c.sum, rabatt: +A.rabatt || 0, rab: c.rab, netto: c.netto, mwst: c.mw, st: c.st, brutto: c.brutto } };
         const r = await FB.angebotSenden({ projekt_id: P.id, email, nr: A.nr, gueltig_bis: A.gueltig, text: $('#snT', d.el).value.trim(), pdf, daten });
@@ -591,36 +703,44 @@
       box.innerHTML = `${fehlt.length ? `<p class="note warn">Für Rechnungen fehlen in den Firmendaten: ${fehlt.join(', ')}. ${FB.canAdmin() ? '<a href="./konto.html#firma">Unter Konto ergänzen</a>' : ''}</p>` : ''}
         <div class="kv"><div><span>Auftragssumme (brutto)</span><b>${FB.eur(c.brutto)}</b></div><div><span>Angezahlt (berechnet)</span><b>${FB.eur(anz.reduce((x, r) => x + +r.brutto, 0))}</b></div><div><span>Bezahlt</span><b>${FB.eur(gueltig.filter(r => r.bezahlt_at).reduce((x, r) => x + +r.brutto, 0))}</b></div></div>
         <div class="list" style="margin-top:10px">${l.length ? l.map(r => `<div class="item" style="cursor:default;flex-wrap:wrap"><div class="grow"><b>${esc(r.nr)}</b> <span class="chip ${r.art === 'storno' ? 'crit' : r.storniert_durch ? '' : r.bezahlt_at ? 'ok' : 'warn'}">${r.art === 'storno' ? 'Storno' : r.storniert_durch ? 'storniert' : r.bezahlt_at ? 'bezahlt ' + fmtDate(r.bezahlt_at) : 'offen'}</span><span class="small muted">${ART_R[r.art]} · ${fmtDate(r.datum)} · ${FB.eur(r.brutto)}${r.faellig && !r.bezahlt_at && r.art !== 'storno' ? ' · fällig ' + fmtDate(r.faellig) : ''}</span></div>
-          <div class="row"><button class="btn ghost sm" data-pdf="${r.id}">PDF</button>${darf && r.art !== 'storno' && !r.storniert_durch ? `<button class="btn ghost sm" data-bez="${r.id}">${r.bezahlt_at ? 'Zahlung zurücknehmen' : 'Als bezahlt markieren'}</button><button class="btn ghost sm" data-sto="${r.id}">Stornieren</button>` : ''}</div></div>`).join('') : '<p class="small muted">Noch keine Rechnungen.</p>'}</div>
-        ${darf ? `<div class="row" style="margin-top:12px;flex-wrap:wrap">${!schluss ? `<button class="btn soft" id="reAnz">+ Anzahlungsrechnung</button><button class="btn" id="reSchluss">${anz.length ? '+ Schlussrechnung' : '+ Rechnung'}</button>` : '<p class="small muted">Schlussrechnung ist erstellt. Für Änderungen bitte stornieren und neu erstellen.</p>'}<button class="btn ghost" id="reCsv">Export für Kontora (CSV)</button></div>` : ''}
+          <div class="row" style="flex-wrap:wrap"><button class="btn ghost sm" data-pdf="${r.id}">PDF</button><button class="btn ghost sm" data-xml="${r.id}" title="E-Rechnung im Format XRechnung">E-Rechnung</button>${darf ? `<button class="btn ${r.gesendet_at ? 'ghost' : 'soft'} sm" data-snd="${r.id}">${r.gesendet_at ? 'Erneut senden' : 'An Kunden senden'}</button>` : ''}${darf && r.art !== 'storno' && !r.storniert_durch ? `<button class="btn ghost sm" data-bez="${r.id}">${r.bezahlt_at ? 'Zahlung zurücknehmen' : 'Als bezahlt markieren'}</button><button class="btn ghost sm" data-sto="${r.id}">Stornieren</button>` : ''}${darf && r.art !== 'storno' && !r.storniert_durch && !r.bezahlt_at && FB.S.firma.mahn_aktiv ? `<button class="btn ghost sm" data-mst="${r.id}">${r.mahnung_stop ? 'Erinnerungen wieder an' : 'Keine Erinnerungen'}</button>` : ''}</div>
+          ${r.gesendet_at || r.mahnstufe ? `<span class="tiny muted" style="width:100%">${r.gesendet_at ? `Gesendet an ${esc(r.gesendet_an || '')} am ${FB.fmtDT(r.gesendet_at)}` : ''}${r.mahnstufe ? ` · ${['', 'Zahlungserinnerung', '1. Mahnung', '2. Mahnung'][r.mahnstufe] || r.mahnstufe + '. Mahnstufe'} am ${FB.fmtDT(r.letzte_mahnung_at)}` : ''}${r.mahnung_stop ? ' · keine automatischen Erinnerungen' : ''}</span>` : ''}</div>`).join('') : '<p class="small muted">Noch keine Rechnungen.</p>'}</div>
+        ${darf ? `<div class="row" style="margin-top:12px;flex-wrap:wrap">${!schluss ? `<button class="btn soft" id="reAnz">+ Anzahlungsrechnung</button><button class="btn" id="reSchluss">${anz.length ? '+ Schlussrechnung' : '+ Rechnung'}</button>` : '<p class="small muted">Schlussrechnung ist erstellt. Für Änderungen bitte stornieren und neu erstellen.</p>'}<button class="btn ghost" id="reCsv">Export für Kontora (CSV)</button>${schluss ? '<button class="btn ghost" id="reFoe">Bescheinigung § 35c</button>' : ''}</div>` : ''}
         <p class="tiny muted" style="margin-top:10px">Rechnungen erhalten eine fortlaufende Nummer und lassen sich danach nicht mehr ändern oder löschen – Korrekturen nur per Storno. Grundlage sind die Positionen und Preise aus dem Angebot.</p>`;
       $$('[data-pdf]', box).forEach(b => b.onclick = () => rechnungPdfOeffnen(l.find(r => r.id === b.dataset.pdf)).catch(e => toast(errText(e))));
+      $$('[data-xml]', box).forEach(b => b.onclick = () => { const r = l.find(x => x.id === b.dataset.xml); const mail = r.daten?.kunde?.email || r.gesendet_an || P.kunde?.email || ''; FB.download(new Blob([FB.xrechnungXml({ ...r, gesendet_an: mail })], { type: 'application/xml' }), `${FB.safeName(r.nr)}_XRechnung.xml`); if (!mail) toast('Hinweis: Ohne E-Mail-Adresse des Kunden ist die E-Rechnung unvollständig – bitte im Projekt unter Kunde eintragen.', 6000); });
+      $$('[data-snd]', box).forEach(b => b.onclick = () => rechnungSenden(l.find(x => x.id === b.dataset.snd), draw));
+      $$('[data-mst]', box).forEach(b => b.onclick = async () => { const r = l.find(x => x.id === b.dataset.mst); try { await FB.rechnungUpdate(r.id, { mahnung_stop: !r.mahnung_stop }); draw(); } catch (e) { toast(errText(e)); } });
       $$('[data-bez]', box).forEach(b => b.onclick = async () => { const r = l.find(x => x.id === b.dataset.bez); try { await FB.rechnungUpdate(r.id, { bezahlt_at: r.bezahlt_at ? null : FB.today() }); draw(); } catch (e) { toast(errText(e)); } });
       $$('[data-sto]', box).forEach(b => b.onclick = async () => { const r = l.find(x => x.id === b.dataset.sto); if (!(await FB.confirmDlg(`Rechnung ${r.nr} stornieren? Es wird eine Stornorechnung mit negativen Beträgen erstellt.`, 'Stornieren', true))) return; try { await neueRechnung({ art: 'storno', original: r }); draw(); } catch (e) { toast(errText(e)); } });
       $('#reAnz', box)?.addEventListener('click', () => rechnungDialog('anzahlung', c, anz, draw));
       $('#reSchluss', box)?.addEventListener('click', () => rechnungDialog(anz.length ? 'schluss' : 'rechnung', c, anz, draw));
       $('#reCsv', box)?.addEventListener('click', () => kontoraCsv(l, `Rechnungen_${FB.safeName(P.nummer)}.csv`));
+      $('#reFoe', box)?.addEventListener('click', () => bescheinigungDialog(schluss, l));
     };
     draw();
   }
   function rechnungDialog(art, c, anz, done) {
     if (firmaFehlt().length) return toast('Bitte zuerst die Firmendaten ergänzen (Konto → Firma).');
     if (c.brutto <= 0) return toast('Bitte zuerst im Angebot Preise eintragen.');
-    const schon = r2(anz.reduce((x, r) => x + +r.brutto, 0)), A = angebotDaten();
+    const schon = r2(anz.reduce((x, r) => x + +r.brutto, 0)), A = angebotDaten(), nt = art === 'anzahlung' ? [] : FB.nachtragPositionen(P), ntSum = r2(nt.reduce((x, n) => x + n.gp, 0));
+    const mitNt = on => { if (!on || !nt.length) return c; const netto = r2(c.netto + ntSum), st = r2(netto * c.mw / 100); return { ...c, extra: nt, sum: r2(c.sum + ntSum), netto, st, brutto: r2(netto + st) }; };
+    let cc = mitNt(true);
     const d = FB.sheet(`<div class="row between"><h2>${ART_R[art]} erstellen</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
       <div class="grid g2" style="margin-top:10px"><label class="f">Rechnungsdatum<input id="rdD" type="date" value="${FB.today()}"></label>
       <label class="f">${art === 'anzahlung' ? 'Leistungszeitraum (voraussichtlich)' : 'Leistungsdatum / -zeitraum'}<input id="rdL" value="${esc(art === 'anzahlung' ? '' : (P.abnahme?.datum ? fmtDate(P.abnahme.datum) : fmtDate(FB.today())))}" placeholder="${art === 'anzahlung' ? 'z. B. Kalenderwoche 49/2026' : 'z. B. 12.11.2026'}"></label>
       ${art === 'anzahlung' ? `<label class="f">Anteil der Auftragssumme (%)<input id="rdP" type="number" min="1" max="100" step="1" value="30"></label><label class="f">oder Betrag brutto (€)<input id="rdB" type="number" min="0" step="0.01" placeholder="${FB.eur(c.brutto * .3)}"></label>` : ''}
       <label class="f">Zahlungsziel (Tage)<input id="rdZ" type="number" min="0" max="90" value="${+FB.S.firma.zahlungsziel_tage || 14}"></label></div>
+      ${nt.length ? `<label class="check" style="margin-top:8px"><input type="checkbox" id="rdNt" checked> Zeit & Material aus der Baustelle mit berechnen (${nt.length} Position${nt.length === 1 ? '' : 'en'}, ${FB.eur(ntSum)} netto)</label>` : ''}
       <div class="kv" id="rdSum" style="margin-top:8px"></div>
       <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ghost" data-close>Abbrechen</button><button class="btn" id="rdGo">Rechnung erstellen</button></div>`);
-    const betrag = () => { if (art !== 'anzahlung') return r2(c.brutto - schon); const b = +$('#rdB', d.el).value; return r2(b > 0 ? b : c.brutto * (+$('#rdP', d.el).value || 0) / 100); };
-    const show = () => { const b = betrag(); $('#rdSum', d.el).innerHTML = art === 'anzahlung' ? `<div><span>Anzahlung brutto</span><b>${FB.eur(b)}</b></div>` : `<div><span>Gesamtleistung brutto</span><b>${FB.eur(c.brutto)}</b></div>${schon ? `<div><span>abzüglich Anzahlungen</span><b>− ${FB.eur(schon)}</b></div>` : ''}<div><span>Zu zahlen</span><b>${FB.eur(b)}</b></div>`; };
-    $$('input', d.el).forEach(i => i.oninput = show); show();
+    const betrag = () => { cc = mitNt($('#rdNt', d.el)?.checked); if (art !== 'anzahlung') return r2(cc.brutto - schon); const b = +$('#rdB', d.el).value; return r2(b > 0 ? b : c.brutto * (+$('#rdP', d.el).value || 0) / 100); };
+    const show = () => { const b = betrag(); $('#rdSum', d.el).innerHTML = art === 'anzahlung' ? `<div><span>Anzahlung brutto</span><b>${FB.eur(b)}</b></div>` : `<div><span>Gesamtleistung brutto</span><b>${FB.eur(cc.brutto)}</b></div>${schon ? `<div><span>abzüglich Anzahlungen</span><b>− ${FB.eur(schon)}</b></div>` : ''}<div><span>Zu zahlen</span><b>${FB.eur(b)}</b></div>`; };
+    $$('input', d.el).forEach(i => { i.oninput = show; i.onchange = show; }); show();
     $('#rdGo', d.el).onclick = async ev => {
       const b = betrag(); if (art === 'anzahlung' && (b <= 0 || b > c.brutto - schon + .001)) return toast('Der Anzahlungsbetrag passt nicht zur Auftragssumme.');
       ev.target.disabled = true;
-      try { await neueRechnung({ art, c, anz, betrag: b, datum: $('#rdD', d.el).value || FB.today(), leistung: $('#rdL', d.el).value.trim(), ziel: +$('#rdZ', d.el).value || 0, angebot: A }); d.close(); done(); toast('Rechnung erstellt.'); }
+      try { await neueRechnung({ art, c: art === 'anzahlung' ? c : cc, anz, betrag: b, datum: $('#rdD', d.el).value || FB.today(), leistung: $('#rdL', d.el).value.trim(), ziel: +$('#rdZ', d.el).value || 0, angebot: A }); d.close(); done(); toast('Rechnung erstellt.'); }
       catch (e) { toast(errText(e)); ev.target.disabled = false; }
     };
   }
@@ -634,14 +754,16 @@
     } else {
       const c = o.c, brutto = r2(o.betrag), netto = r2(brutto / (1 + mw / 100)), steuer = r2(brutto - netto);
       const faellig = (() => { const x = new Date(o.datum + 'T12:00:00'); x.setDate(x.getDate() + (o.ziel || 0)); return x.toISOString().slice(0, 10); })();
-      const daten = { firma, kunde: { name: k.name || '', adresse: k.adresse || '' }, projekt: P.nummer, bauvorhaben: k.adresse || '', angebot: { nr: o.angebot.nr, datum: o.angebot.datum }, leistung: o.leistung, ziel: o.ziel,
-        positionen: c.pos.map(({ e, ep, gp }, i) => ({ pos: i + 1, titel: e.label || '', details: posText(e), menge: e.anzahl || 1, ep, gp })),
+      const daten = { firma, kunde: { name: k.name || '', adresse: k.adresse || '', email: k.email || '' }, projekt: P.nummer, bauvorhaben: k.adresse || '', angebot: { nr: o.angebot.nr, datum: o.angebot.datum }, leistung: o.leistung, ziel: o.ziel,
+        positionen: [...c.pos.map(({ e, ep, gp }, i) => ({ pos: i + 1, titel: e.label || '', details: posText(e), menge: e.anzahl || 1, ep, gp })),
+          ...(c.extra || []).map((x, i) => ({ pos: c.pos.length + i + 1, titel: x.titel, details: x.details, menge: x.menge, einheit: x.einheit, ep: x.ep, gp: x.gp }))],
         summen: { sum: c.sum, rabatt: +o.angebot.rabatt || 0, rab: c.rab, netto: c.netto, mwst: mw, st: c.st, brutto: c.brutto },
         anzahlungen: o.art === 'anzahlung' ? [] : o.anz.map(r => ({ nr: r.nr, datum: r.datum, netto: +r.netto, steuer: +r.steuer, brutto: +r.brutto })),
         anteil: o.art === 'anzahlung' ? r2(brutto / c.brutto * 100) : null };
       row = { projekt_id: P.id, art: o.art, datum: o.datum, daten, netto, steuer, brutto, faellig };
     }
     const rech = await FB.rechnungAnlegen(row);
+    if (o.c?.extra?.length) { const ids = new Set(o.c.extra.flatMap(x => x.ids)); (P.aufmass.nachtraege || []).forEach(x => { if (ids.has(x.id)) x.berechnet = rech.nr; }); await saveNow(); }
     const blob = await rechnungPdf(rech);
     await FB.rechnungPdfAblegen(rech, blob).catch(e => toast('PDF wird beim nächsten Öffnen erneut erzeugt: ' + errText(e)));
     FB.download(blob, `Rechnung_${FB.safeName(rech.nr)}_${FB.safeName(k.name)}.pdf`);
@@ -678,7 +800,7 @@
         font(9, true); const t1 = doc.splitTextToSize(p.titel || '', cols[1][1] - 2); font(8.5); const t2 = doc.splitTextToSize((p.details || []).join('\n'), cols[1][1] - 2); const h = (t1.length + t2.length) * 4.2 + 3;
         if (y + h > 262) { doc.addPage(); y = 24; th(); }
         let x = M + 1; font(9); doc.text(String(p.pos), x, y); x += cols[0][1]; font(9, true); doc.text(t1, x, y); font(8.5); doc.setTextColor(70); doc.text(t2, x, y + t1.length * 4.2); doc.setTextColor(0); x += cols[1][1];
-        font(9); doc.text(`${p.menge} Stk.`, x + cols[2][1] - 2, y, { align: 'right' }); x += cols[2][1]; doc.text(FB.eur(sg * p.ep), x + cols[3][1] - 2, y, { align: 'right' }); x += cols[3][1]; doc.text(FB.eur(sg * p.gp), x + cols[4][1] - 2, y, { align: 'right' });
+        font(9); doc.text(`${String(p.menge).replace('.', ',')} ${p.einheit || 'Stk.'}`, x + cols[2][1] - 2, y, { align: 'right' }); x += cols[2][1]; doc.text(FB.eur(sg * p.ep), x + cols[3][1] - 2, y, { align: 'right' }); x += cols[3][1]; doc.text(FB.eur(sg * p.gp), x + cols[4][1] - 2, y, { align: 'right' });
         y += h; doc.setDrawColor(225); doc.line(M, y - 3, W - M, y - 3);
       }
       y += 3;
@@ -690,23 +812,49 @@
     } else if (sto) {
       line(`Stornierter Rechnungsbetrag netto`, FB.eur(r.netto)); line(stLabel, mw ? FB.eur(r.steuer) : '—'); doc.setDrawColor(120); doc.line(LX, y - 3.5, W - M, y - 3.5); line('Storno gesamt', FB.eur(r.brutto), true);
     } else {
-      line('Summe', FB.eur(S0.sum)); if (S0.rab) line(`abzüglich ${String(S0.rabatt).replace('.', ',')} % Rabatt`, '− ' + FB.eur(S0.rab));
+      line('Summe', FB.eur(S0.sum)); if (S0.rab) line(`abzüglich Rabatt ${String(S0.rabatt).replace('.', ',')} % auf das Angebot`, '− ' + FB.eur(S0.rab));
       line('Nettobetrag Gesamtleistung', FB.eur(S0.netto)); line(stLabel, mw ? FB.eur(S0.st) : '—'); line('Gesamtleistung brutto', FB.eur(S0.brutto), true);
       for (const a of D.anzahlungen || []) { y += 1; line(`abzgl. Anzahlung ${a.nr} vom ${fmtDate(a.datum)}, netto`, '− ' + FB.eur(a.netto)); if (mw) line(`abzgl. darauf entfallende USt. ${String(mw).replace('.', ',')} %`, '− ' + FB.eur(a.steuer)); }
       if ((D.anzahlungen || []).length) { y += 1; line('verbleibend netto', FB.eur(r.netto)); if (mw) line('verbleibende Umsatzsteuer', FB.eur(r.steuer)); }
       doc.setDrawColor(120); doc.line(LX, y - 3.5, W - M, y - 3.5); line('Zu zahlender Betrag', FB.eur(r.brutto), true);
     }
     y += 4; font(8.5);
+    const gc = FB.girocodeText(r);
+    let qrY = null; if (gc && !r.bezahlt_at) { try { if (y + 30 > 272) { doc.addPage(); y = 24; } const q = await qrDataUrl(gc); qrY = y; doc.addImage(q, 'PNG', W - M - 26, y, 26, 26); font(7.5); doc.setTextColor(90); doc.text(['Mit Banking-App', 'scannen'], W - M - 13, y + 29, { align: 'center' }); doc.setTextColor(0); font(8.5); } catch {} }
     const notes = [];
     if (!mw) notes.push('Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.');
     if (!sto && r.faellig) notes.push(`Bitte überweisen Sie den Betrag bis zum ${fmtDate(r.faellig)} ohne Abzug unter Angabe der Rechnungsnummer ${r.nr}.`);
     notes.push('Als Privatperson sind Sie gesetzlich verpflichtet, diese Rechnung, einen Zahlungsbeleg oder eine andere beweiskräftige Unterlage zwei Jahre lang aufzubewahren (§ 14b Abs. 1 Satz 5 UStG).');
     if (Fi.text) notes.push(Fi.text);
-    for (const t of notes) { const tt = doc.splitTextToSize(t, W - 2 * M); if (y + tt.length * 4.2 > 272) { doc.addPage(); y = 24; } doc.text(tt, M, y); y += tt.length * 4.2 + 1.5; }
+    for (const t of notes) { const nw = qrY != null && y < qrY + 36 ? W - 2 * M - 34 : W - 2 * M, tt = doc.splitTextToSize(t, nw); if (y + tt.length * 4.2 > 272) { doc.addPage(); y = 24; qrY = null; } doc.text(tt, M, y); y += tt.length * 4.2 + 1.5; }
+    if (qrY != null) y = Math.max(y, qrY + 36);
     const fuss = [[Fi.name, Fi.anschrift].filter(Boolean).join(' · '), [Fi.steuernummer && 'Steuernummer ' + Fi.steuernummer, Fi.ustid && 'USt-IdNr. ' + Fi.ustid].filter(Boolean).join(' · '), [Fi.bank, Fi.iban && 'IBAN ' + Fi.iban, Fi.bic && 'BIC ' + Fi.bic].filter(Boolean).join(' · ')].filter(Boolean);
     const n = doc.getNumberOfPages(); for (let i = 1; i <= n; i++) { doc.setPage(i); font(7.5); doc.setTextColor(110); doc.text(fuss, W / 2, 280, { align: 'center' }); doc.text(`${ART_R[r.art]} ${r.nr} · Seite ${i}/${n}`, W - M, 292, { align: 'right' }); doc.setTextColor(0); }
     return doc.output('blob');
   }
+  async function rechnungSenden(r, done) {
+    const k = P.kunde || {};
+    const d = FB.sheet(`<div class="row between"><h2>${esc(ART_R[r.art])} ${esc(r.nr)} senden</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
+      <p class="small muted" style="margin-top:6px">Der Kunde bekommt die Rechnung als PDF und zusätzlich als E-Rechnung (XRechnung). Antworten gehen an eure Firmen-E-Mail.</p>
+      <label class="f" style="margin-top:10px">E-Mail des Kunden<input id="rsM" type="email" value="${esc(r.gesendet_an || k.email || '')}" autocomplete="off"></label>
+      <label class="f">Nachricht (optional)<textarea id="rsT" rows="3" placeholder="z. B. vielen Dank für die angenehme Zusammenarbeit"></textarea></label>
+      <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ghost" data-close>Abbrechen</button><button class="btn" id="rsGo">Senden</button></div>`);
+    $('#rsGo', d.el).onclick = async ev => {
+      const email = $('#rsM', d.el).value.trim(); if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return toast('Bitte eine gültige E-Mail-Adresse eingeben.');
+      ev.target.disabled = true;
+      try {
+        if (!r.pdf_pfad) { const blob = await rechnungPdf(r); await FB.rechnungPdfAblegen(r, blob); }
+        const xml = FB.xrechnungXml({ ...r, gesendet_an: email }), b64 = btoa(String.fromCharCode(...new TextEncoder().encode(xml)));
+        if (FB.demo) { await FB.rechnungUpdate(r.id, { gesendet_at: new Date().toISOString(), gesendet_an: email }); d.close(); toast('Demo: nichts versendet, als gesendet vermerkt.'); return done(); }
+        await FB.callKunde('rechnung_senden', { rechnung_id: r.id, email, nachricht: $('#rsT', d.el).value.trim(), xml: b64 });
+        if (!k.email) { k.email = email; dirty(); }
+        d.close(); toast('Rechnung gesendet.'); done();
+      } catch (e) { toast(errText(e)); ev.target.disabled = false; }
+    };
+  }
+  const qrReady = () => new Promise(res => { const t = () => window.QRCode ? res() : setTimeout(t, 50); t(); });
+  async function qrDataUrl(text, size = 400) { await qrReady(); const box = document.createElement('div'); new QRCode(box, { text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M }); await new Promise(res => setTimeout(res, 30)); const c = box.querySelector('canvas'); return c ? c.toDataURL('image/png') : box.querySelector('img')?.src; }
+
   /* CSV im Format, das Kontora unter „Daten übernehmen → Rechnungen (andere Programme)“ erkennt */
   function kontoraCsv(l, name) {
     const weg = l.filter(r => r.art === 'storno' || r.storniert_durch).length; l = l.filter(r => r.art !== 'storno' && !r.storniert_durch);
@@ -723,13 +871,13 @@
   function more() {
     const d = FB.sheet(`<h2>Projekt ${esc(P.nummer || '')}</h2><div class="stack" style="margin-top:12px">
       <button class="btn" data-a="ang">Angebot erstellen / senden</button>${FB.canAdmin() ? '<button class="btn soft" data-a="re">Rechnungen (Anzahlung, Schluss)</button>' : ''}<button class="btn ghost" data-a="pdf">Aufmaßblatt als PDF</button>
-      <button class="btn ghost" data-a="best">Bestellliste für den Hersteller (PDF)</button><button class="btn ghost" data-a="csv">Bestellliste als Excel-Tabelle (CSV)</button><button class="btn ghost" data-a="json">Export für Branchensoftware (JSON)</button>
+      <button class="btn ghost" data-a="bst">Bestellung beim Hersteller (Lieferstatus)</button><button class="btn ghost" data-a="zm">Zeit & Material (Nachträge)</button><button class="btn ghost" data-a="best">Bestellliste für den Hersteller (PDF)</button><button class="btn ghost" data-a="csv">Bestellliste als Excel-Tabelle (CSV)</button><button class="btn ghost" data-a="json">Export für Branchensoftware (JSON)</button>
       <button class="btn ghost" data-a="ter">Termin planen</button><button class="btn ghost" data-a="pf">In PassFort öffnen (Abnahme)</button>
       ${FB.canAdmin() && FB.canEdit() ? '<button class="btn danger" data-a="del">Projekt löschen</button>' : ''}<button class="btn ghost" data-close>Schließen</button></div>
       <p class="tiny muted" style="margin-top:10px">Der JSON-Export ist eine offene Struktur. Für einen direkten Import in eure Branchensoftware gleichen wir die Felder gern ab.</p>`);
     d.el.addEventListener('click', async ev => {
       const a = ev.target.closest('[data-a]')?.dataset.a; if (!a) return; d.close();
-      if (a === 'pdf') pdfAufmass().catch(e => toast(errText(e))); if (a === 'csv') exportCSV(); if (a === 'best') pdfBestellung().catch(e => toast(errText(e))); if (a === 'ang') angebot(); if (a === 're') rechnungen(); if (a === 'ter') { saveNow().then(() => location.href = './planung.html#neu=' + P.id); } if (a === 'json') exportJSON(); if (a === 'pf') location.href = './passfort.html#p=' + P.id;
+      if (a === 'pdf') pdfAufmass().catch(e => toast(errText(e))); if (a === 'csv') exportCSV(); if (a === 'best') pdfBestellung().catch(e => toast(errText(e))); if (a === 'ang') angebot(); if (a === 're') rechnungen(); if (a === 'bst') bestellung(); if (a === 'zm') FB.nachtraegeDialog(P, () => saveNow()); if (a === 'ter') { saveNow().then(() => location.href = './planung.html#neu=' + P.id); } if (a === 'json') exportJSON(); if (a === 'pf') location.href = './passfort.html#p=' + P.id;
       if (a === 'del') { if ((await FB.listRechnungen(P.id).catch(() => [])).length) return toast('Zu diesem Projekt gibt es Rechnungen – es bleibt wegen der Aufbewahrungspflicht erhalten.', 5000); if (!(await FB.confirmDlg(`Projekt ${P.nummer || ''} mit allen Fotos löschen?`, 'Löschen', true))) return; try { const files = P.aufmass.elemente.flatMap(e => [e.foto, ...(e.fotos || []).map(f => f.pfad)]).filter(Boolean); await FB.deleteProjekt(P.id); files.forEach(f => FB.removeFile(f)); toast('Gelöscht'); location.hash = ''; } catch (e) { toast(errText(e)); } }
     });
   }

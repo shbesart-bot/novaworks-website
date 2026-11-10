@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#1e293b">
 <title>Konto – ProFitAR & PassFort</title>
 <link rel="icon" href="./icon-konto.svg" type="image/svg+xml">
-<link rel="stylesheet" href="./fb.css?v=2026-11-09a">
+<link rel="stylesheet" href="./fb.css?v=2026-11-09b">
 <style>
   .auth { max-width: 440px; margin: 28px auto 0; }
   .plans { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
@@ -20,7 +20,7 @@
 <body>
 <main id="app"><div class="auth"><div class="skel"></div></div></main>
 <script src="./vendor/supabase.js"></script>
-<script src="./fb-core.js?v=2026-11-09a"></script>
+<script src="./fb-core.js?v=2026-11-09b"></script>
 <script>
 (async () => {
   const { $, $$, esc, toast, call, errText, fmtDate } = FB;
@@ -143,6 +143,7 @@
     app.innerHTML = `
       <div class="head"><div><p class="eyebrow">Konto</p><h1>${esc(f.name)}</h1><p class="muted small">Angemeldet als ${esc(S.me?.name || '')} (${esc(S.user.email || '')}) · ${ROLLE[S.rolle] || ''}</p></div>
         <div class="row"><a class="btn soft" href="./profitar.html">Aufmaß</a><a class="btn soft" href="./passfort.html">Abnahme</a><a class="btn soft" href="./planung.html">Planung</a><button class="btn ghost" id="logout">${FB.demo ? 'Demo beenden' : 'Abmelden'}</button></div></div>
+      ${adm ? '<section class="card" id="zahlen"><div class="row between"><h2 style="margin:0">Zahlen</h2><select class="field" id="zJahr" style="width:auto;margin:0"></select></div><div id="zahlenBox" style="margin-top:10px"><div class="skel"></div></div></section>' : ''}
       <section class="card" id="abo"><h2>Abo</h2><div id="aboBox"></div></section>
       <section class="card" id="firma"><h2>Betrieb</h2>
         <form id="fFirma" class="grid g2" novalidate>
@@ -170,6 +171,17 @@
       <section class="card" id="kunden"><h2>Kunden: Bewertung und Export</h2><div id="kundenBox"></div></section>
       ${adm ? `<section class="card" id="rechnungen"><h2>Rechnungen</h2>
         <p class="small muted">Anzahlungs- und Schlussrechnungen erstellt ihr im Aufmaß unter ⋯ → „Rechnungen“. Hier exportiert ihr alle Rechnungen eines Zeitraums – als CSV für Kontora (Daten übernehmen → Rechnungen) oder für eure Steuerberatung. Rechnungen müsst ihr 10 Jahre aufbewahren; exportiert sie regelmäßig.</p>
+        <h3 style="margin:14px 0 6px;font-size:15px">Automatisch nachhaken</h3>
+        <form id="fMahn" class="stack" novalidate>
+          <label class="check"><input type="checkbox" id="mAkt" ${f.mahn_aktiv ? 'checked' : ''}> Zahlungserinnerung und Mahnungen automatisch per E-Mail senden (nur für Rechnungen, die ihr aus der App gesendet habt)</label>
+          <div class="row" style="flex-wrap:wrap"><label class="f" style="width:150px;margin:0">Erinnerung (Tage nach Fälligkeit)<input id="mT1" type="number" min="0" max="60" value="${(f.mahn_tage || [3, 14, 28])[0]}"></label>
+            <label class="f" style="width:150px;margin:0">1. Mahnung<input id="mT2" type="number" min="1" max="90" value="${(f.mahn_tage || [3, 14, 28])[1]}"></label>
+            <label class="f" style="width:150px;margin:0">2. Mahnung<input id="mT3" type="number" min="1" max="120" value="${(f.mahn_tage || [3, 14, 28])[2]}"></label></div>
+          <p class="tiny muted" style="margin:0">Höflicher Text, Rechnung im Anhang, ohne Mahngebühren. Ihr bekommt jeweils eine Übersicht. Pro Rechnung lässt sich das abschalten („Keine Erinnerungen“), und mit „Als bezahlt markieren“ hört es sofort auf.</p>
+          <div class="row" style="flex-wrap:wrap"><label class="f" style="width:220px;margin:0">Angebote nachfassen nach (Tagen, 0 = nie)<input id="nfT" type="number" min="0" max="60" value="${f.nachfass_tage ?? 7}"></label></div>
+          <label class="check"><input type="checkbox" id="nfK" ${f.nachfass_kunde ? 'checked' : ''}> Dem Kunden dann auch eine freundliche Nachfrage per E-Mail schicken (sonst nur Hinweis an euch)</label>
+          <div><button class="btn ghost">Einstellungen speichern</button></div></form>
+        <h3 style="margin:14px 0 6px;font-size:15px">Export</h3>
         <div class="row" style="margin-top:10px;align-items:flex-end;flex-wrap:wrap"><label class="f" style="margin:0">von<input id="reVon" type="date" value="${new Date().getFullYear()}-01-01"></label><label class="f" style="margin:0">bis<input id="reBis" type="date" value="${FB.today()}"></label>
           <button class="btn ghost" id="reCsv">CSV für Kontora</button><button class="btn ghost" id="reZip">Alle PDFs (ZIP)</button></div><p id="reInfo" class="small muted" style="margin-top:8px"></p></section>` : ''}
       <section class="card" id="team"><h2>Team</h2><div id="teamBox"><div class="skel"></div></div></section>
@@ -182,7 +194,7 @@
           <button class="btn danger" id="delBtn" style="margin-top:8px">Endgültig löschen</button></details>` : ''}
       </section>`;
     $('#logout').onclick = async () => { if (FB.demo) { sessionStorage.removeItem('fb.demo'); location.href = './konto.html?demo=0'; return; } await FB.sb.auth.signOut(); location.href = './konto.html'; };
-    aboBox(); team(); preisBox(); kundenBox();
+    aboBox(); team(); preisBox(); kundenBox(); if (adm) zahlen();
     let logo = f.logo;
     $('#fLogo')?.addEventListener('change', async e => {
       const file = e.target.files[0]; if (!file) return;
@@ -204,6 +216,10 @@
       try { await FB.saveFirma(p); toast('Gespeichert'); $('.brand small').textContent = p.name; $('h1').textContent = p.name; } catch (er) { toast(errText(er)); }
     };
     $('#exp').onclick = exportAll;
+    $('#fMahn')?.addEventListener('submit', async e => { e.preventDefault();
+      const t = ['#mT1', '#mT2', '#mT3'].map(x => Math.max(0, Math.round(+$(x).value || 0)));
+      if (!(t[0] < t[1] && t[1] < t[2])) return toast('Bitte steigende Tage eintragen (Erinnerung < 1. Mahnung < 2. Mahnung).');
+      try { await FB.saveFirma({ mahn_aktiv: $('#mAkt').checked, mahn_tage: t, nachfass_tage: Math.max(0, Math.min(60, +$('#nfT').value || 0)), nachfass_kunde: $('#nfK').checked }); toast('Gespeichert'); } catch (er) { toast(errText(er)); } });
     const reListe = async () => { const von = $('#reVon').value, bis = $('#reBis').value; return (await FB.listRechnungen()).filter(r => (!von || r.datum >= von) && (!bis || r.datum <= bis)); };
     $('#reCsv')?.addEventListener('click', async () => { try { const l = await reListe(); if (!l.length) return toast('Keine Rechnungen im Zeitraum.'); rechnungCsv(l, `Rechnungen_${$('#reVon').value}_bis_${$('#reBis').value}.csv`); $('#reInfo').textContent = `${l.length} Rechnung(en) exportiert.`; } catch (e) { toast(errText(e)); } });
     $('#reZip')?.addEventListener('click', async ev => { const b = ev.target; b.disabled = true; try {
@@ -246,14 +262,14 @@
       <div class="grid g3" style="margin-top:12px">
         <label class="f">Farbe/Dekor (Aufschlag %)${n('zF', P.farbe_prozent)}</label><label class="f">Rollladen (€ je Stück)${n('zR', P.rollladen)}</label><label class="f">Sprossen (€ je Stück)${n('zS', P.sprossen)}</label>
         <label class="f">Insektenschutz (€ je Stück)${n('zI', P.insekt)}</label><label class="f">Fensterbank innen (€ je m)${n('zFi', P.fb_innen_m)}</label><label class="f">Fensterbank außen (€ je m)${n('zFa', P.fb_aussen_m)}</label>
-        <label class="f">Montage (€ je Stück)${n('zM', P.montage)}</label><label class="f">Ausbau & Entsorgung (€ je Stück)${n('zD', P.demontage)}</label><label class="f">Mehrwertsteuer (%)<input type="number" min="0" max="30" step="1" id="zMw" value="${+f.mwst}" ${dis} style="margin:0"></label></div>
+        <label class="f">Montage (€ je Stück)${n('zM', P.montage)}</label><label class="f">Ausbau & Entsorgung (€ je Stück)${n('zD', P.demontage)}</label><label class="f">Stundensatz für Nachträge (€ netto)${n('zSt', P.stundensatz)}</label><label class="f">Mehrwertsteuer (%)<input type="number" min="0" max="30" step="1" id="zMw" value="${+f.mwst}" ${dis} style="margin:0"></label></div>
       <details style="margin-top:10px"><summary class="small" style="cursor:pointer">Aufpreis je Verglasung (€ pro m²)</summary><div class="grid g3" style="margin-top:8px">${GLAS.map((g, i) => `<label class="f">${esc(g)}${n('zg' + i, P.glas[g])}</label>`).join('')}</div></details>
       <label class="f" style="margin-top:10px">Einleitungstext im Angebot<textarea id="zTxt" rows="3" maxlength="1500" ${dis}>${esc(f.angebot_text || '')}</textarea></label>
       <p class="hint">Mehrwertsteuer 0 % nur, wenn euer Betrieb Kleinunternehmer nach § 19 UStG ist – dann steht der Hinweis automatisch im Angebot.</p>
       ${adm ? '<button class="btn" id="zSave" style="margin-top:10px">Preise speichern</button>' : ''}`;
     $('#zSave')?.addEventListener('click', async () => {
       const v = id => Math.max(0, +($('#' + id).value || 0));
-      const preise = { typen: Object.fromEntries(FB.TYPEN.map((t, i) => [t, { m2: v('pm' + i), min: v('pn' + i) }])), farbe_prozent: v('zF'), rollladen: v('zR'), sprossen: v('zS'), insekt: v('zI'), fb_innen_m: v('zFi'), fb_aussen_m: v('zFa'), montage: v('zM'), demontage: v('zD'), glas: Object.fromEntries(GLAS.map((g, i) => [g, v('zg' + i)])) };
+      const preise = { typen: Object.fromEntries(FB.TYPEN.map((t, i) => [t, { m2: v('pm' + i), min: v('pn' + i) }])), farbe_prozent: v('zF'), rollladen: v('zR'), sprossen: v('zS'), insekt: v('zI'), fb_innen_m: v('zFi'), fb_aussen_m: v('zFa'), montage: v('zM'), demontage: v('zD'), stundensatz: v('zSt'), glas: Object.fromEntries(GLAS.map((g, i) => [g, v('zg' + i)])) };
       try { await FB.saveFirma({ preise, mwst: Math.min(30, v('zMw')), angebot_text: $('#zTxt').value.trim() }); toast('Preise gespeichert'); } catch (e) { toast(errText(e)); }
     });
   }
@@ -298,6 +314,37 @@
       e.preventDefault(); const btn = e.submitter; btn.disabled = true;
       try { const r = await call('einladen', { name: $('#iName').value, email: $('#iMail').value, rolle: $('#iRolle').value }); toast(r.mail ? 'Einladung verschickt' : 'Angelegt – die E-Mail konnte nicht verschickt werden.'); team(); } catch (er) { btn.disabled = false; toast(errText(er), 4500); }
     });
+  }
+
+  /* Kennzahlen für Inhaber und Büro: Angebote, Umsatz, offene Posten, Montagen */
+  async function zahlen() {
+    const box = $('#zahlenBox'), sel = $('#zJahr'), y0 = new Date().getFullYear();
+    sel.innerHTML = [y0, y0 - 1, y0 - 2].map(y => `<option>${y}</option>`).join('');
+    let an = [], re = [], pr = [], te = [];
+    try { [an, re, pr, te] = await Promise.all([FB.listAngeboteAlle(), FB.listRechnungen(), FB.listProjekte(), FB.listTermine(FB.today().slice(0, 4) + '-01-01', (y0 + 1) + '-12-31').catch(() => [])]); }
+    catch (e) { box.innerHTML = `<p class="note crit">${esc(errText(e))}</p>`; return; }
+    const eur = FB.eur, heute = FB.today();
+    const draw = () => {
+      const y = sel.value, A = an.filter(a => (a.created_at || '').startsWith(y) && !a.zurueckgezogen_at), ok = A.filter(a => a.angenommen_at), ab = A.filter(a => a.abgelehnt_at);
+      const brutto = a => +(a.summen?.brutto ?? a.daten?.summen?.brutto ?? 0);
+      const R = re.filter(r => (r.datum || '').startsWith(y) && r.art !== 'storno' && !r.storniert_durch);
+      const monate = [...Array(12)].map((_, i) => R.filter(r => +r.datum.slice(5, 7) === i + 1).reduce((x, r) => x + +r.netto, 0)), max = Math.max(1, ...monate);
+      const offen = re.filter(r => r.art !== 'storno' && !r.storniert_durch && !r.bezahlt_at), faellig = offen.filter(r => r.faellig && r.faellig < heute);
+      const status = {}; pr.forEach(p => { status[p.status] = (status[p.status] || 0) + 1; });
+      const in28 = new Date(Date.now() + 28 * 864e5).toISOString().slice(0, 10), mont = te.filter(t => t.art === 'montage' && t.datum >= heute && t.datum <= in28 && !t.erledigt).length;
+      const SL = { aufmass: 'Aufmaß', angebot: 'Angebot', beauftragt: 'Beauftragt', bestellt: 'Bestellt', montage: 'Montage', abgenommen: 'Abgenommen' };
+      box.innerHTML = `<div class="kv">
+          <div><span>Angebote gesendet</span><b>${A.length}</b></div><div><span>angenommen</span><b>${ok.length}${A.length ? ` (${Math.round(ok.length / A.length * 100)} %)` : ''}</b></div>
+          <div><span>abgelehnt</span><b>${ab.length}</b></div><div><span>Auftragswert angenommen</span><b>${eur(ok.reduce((x, a) => x + brutto(a), 0))}</b></div>
+          <div><span>Umsatz ${y} (netto, berechnet)</span><b>${eur(R.reduce((x, r) => x + +r.netto, 0))}</b></div><div><span>Offene Rechnungen</span><b>${eur(offen.reduce((x, r) => x + +r.brutto, 0))} (${offen.length})</b></div>
+          <div><span>davon überfällig</span><b style="${faellig.length ? 'color:var(--crit)' : ''}">${eur(faellig.reduce((x, r) => x + +r.brutto, 0))} (${faellig.length})</b></div><div><span>Montagen in den nächsten 4 Wochen</span><b>${mont}</b></div></div>
+        <h3 style="margin:14px 0 6px;font-size:15px">Umsatz je Monat ${y} (netto)</h3>
+        <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:4px;align-items:end;height:120px">${monate.map((v, i) => `<div title="${eur(v)}" style="display:flex;flex-direction:column;justify-content:flex-end;height:100%"><div style="background:var(--accent);border-radius:4px 4px 0 0;height:${Math.max(v ? 3 : 0, v / max * 100)}%"></div></div>`).join('')}</div>
+        <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:4px;font-size:11px;text-align:center" class="muted">${['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'].map(m => `<span>${m}</span>`).join('')}</div>
+        <h3 style="margin:14px 0 6px;font-size:15px">Projekte nach Stand</h3><div class="row" style="flex-wrap:wrap">${Object.entries(SL).map(([k, l]) => `<span class="chip">${l}: ${status[k] || 0}</span>`).join('')}</div>
+        ${faellig.length ? `<h3 style="margin:14px 0 6px;font-size:15px">Überfällige Rechnungen</h3><div class="list">${faellig.slice(0, 8).map(r => `<a class="item" href="./profitar.html#p=${r.projekt_id}"><div class="grow"><b>${esc(r.nr)}</b><span class="small muted">${esc(r.daten?.kunde?.name || '')} · fällig ${fmtDate(r.faellig)}${r.mahnstufe ? ' · ' + ['', 'erinnert', '1. Mahnung', '2. Mahnung'][r.mahnstufe] : ''}</span></div><b>${eur(r.brutto)}</b></a>`).join('')}</div>` : ''}`;
+    };
+    sel.onchange = draw; draw();
   }
 
   function rechnungCsv(l, name) {

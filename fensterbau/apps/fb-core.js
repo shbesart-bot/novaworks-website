@@ -5,7 +5,7 @@
   const SB_KEY = 'sb_publishable_i5Lf1DJYMBVX0yQOW2_nKQ_bRBbDUD2';
   const FN = SB_URL + '/functions/v1/fb-konto';
   const FN_KUNDE = SB_URL + '/functions/v1/fb-kunde';
-  const VERSION = '2026-11-09a';
+  const VERSION = '2026-11-09b';
   const qs = new URLSearchParams(location.search);
   let demo = qs.get('demo') === '1';
   try { if (qs.get('demo') === '0') sessionStorage.removeItem('fb.demo'); else if (demo) sessionStorage.setItem('fb.demo', '1'); else demo = sessionStorage.getItem('fb.demo') === '1'; } catch {}
@@ -80,7 +80,7 @@
     pruefliste: ['Fenster und Türen auf leichtgängige Funktion geprüft', 'Dichtungen, Beschläge und Entwässerung kontrolliert', 'Anschlüsse innen und außen sauber ausgeführt', 'Baustelle gereinigt, Verpackung entsorgt', 'Kunde in Bedienung und Pflege eingewiesen'],
     pflege: 'Beschläge einmal im Jahr leicht ölen. Dichtungen mit Wasser und mildem Reiniger säubern, danach mit Pflegestift behandeln. Entwässerungsschlitze frei halten. Rahmen nicht mit scheuernden Mitteln reinigen.',
     steuernummer: '123/456/78901', ustid: '', inhaber: 'Max Muster', bank: 'Musterbank', iban: 'DE02 1001 0010 0006 8201 01', bic: '', zahlungsziel_tage: 14, rechnung_text: '', mwst: 19, angebot_text: 'Vielen Dank für Ihre Anfrage. Gern bieten wir Ihnen folgende Leistungen an. Das Angebot gilt 30 Tage. Maße vorbehaltlich der Prüfung vor Bestellung.', bewertung_link: '', bewertung_tage: 3,
-    preise: { typen: { 'Dreh-Kipp-Fenster': { m2: 480, min: 390 }, 'Festverglasung': { m2: 380, min: 290 }, 'Stulpfenster (2-flügelig)': { m2: 520, min: 690 }, 'Balkontür': { m2: 520, min: 790 }, 'Hebe-Schiebetür': { m2: 980, min: 3900 }, 'Haustür': { m2: 0, min: 2900 }, 'Nebeneingangstür': { m2: 0, min: 1400 } }, farbe_prozent: 12, rollladen: 290, sprossen: 60, insekt: 85, fb_innen_m: 45, fb_aussen_m: 55, montage: 120, demontage: 60, glas: { '3-fach mit Sicherheitsglas (VSG)': 45, 'Schallschutz': 60 } } };
+    preise: { typen: { 'Dreh-Kipp-Fenster': { m2: 480, min: 390 }, 'Festverglasung': { m2: 380, min: 290 }, 'Stulpfenster (2-flügelig)': { m2: 520, min: 690 }, 'Balkontür': { m2: 520, min: 790 }, 'Hebe-Schiebetür': { m2: 980, min: 3900 }, 'Haustür': { m2: 0, min: 2900 }, 'Nebeneingangstür': { m2: 0, min: 1400 } }, farbe_prozent: 12, rollladen: 290, sprossen: 60, insekt: 85, fb_innen_m: 45, fb_aussen_m: 55, montage: 120, demontage: 60, stundensatz: 58, glas: { '3-fach mit Sicherheitsglas (VSG)': 45, 'Schallschutz': 60 } } };
   async function demoSeed() {
     if (await get('kv', 'seeded')) return;
     const el = (label, type, w, h, extra = {}) => ({ id: uid(), label, type, widthMm: w, heightMm: h, widthPoints: [w, w, w], heightPoints: [h, h, h], diagonals: [], installGapMm: 15, opening: 'DIN links', coupling: 'Keine', color: 'RAL 7016 Anthrazit', colorHex: '#3b4148', glass: '3-fach Wärmeschutz', profil: 'Kunststoff 82 mm', rollladen: 'kein', anzahl: 1, colorAussen: '', notiz: '', options: { muntins: false }, ...extra });
@@ -355,10 +355,48 @@
     return `${n > 1 ? n + '-teilig: ' : ''}${t.felder.map(f => FELD_KURZ[f] || f).join(' | ')}${t.oberlicht ? `, Oberlicht ${t.oberlicht}` : ''}`;
   }
 
+  /* ---------- Zeit & Material (Nachträge) je Projekt – erfasst auf der Baustelle, berechnet in der Schlussrechnung ---------- */
+  function nachtragPositionen(p) {
+    const l = (p.aufmass?.nachtraege || []).filter(x => !x.berechnet), sz = +preise().stundensatz || 0, out = [];
+    const std = l.filter(x => x.art === 'zeit').reduce((s, x) => s + (+x.menge || 0), 0);
+    if (std > 0) out.push({ titel: 'Zusätzliche Arbeitszeit', details: [l.filter(x => x.art === 'zeit').map(x => `${fmtDate(x.datum)}: ${String(x.menge).replace('.', ',')} Std. ${x.text || ''}`.trim()).join('; ')], menge: Math.round(std * 100) / 100, einheit: 'Std.', ep: sz, gp: Math.round(std * sz * 100) / 100, ids: l.filter(x => x.art === 'zeit').map(x => x.id) });
+    for (const x of l.filter(x => x.art === 'material')) out.push({ titel: x.text || 'Material', details: [`Nachtrag vom ${fmtDate(x.datum)}${x.wer ? ', erfasst von ' + x.wer : ''}`], menge: +x.menge || 1, einheit: 'Stk.', ep: +x.preis || 0, gp: Math.round((+x.menge || 1) * (+x.preis || 0) * 100) / 100, ids: [x.id] });
+    return out;
+  }
+  function nachtraegeDialog(p, onSave) {
+    p.aufmass ||= {}; p.aufmass.nachtraege ||= [];
+    const L = p.aufmass.nachtraege, ro = !canEdit(), sz = +preise().stundensatz || 0;
+    const d = sheet(`<div class="row between"><h2>Zeit & Material</h2><button class="iconbtn" data-close aria-label="Schließen">✕</button></div>
+      <p class="small muted" style="margin-top:4px">${esc(p.nummer || '')} ${esc(p.kunde?.name || '')} – zusätzliche Arbeit und Material, das nicht im Angebot steht. Kommt auf Wunsch in die Schlussrechnung${sz ? ` (Stundensatz ${eur(sz)} netto)` : ' – Stundensatz unter Konto → Preise eintragen'}.</p>
+      <div class="list" id="ntL" style="margin-top:8px"></div>
+      ${ro ? '' : `<div class="note" style="margin-top:10px"><div class="seg" id="ntA" style="margin-bottom:8px"><button data-a="zeit" aria-pressed="true">Arbeitszeit</button><button data-a="material" aria-pressed="false">Material</button></div>
+        <div class="grid g2"><label class="f">Datum<input id="ntD" type="date" value="${today()}"></label><label class="f" id="ntML">Stunden<input id="ntM" type="number" min="0" step="0.25" value="1"></label>
+        <label class="f span2">Was?<input id="ntT" maxlength="200" placeholder="z. B. Laibung nachgeputzt, Fensterbank gekürzt"></label>
+        <label class="f" id="ntPL" hidden>Einzelpreis netto (€)<input id="ntP" type="number" min="0" step="0.01"></label></div>
+        <div class="row" style="justify-content:flex-end;margin-top:8px"><button class="btn soft sm" id="ntAdd">+ Hinzufügen</button></div></div>`}
+      <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn ghost" data-close>Schließen</button></div>`);
+    let art = 'zeit';
+    const draw = () => { $('#ntL', d.el).innerHTML = L.length ? L.map((x, i) => `<div class="item" style="cursor:default"><div class="grow"><b>${x.art === 'zeit' ? String(x.menge).replace('.', ',') + ' Std.' : String(x.menge).replace('.', ',') + ' × ' + esc(x.text)}</b><span class="small muted">${fmtDate(x.datum)}${x.wer ? ' · ' + esc(x.wer) : ''}${x.art === 'zeit' && x.text ? ' · ' + esc(x.text) : ''}${x.art === 'material' ? ' · ' + eur(x.preis) + ' je Stück' : ''}${x.berechnet ? ' · berechnet in ' + esc(x.berechnet) : ''}</span></div>${!ro && !x.berechnet ? `<button class="iconbtn" data-x="${i}" aria-label="Entfernen">✕</button>` : ''}</div>`).join('') : '<p class="small muted">Noch nichts erfasst.</p>';
+      $$('[data-x]', d.el).forEach(b => b.onclick = async () => { L.splice(+b.dataset.x, 1); draw(); try { await onSave(); } catch (e) { toast(errText(e)); } }); };
+    draw();
+    $$('#ntA [data-a]', d.el).forEach(b => b.onclick = () => { art = b.dataset.a; $$('#ntA [data-a]', d.el).forEach(y => y.setAttribute('aria-pressed', y === b)); $('#ntML', d.el).firstChild.textContent = art === 'zeit' ? 'Stunden' : 'Menge (Stück)'; $('#ntPL', d.el).hidden = art === 'zeit'; });
+    $('#ntAdd', d.el)?.addEventListener('click', async () => {
+      const m = +$('#ntM', d.el).value, t = $('#ntT', d.el).value.trim(), pr = +$('#ntP', d.el).value || 0;
+      if (!(m > 0)) return toast('Bitte eine Menge eintragen.'); if (art === 'material' && !t) return toast('Bitte das Material beschreiben.');
+      L.push({ id: uid(), art, datum: $('#ntD', d.el).value || today(), menge: Math.round(m * 100) / 100, text: t, preis: art === 'material' ? pr : null, wer: S.me?.name || '' });
+      $('#ntT', d.el).value = ''; $('#ntP', d.el).value = ''; draw();
+      try { await onSave(); toast('Gespeichert'); } catch (e) { toast(errText(e)); }
+    });
+  }
+
   /* ---------- Angebote (online) und Rechnungen ---------- */
   async function listAngebote(projektId) {
     if (demo) return ((await get('kv', 'angebote')) || []).filter(a => a.projekt_id === projektId).sort((a, b) => b.created_at.localeCompare(a.created_at));
     const { data, error } = await sb.from('fb_angebote').select('id,nr,email,gueltig_bis,created_at,geoeffnet_at,angenommen_at,angenommen_name,unterschrift_pfad,abgelehnt_at,abgelehnt_grund,zurueckgezogen_at,token,daten').eq('projekt_id', projektId).order('created_at', { ascending: false }); if (error) throw error; return data;
+  }
+  async function listAngeboteAlle() {
+    if (demo) return (await get('kv', 'angebote')) || [];
+    const { data, error } = await sb.from('fb_angebote').select('id,projekt_id,nr,created_at,geoeffnet_at,angenommen_at,abgelehnt_at,zurueckgezogen_at,gueltig_bis,daten->summen').order('created_at', { ascending: false }).limit(3000); if (error) throw error; return data;
   }
   async function angebotSenden(body) {
     if (demo) {
@@ -404,6 +442,68 @@
     await rechnungUpdate(rech.id, { pdf_pfad: path }); return path;
   }
 
+
+  /* ---------- E-Rechnung (XRechnung 3.0, CII) und GiroCode ---------- */
+  /* „Straße 1, 12345 Ort“ → Teile; tolerant gegenüber fehlendem Komma */
+  function adresseTeilen(a) {
+    const t = String(a || '').trim(), m = t.match(/^(.*?)[,\n]?\s*(\d{5})\s+([^,\n]+)\s*$/);
+    return m ? { strasse: m[1].replace(/,\s*$/, '').trim(), plz: m[2], ort: m[3].trim() } : { strasse: t, plz: '', ort: '' };
+  }
+  const xe = v => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+  const m2 = n => (Math.round((+n || 0) * 100) / 100).toFixed(2), d102 = s => String(s || '').slice(0, 10).replace(/-/g, '');
+  function xrechnungXml(r) {
+    const D = r.daten || {}, Fi = D.firma || {}, K = D.kunde || {}, mw = +Fi.mwst || 0, sto = r.art === 'storno', abs = Math.abs;
+    const kat = mw > 0 ? 'S' : 'E', grund = mw > 0 ? '' : 'Umsatzsteuerbefreit nach § 19 UStG (Kleinunternehmerregelung).';
+    const typ = sto ? '381' : r.art === 'anzahlung' ? '326' : '380';
+    const sa = adresseTeilen(Fi.anschrift), ka = adresseTeilen(K.adresse);
+    let lines, lineTotal, allowance = 0, basis, tax, grand, prepaid = 0;
+    if (sto || r.art === 'anzahlung') {
+      const txt = sto ? `Storno der Rechnung ${D.storno_zu?.nr || ''}` : `Anzahlung ${String(D.anteil ?? '').replace('.', ',')} % auf Angebot ${D.angebot?.nr || ''}${D.projekt ? ' (Projekt ' + D.projekt + ')' : ''}`;
+      lines = [{ pos: 1, name: txt, menge: 1, preis: abs(r.netto), summe: abs(r.netto) }];
+      lineTotal = basis = abs(r.netto); tax = abs(r.steuer); grand = abs(r.brutto);
+    } else {
+      const S0 = D.summen || {};
+      lines = (D.positionen || []).map(p => ({ pos: p.pos, name: [p.titel, ...(p.details || [])].filter(Boolean).join(' – '), menge: p.menge || 1, preis: p.menge ? p.gp / p.menge : p.ep, summe: p.gp }));
+      lineTotal = +S0.sum || 0; allowance = +S0.rab || 0; basis = +S0.netto || 0; tax = +S0.st || 0; grand = +S0.brutto || 0;
+      prepaid = (D.anzahlungen || []).reduce((x, a) => x + (+a.brutto || 0), 0);
+    }
+    const due = Math.round((grand - prepaid) * 100) / 100;
+    const party = (o) => [o.id ? `<ram:ID>${xe(o.id)}</ram:ID>` : '', `<ram:Name>${xe(o.name)}</ram:Name>`,
+      o.kontakt ? `<ram:DefinedTradeContact><ram:PersonName>${xe(o.kontakt.name)}</ram:PersonName>${o.kontakt.tel ? `<ram:TelephoneUniversalCommunication><ram:CompleteNumber>${xe(o.kontakt.tel)}</ram:CompleteNumber></ram:TelephoneUniversalCommunication>` : ''}${o.kontakt.mail ? `<ram:EmailURIUniversalCommunication><ram:URIID>${xe(o.kontakt.mail)}</ram:URIID></ram:EmailURIUniversalCommunication>` : ''}</ram:DefinedTradeContact>` : '',
+      `<ram:PostalTradeAddress><ram:PostcodeCode>${xe(o.a.plz)}</ram:PostcodeCode><ram:LineOne>${xe(o.a.strasse)}</ram:LineOne><ram:CityName>${xe(o.a.ort)}</ram:CityName><ram:CountryID>DE</ram:CountryID></ram:PostalTradeAddress>`,
+      o.mail ? `<ram:URIUniversalCommunication><ram:URIID schemeID="EM">${xe(o.mail)}</ram:URIID></ram:URIUniversalCommunication>` : '',
+      o.ustid ? `<ram:SpecifiedTaxRegistration><ram:ID schemeID="VA">${xe(o.ustid)}</ram:ID></ram:SpecifiedTaxRegistration>` : '',
+      o.stnr ? `<ram:SpecifiedTaxRegistration><ram:ID schemeID="FC">${xe(o.stnr)}</ram:ID></ram:SpecifiedTaxRegistration>` : ''].join('');
+    const steuer = `<ram:TypeCode>VAT</ram:TypeCode><ram:CategoryCode>${kat}</ram:CategoryCode><ram:RateApplicablePercent>${m2(mw)}</ram:RateApplicablePercent>`;
+    const iban = String(Fi.iban || '').replace(/\s+/g, '');
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<rsm:CrossIndustryInvoice xmlns:rsm="urn:un:unece:uncefact:data:standard:CrossIndustryInvoice:100" xmlns:ram="urn:un:unece:uncefact:data:standard:ReusableAggregateBusinessInformationEntity:100" xmlns:qdt="urn:un:unece:uncefact:data:standard:QualifiedDataType:100" xmlns:udt="urn:un:unece:uncefact:data:standard:UnqualifiedDataType:100">
+<rsm:ExchangedDocumentContext><ram:GuidelineSpecifiedDocumentContextParameter><ram:ID>urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0</ram:ID></ram:GuidelineSpecifiedDocumentContextParameter></rsm:ExchangedDocumentContext>
+<rsm:ExchangedDocument><ram:ID>${xe(r.nr)}</ram:ID><ram:TypeCode>${typ}</ram:TypeCode><ram:IssueDateTime><udt:DateTimeString format="102">${d102(r.datum)}</udt:DateTimeString></ram:IssueDateTime>${D.leistung ? `<ram:IncludedNote><ram:Content>${xe((r.art === 'anzahlung' ? 'Leistungszeitraum (voraussichtlich): ' : 'Leistungsdatum: ') + D.leistung)}</ram:Content></ram:IncludedNote>` : ''}</rsm:ExchangedDocument>
+<rsm:SupplyChainTradeTransaction>
+${lines.map(l => `<ram:IncludedSupplyChainTradeLineItem><ram:AssociatedDocumentLineDocument><ram:LineID>${l.pos}</ram:LineID></ram:AssociatedDocumentLineDocument><ram:SpecifiedTradeProduct><ram:Name>${xe(l.name.slice(0, 500))}</ram:Name></ram:SpecifiedTradeProduct><ram:SpecifiedLineTradeAgreement><ram:NetPriceProductTradePrice><ram:ChargeAmount>${m2(l.preis)}</ram:ChargeAmount></ram:NetPriceProductTradePrice></ram:SpecifiedLineTradeAgreement><ram:SpecifiedLineTradeDelivery><ram:BilledQuantity unitCode="C62">${l.menge}</ram:BilledQuantity></ram:SpecifiedLineTradeDelivery><ram:SpecifiedLineTradeSettlement><ram:ApplicableTradeTax>${steuer}</ram:ApplicableTradeTax><ram:SpecifiedTradeSettlementLineMonetarySummation><ram:LineTotalAmount>${m2(l.summe)}</ram:LineTotalAmount></ram:SpecifiedTradeSettlementLineMonetarySummation></ram:SpecifiedLineTradeSettlement></ram:IncludedSupplyChainTradeLineItem>`).join('\n')}
+<ram:ApplicableHeaderTradeAgreement><ram:BuyerReference>${xe(D.projekt || r.nr)}</ram:BuyerReference>
+<ram:SellerTradeParty>${party({ id: Fi.ustid ? '' : Fi.steuernummer, name: Fi.name, kontakt: { name: Fi.inhaber || Fi.name, tel: Fi.telefon, mail: Fi.email }, a: sa, mail: Fi.email, ustid: Fi.ustid, stnr: Fi.ustid ? '' : Fi.steuernummer })}</ram:SellerTradeParty>
+<ram:BuyerTradeParty>${party({ name: K.name || 'Kunde', a: ka, mail: K.email || r.gesendet_an || '' })}</ram:BuyerTradeParty></ram:ApplicableHeaderTradeAgreement>
+<ram:ApplicableHeaderTradeDelivery><ram:ActualDeliverySupplyChainEvent><ram:OccurrenceDateTime><udt:DateTimeString format="102">${d102(r.datum)}</udt:DateTimeString></ram:OccurrenceDateTime></ram:ActualDeliverySupplyChainEvent></ram:ApplicableHeaderTradeDelivery>
+<ram:ApplicableHeaderTradeSettlement><ram:PaymentReference>${xe(r.nr)}</ram:PaymentReference><ram:InvoiceCurrencyCode>EUR</ram:InvoiceCurrencyCode>
+${!sto && iban ? `<ram:SpecifiedTradeSettlementPaymentMeans><ram:TypeCode>58</ram:TypeCode><ram:PayeePartyCreditorFinancialAccount><ram:IBANID>${xe(iban)}</ram:IBANID></ram:PayeePartyCreditorFinancialAccount></ram:SpecifiedTradeSettlementPaymentMeans>` : sto ? '<ram:SpecifiedTradeSettlementPaymentMeans><ram:TypeCode>1</ram:TypeCode><ram:Information>Verrechnung bzw. Erstattung gemäß Storno</ram:Information></ram:SpecifiedTradeSettlementPaymentMeans>' : ''}
+<ram:ApplicableTradeTax><ram:CalculatedAmount>${m2(tax)}</ram:CalculatedAmount><ram:TypeCode>VAT</ram:TypeCode>${grund ? `<ram:ExemptionReason>${xe(grund)}</ram:ExemptionReason>` : ''}<ram:BasisAmount>${m2(basis)}</ram:BasisAmount><ram:CategoryCode>${kat}</ram:CategoryCode><ram:RateApplicablePercent>${m2(mw)}</ram:RateApplicablePercent></ram:ApplicableTradeTax>
+${allowance ? `<ram:SpecifiedTradeAllowanceCharge><ram:ChargeIndicator><udt:Indicator>false</udt:Indicator></ram:ChargeIndicator><ram:ActualAmount>${m2(allowance)}</ram:ActualAmount><ram:Reason>Rabatt</ram:Reason><ram:CategoryTradeTax>${steuer}</ram:CategoryTradeTax></ram:SpecifiedTradeAllowanceCharge>` : ''}
+<ram:SpecifiedTradePaymentTerms>${r.faellig && !sto ? `<ram:DueDateDateTime><udt:DateTimeString format="102">${d102(r.faellig)}</udt:DateTimeString></ram:DueDateDateTime>` : '<ram:Description>Keine Zahlung fällig</ram:Description>'}</ram:SpecifiedTradePaymentTerms>
+<ram:SpecifiedTradeSettlementHeaderMonetarySummation><ram:LineTotalAmount>${m2(lineTotal)}</ram:LineTotalAmount>${allowance ? `<ram:AllowanceTotalAmount>${m2(allowance)}</ram:AllowanceTotalAmount>` : ''}<ram:TaxBasisTotalAmount>${m2(basis)}</ram:TaxBasisTotalAmount><ram:TaxTotalAmount currencyID="EUR">${m2(tax)}</ram:TaxTotalAmount><ram:GrandTotalAmount>${m2(grand)}</ram:GrandTotalAmount>${prepaid ? `<ram:TotalPrepaidAmount>${m2(prepaid)}</ram:TotalPrepaidAmount>` : ''}<ram:DuePayableAmount>${m2(sto ? grand : due)}</ram:DuePayableAmount></ram:SpecifiedTradeSettlementHeaderMonetarySummation>
+${sto && D.storno_zu ? `<ram:InvoiceReferencedDocument><ram:IssuerAssignedID>${xe(D.storno_zu.nr)}</ram:IssuerAssignedID><ram:FormattedIssueDateTime><qdt:DateTimeString format="102">${d102(D.storno_zu.datum)}</qdt:DateTimeString></ram:FormattedIssueDateTime></ram:InvoiceReferencedDocument>` : ''}
+</ram:ApplicableHeaderTradeSettlement></rsm:SupplyChainTradeTransaction></rsm:CrossIndustryInvoice>
+`;
+  }
+  /* EPC-QR („GiroCode“) für Banking-Apps; nur ASCII für maximale Lesbarkeit */
+  function girocodeText(r) {
+    const Fi = r.daten?.firma || {}, iban = String(Fi.iban || '').replace(/\s+/g, '').toUpperCase(), betrag = Math.round(+r.brutto * 100) / 100;
+    if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(iban) || !(betrag > 0) || r.art === 'storno') return null;
+    const asc = t => String(t || '').normalize('NFKD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss').replace(/[^\x20-\x7e]/g, '');
+    return ['BCD', '002', '1', 'SCT', asc(Fi.bic).replace(/\s+/g, ''), asc(Fi.name).slice(0, 70), iban, 'EUR' + betrag.toFixed(2), '', '', asc(`${r.nr}`).slice(0, 140), ''].join('\n');
+  }
+
   /* ---------- Bestellmaß, Preise, Export-Spalten (gemeinsam für Aufmaß, Angebot, Bestellliste) ---------- */
   function bestell(e) {
     const g = +e.installGapMm || 0, w = e.widthPoints || [], h = e.heightPoints || [];
@@ -413,7 +513,7 @@
   }
   const TYPEN = ['Dreh-Kipp-Fenster', 'Festverglasung', 'Stulpfenster (2-flügelig)', 'Kippfenster', 'Balkontür', 'Hebe-Schiebetür', 'Parallel-Schiebe-Kipp-Tür', 'Haustür', 'Nebeneingangstür', 'Rollladen / Sonnenschutz'];
   /* Preisliste: je Typ Preis pro m² (Rahmenaußenmaß) und Mindestpreis; Zuschläge in € bzw. % */
-  const PREISE_DEFAULT = { typen: Object.fromEntries(TYPEN.map(t => [t, { m2: 0, min: 0 }])), farbe_prozent: 0, glas: {}, rollladen: 0, sprossen: 0, insekt: 0, fb_innen_m: 0, fb_aussen_m: 0, montage: 0, demontage: 0 };
+  const PREISE_DEFAULT = { typen: Object.fromEntries(TYPEN.map(t => [t, { m2: 0, min: 0 }])), farbe_prozent: 0, glas: {}, rollladen: 0, sprossen: 0, insekt: 0, fb_innen_m: 0, fb_aussen_m: 0, montage: 0, demontage: 0, stundensatz: 0 };
   const preise = () => { const p = S.firma?.preise || {}; return { ...PREISE_DEFAULT, ...p, typen: { ...PREISE_DEFAULT.typen, ...(p.typen || {}) }, glas: p.glas || {} }; };
   function positionPreis(e, P = preise()) {
     const b = bestell(e), m2 = b.B && b.H ? (b.B / 1000) * (b.H / 1000) : 0, t = P.typen[e.type] || { m2: 0, min: 0 }, teile = [];
@@ -481,7 +581,9 @@
 
   window.FB = { S, sb, demo, VERSION, $, $$, esc, uid, today, fmtDate, fmtDT, errText, toast, sheet, confirmDlg, call, init, abo, canEdit, canAdmin,
     listProjekte, getProjekt, neuesProjekt, saveProjekt, deleteProjekt, compress, saveFile, fileUrl, fileBlob, removeFile, flush, header, pdf, blobToDataUrl, sha256, passUrl, download, safeName,
-    callKunde, listAngebote, angebotSenden, angebotZurueckziehen, listRechnungen, rechnungAnlegen, rechnungUpdate, rechnungPdfAblegen,
+    adresseTeilen, xrechnungXml, girocodeText,
+    nachtragPositionen, nachtraegeDialog,
+    callKunde, listAngebote, listAngeboteAlle, angebotSenden, angebotZurueckziehen, listRechnungen, rechnungAnlegen, rechnungUpdate, rechnungPdfAblegen,
     listService, updateService, deleteService, listTeam, saveFirma, logLines, listTermine, saveTermin, deleteTermin, listWartung,
     FELD_OEFF, FELD_KURZ, mitTeilung, teilung, oeffnungText,
     bestell, TYPEN, PREISE_DEFAULT, preise, positionPreis, eur, EXPORT_COLS, exportCols, annotate,
