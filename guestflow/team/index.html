@@ -12,10 +12,26 @@
   <link rel="icon" type="image/png" href="favicon.png"/>
   <title>GuestFlow Team</title>
   <link rel="manifest" href="manifest.json">
-  <meta name="gf-build" content="20261112083803">
+  <meta name="gf-build" content="20261112091356">
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://zohdlnsznsmoedsnamcn.supabase.co" crossorigin>
+  <style>
+    #gf-laden{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#f4f6fb;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2a44;z-index:9999;transition:opacity .3s}
+    #gf-laden b{font-size:22px}
+    #gf-laden i{width:36px;height:36px;border:4px solid #d6def0;border-top-color:#4f8cff;border-radius:50%;animation:gfdreh 0.9s linear infinite}
+    @keyframes gfdreh{to{transform:rotate(360deg)}}
+  </style>
 </head>
 <body>
+  <div id="gf-laden"><b>GuestFlow Team</b><i></i><span>Wird geladen &hellip;</span></div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var l = document.getElementById('gf-laden');
+      if (l) { l.style.opacity = '0'; setTimeout(function () { l.remove(); }, 300); }
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
-  <script src="update_check.js?b=20261112083803" defer></script>
+  <script src="update_check.js?b=20261112091356" defer></script>
 </body>
 </html>

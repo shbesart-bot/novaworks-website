@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <base href="/guestflow/gast/">
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="GuestFlow – Ihr digitaler Hotel-Begleiter: Speisekarte, Zimmerservice, Veranstaltungen und mehr.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="GuestFlow">
+  <meta name="theme-color" content="#1f2a44">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <link rel="icon" type="image/png" href="favicon.png"/>
+  <title>GuestFlow</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="gf-build" content="20261112091833">
+  <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://zohdlnsznsmoedsnamcn.supabase.co" crossorigin>
+  <style>
+    #gf-laden{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#f4f6fb;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2a44;z-index:9999;transition:opacity .3s}
+    #gf-laden b{font-size:24px}
+    #gf-laden i{width:36px;height:36px;border:4px solid #d6def0;border-top-color:#4f8cff;border-radius:50%;animation:gfdreh 0.9s linear infinite}
+    @keyframes gfdreh{to{transform:rotate(360deg)}}
+  </style>
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB0hVXJhF9ZHxAkiKkHoMrLNZYwgc2LtkY"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+  <div id="gf-laden"><b>GuestFlow</b><i></i><span>Wird geladen &hellip;</span></div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var l = document.getElementById('gf-laden');
+      if (l) { l.style.opacity = '0'; setTimeout(function () { l.remove(); }, 300); }
+    });
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+  <script src="update_check.js?b=20261112091833" defer></script>
+</body>
+</html>
