@@ -1,9 +1,9 @@
 {
     "name": "GuestFlow",
     "short_name": "GuestFlow",
-    "start_url": ".",
+    "start_url": "./",
     "display": "standalone",
-    "background_color": "#f4f6fb",
+    "background_color": "#ffffff",
     "theme_color": "#1f2a44",
     "description": "Ihr digitaler Hotel-Begleiter",
     "orientation": "portrait-primary",
