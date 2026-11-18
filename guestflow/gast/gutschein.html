@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Gutschein</title>
+<style>
+  @page { size: A5 landscape; margin: 0; }
+  :root { --farbe: #6b4a2b; --gold: #b8915a; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #efe8dc; font-family: Georgia, 'Times New Roman', serif; color: #2b2118; }
+  .leiste { font-family: system-ui, Arial, sans-serif; text-align: center; padding: 14px; }
+  .leiste button { font: 600 15px system-ui, Arial; padding: 10px 18px; border: 0; border-radius: 10px; background: var(--farbe); color: #fff; cursor: pointer; }
+  .karte { width: 210mm; max-width: calc(100vw - 24px); aspect-ratio: 210 / 148; margin: 0 auto 24px; background: #fffdf9; position: relative;
+           border-radius: 6px; box-shadow: 0 12px 40px #0002; overflow: hidden; display: grid; grid-template-columns: 1.1fr 1fr; }
+  .bild { background: var(--farbe); color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 6%; text-align: center; position: relative; }
+  .bild .symbol { font-size: clamp(48px, 11vw, 110px); line-height: 1; }
+  .bild .wort { margin-top: 10px; font-size: clamp(18px, 3.4vw, 34px); letter-spacing: .04em; font-style: italic; }
+  .bild::after { content: ''; position: absolute; inset: 4%; border: 1.5px solid #fff6; border-radius: 4px; pointer-events: none; }
+  .text { padding: 6% 7%; display: flex; flex-direction: column; }
+  .logo { max-height: 54px; max-width: 70%; object-fit: contain; align-self: flex-start; }
+  .hotel { font-size: 18px; color: var(--farbe); font-weight: 700; }
+  .klein { font: 11px system-ui, Arial, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #8a6a3b; margin-top: 4%; }
+  .betrag { font-size: clamp(34px, 6vw, 58px); margin: 2% 0; color: var(--farbe); }
+  .fuer { font-size: clamp(15px, 2vw, 20px); }
+  .nachricht { font-style: italic; margin-top: 3%; font-size: clamp(13px, 1.6vw, 16px); color: #5a4a3a; }
+  .unten { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+  .code { font: 700 clamp(15px, 2.2vw, 22px) ui-monospace, monospace; letter-spacing: 3px; }
+  .gueltig { font: 12px system-ui, Arial, sans-serif; color: #6f6255; }
+  .eingeloest { position: absolute; top: 40%; left: -5%; right: -5%; transform: rotate(-12deg); text-align: center; font: 800 40px system-ui; color: #b3261e88; border: 4px solid #b3261e88; }
+  .fehler { font-family: system-ui, Arial; text-align: center; padding: 60px 20px; }
+  @media print { body { background: #fff; } .leiste { display: none; } .karte { box-shadow: none; margin: 0; width: 210mm; height: 148mm; max-width: none; border-radius: 0; } }
+  @media (max-width: 560px) { .karte { grid-template-columns: 1fr; aspect-ratio: auto; } .bild { padding: 28px; } }
+</style>
+</head>
+<body>
+<div class="leiste" id="leiste" hidden><button onclick="print()">Drucken / als PDF speichern</button></div>
+<div id="inhalt"><p class="fehler">Gutschein wird geladen …</p></div>
+<script>
+const SUPA = 'https://zohdlnsznsmoedsnamcn.supabase.co';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvaGRsbnN6bnNtb2Vkc25hbWNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwMTIwOTAsImV4cCI6MjEwMDU4ODA5MH0.CSlI87ec29PveyjRUHGFWVsPXTUqirvVlOF0rAfnfdY';
+const MOTIVE = {
+  klassisch: ['✦', 'Für eine schöne Zeit', null],
+  geburtstag: ['🎂', 'Alles Gute zum Geburtstag', '#7a2e3b'],
+  weihnachten: ['🎄', 'Frohe Weihnachten', '#2e5b3b'],
+  hochzeit: ['💍', 'Für das Brautpaar', '#8a6d3b'],
+  danke: ['💐', 'Danke!', '#3d6273'],
+  ostern: ['🐣', 'Frohe Ostern', '#7a8a3b'],
+};
+const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+(async () => {
+  const q = new URLSearchParams(location.search);
+  const ziel = document.getElementById('inhalt');
+  try {
+    const r = await fetch(SUPA + '/rest/v1/rpc/gutschein_ansicht', {
+      method: 'POST', headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_id: q.get('id'), p_code: q.get('code') }),
+    });
+    const g = await r.json();
+    if (!r.ok || !g) throw new Error('nicht gefunden');
+    const m = MOTIVE[g.motiv] || MOTIVE.klassisch;
+    const farbe = m[2] || (/^#[0-9a-f]{6}$/i.test(g.farbe || '') ? g.farbe : '#6b4a2b');
+    document.documentElement.style.setProperty('--farbe', farbe);
+    document.title = 'Gutschein – ' + g.hotel;
+    const betrag = Number(g.betrag).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+    const bis = g.gueltig_bis ? new Date(g.gueltig_bis).toLocaleDateString('de-DE') : null;
+    ziel.innerHTML = `<div class="karte">
+      <div class="bild"><div class="symbol">${m[0]}</div><div class="wort">${esc(m[1])}</div></div>
+      <div class="text">
+        ${g.logo && /^https:\/\//.test(g.logo) ? `<img class="logo" src="${esc(g.logo)}" alt="${esc(g.hotel)}">` : `<div class="hotel">${esc(g.hotel)}</div>`}
+        <div class="klein">Gutschein</div>
+        <div class="betrag">${betrag}</div>
+        <div class="fuer">für ${esc(g.empfaenger)}</div>
+        ${g.nachricht ? `<div class="nachricht">„${esc(g.nachricht)}“</div>` : ''}
+        <div class="unten">
+          <div><div class="klein" style="margin:0">Gutscheincode</div><div class="code">${esc(g.code)}</div></div>
+          ${bis ? `<div class="gueltig">gültig bis ${bis}</div>` : ''}
+        </div>
+      </div>
+      ${g.status === 'redeemed' ? '<div class="eingeloest">EINGELÖST</div>' : ''}
+    </div>`;
+    document.getElementById('leiste').hidden = false;
+  } catch (e) {
+    ziel.innerHTML = '<p class="fehler">Dieser Gutschein wurde nicht gefunden. Bitte den Link aus der Gäste-App verwenden.</p>';
+  }
+})();
+</script>
+</body>
+</html>
