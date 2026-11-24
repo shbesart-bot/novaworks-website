@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gutschein verschenken</title>
+<meta name="description" content="Gutscheine zum Verschenken – direkt online kaufen, sofort als PDF.">
+<meta property="og:title" content="Gutschein verschenken">
+<meta property="og:description" content="Ein Aufenthalt oder ein schönes Essen – als Gutschein, sofort per E-Mail.">
+<style>
+:root{--bg:#f7f2e9;--karte:#fff;--text:#2b2118;--grau:#6f6255;--linie:#e6d8c2;--akzent:#6b4a2b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:28px 16px 60px}
+.kopf{text-align:center}.kopf img{max-height:72px;max-width:220px;background:#fff;border-radius:12px;padding:6px 10px}
+h1{font-family:Georgia,serif;font-weight:500;font-size:32px;margin:14px 0 6px}.grau{color:var(--grau)}
+.motive{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin:24px 0}
+.motiv{background:var(--karte);border:1px solid var(--linie);border-radius:16px;padding:18px 12px;text-align:center}
+.motiv b{display:block;font-size:34px;margin-bottom:6px}
+.betraege{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:18px 0}
+.betrag{background:var(--karte);border:1px solid var(--linie);border-radius:999px;padding:8px 16px;font-weight:600}
+.knopf{display:block;text-align:center;background:var(--akzent);color:#fff;text-decoration:none;font-weight:700;padding:15px 20px;border-radius:12px;margin:22px 0 8px;font-size:17px}
+ol{padding-left:22px}li{margin:4px 0}.klein{font-size:13px;color:var(--grau);text-align:center}
+.karte{background:var(--karte);border:1px solid var(--linie);border-radius:16px;padding:18px 20px;margin:18px 0}
+</style></head>
+<body><main id="app"><p class="grau" style="text-align:center">Wird geladen …</p></main>
+<script>
+(function () {
+  var URL_ = 'https://zohdlnsznsmoedsnamcn.supabase.co', KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvaGRsbnN6bnNtb2Vkc25hbWNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwMTIwOTAsImV4cCI6MjEwMDU4ODA5MH0.CSlI87ec29PveyjRUHGFWVsPXTUqirvVlOF0rAfnfdY';
+  var slug = new URLSearchParams(location.search).get('hotel') || '';
+  var app = document.getElementById('app');
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  if (!/^[a-z0-9-]{3,80}$/.test(slug)) { app.innerHTML = '<div class="karte">Dieser Link ist unvollständig.</div>'; return; }
+  fetch(URL_ + '/rest/v1/hotels?slug=eq.' + encodeURIComponent(slug) + '&select=name,logo_url,brand_color&limit=1', { headers: { apikey: KEY, Authorization: 'Bearer ' + KEY } })
+    .then(function (r) { return r.json(); })
+    .then(function (rows) {
+      var h = rows && rows[0];
+      if (!h) { app.innerHTML = '<div class="karte">Hotel nicht gefunden.</div>'; return; }
+      if (/^#[0-9a-fA-F]{6}$/.test(h.brand_color || '')) document.documentElement.style.setProperty('--akzent', h.brand_color);
+      document.title = 'Gutschein verschenken – ' + h.name;
+      var shop = '../gast/?hotel=' + encodeURIComponent(slug) + '#/gift-vouchers';
+      var motive = [['🎄', 'Weihnachten'], ['🎂', 'Geburtstag'], ['💍', 'Hochzeit'], ['💐', 'Danke'], ['🐣', 'Ostern'], ['✦', 'Klassisch']];
+      app.innerHTML =
+        '<div class="kopf">' + (h.logo_url ? '<img src="' + esc(h.logo_url) + '" alt="' + esc(h.name) + '">' : '') +
+        '<h1>Freude verschenken</h1><div class="grau">Ein Gutschein vom ' + esc(h.name) + ' – für eine Auszeit, ein gutes Essen oder einfach so.</div></div>' +
+        '<div class="motive">' + motive.map(function (m) { return '<div class="motiv"><b>' + m[0] + '</b>' + esc(m[1]) + '</div>'; }).join('') + '</div>' +
+        '<div class="betraege">' + [25, 50, 100, 150, 'Wunschbetrag'].map(function (b) { return '<span class="betrag">' + (typeof b === 'number' ? b + ' €' : b) + '</span>'; }).join('') + '</div>' +
+        '<a class="knopf" href="' + shop + '">Jetzt Gutschein kaufen</a>' +
+        '<p class="klein">Sicher online bezahlen · Gutschein kommt sofort per E-Mail und in der App</p>' +
+        '<div class="karte"><b>So geht’s</b><ol><li>Motiv und Betrag wählen, auf Wunsch einen Gruß dazuschreiben.</li><li>Kurz anmelden (dauert eine Minute) und sicher bezahlen.</li><li>Gutschein ausdrucken oder weiterleiten – eingelöst wird bei der Buchung oder vor Ort.</li></ol></div>' +
+        '<p class="klein">' + esc(h.name) + ' · Gutscheine über GuestFlow</p>';
+    })
+    .catch(function () { app.innerHTML = '<div class="karte">Die Seite konnte nicht geladen werden.</div>'; });
+})();
+</script></body></html>
