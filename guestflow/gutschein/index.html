@@ -11,15 +11,19 @@ main{max-width:720px;margin:0 auto;padding:28px 16px 60px}
 .kopf{text-align:center}.kopf img{max-height:72px;max-width:220px;background:#fff;border-radius:12px;padding:6px 10px}
 h1{font-family:Georgia,serif;font-weight:500;font-size:32px;margin:14px 0 6px}.grau{color:var(--grau)}
 .motive{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin:24px 0}
-.motiv{background:var(--karte);border:1px solid var(--linie);border-radius:16px;padding:18px 12px;text-align:center}
+.motiv{background:var(--karte);border:1px solid var(--linie);border-radius:16px;padding:14px 10px;text-align:center;font:inherit;cursor:pointer;color:inherit}
+.motiv[aria-pressed="true"],.betrag[aria-pressed="true"]{border-color:var(--akzent);box-shadow:0 0 0 2px var(--akzent)}
+.motive{grid-template-columns:repeat(auto-fill,minmax(100px,1fr))!important}
+input,textarea{width:100%;font:inherit;padding:11px 12px;border:1px solid #cdbfa8;border-radius:10px;background:#fff;color:var(--text);margin:6px 0}
+textarea{min-height:64px}.fehler{color:#b3261e;margin-top:8px}form b{display:block;margin-top:14px}
 .motiv b{display:block;font-size:34px;margin-bottom:6px}
 .betraege{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:18px 0}
-.betrag{background:var(--karte);border:1px solid var(--linie);border-radius:999px;padding:8px 16px;font-weight:600}
+.betrag{background:var(--karte);border:1px solid var(--linie);border-radius:999px;padding:8px 16px;font-weight:600;font:inherit;cursor:pointer;color:inherit}
 .knopf{display:block;text-align:center;background:var(--akzent);color:#fff;text-decoration:none;font-weight:700;padding:15px 20px;border-radius:12px;margin:22px 0 8px;font-size:17px}
 ol{padding-left:22px}li{margin:4px 0}.klein{font-size:13px;color:var(--grau);text-align:center}
 .karte{background:var(--karte);border:1px solid var(--linie);border-radius:16px;padding:18px 20px;margin:18px 0}
 </style></head>
-<body><main id="app"><p class="grau" style="text-align:center">Wird geladen …</p></main>
+<body><main id="app"><p class="grau" style="text-align:center">Wird geladen …</p></main><footer style="text-align:center;font-size:12px;color:#8a7a66;padding:0 16px 30px"><a href="../../impressum.html" style="color:inherit">Impressum</a> · <a href="../../datenschutz.html#guestflow" style="color:inherit">Datenschutz</a></footer>
 <script>
 (function () {
   var URL_ = 'https://zohdlnsznsmoedsnamcn.supabase.co', KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpvaGRsbnN6bnNtb2Vkc25hbWNuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUwMTIwOTAsImV4cCI6MjEwMDU4ODA5MH0.CSlI87ec29PveyjRUHGFWVsPXTUqirvVlOF0rAfnfdY';
@@ -36,15 +40,58 @@ ol{padding-left:22px}li{margin:4px 0}.klein{font-size:13px;color:var(--grau);tex
       document.title = 'Gutschein verschenken – ' + h.name;
       var shop = '../gast/?hotel=' + encodeURIComponent(slug) + '#/gift-vouchers';
       var motive = [['🎄', 'Weihnachten'], ['🎂', 'Geburtstag'], ['💍', 'Hochzeit'], ['💐', 'Danke'], ['🐣', 'Ostern'], ['✦', 'Klassisch']];
-      app.innerHTML =
-        '<div class="kopf">' + (h.logo_url ? '<img src="' + esc(h.logo_url) + '" alt="' + esc(h.name) + '">' : '') +
-        '<h1>Freude verschenken</h1><div class="grau">Ein Gutschein vom ' + esc(h.name) + ' – für eine Auszeit, ein gutes Essen oder einfach so.</div></div>' +
-        '<div class="motive">' + motive.map(function (m) { return '<div class="motiv"><b>' + m[0] + '</b>' + esc(m[1]) + '</div>'; }).join('') + '</div>' +
-        '<div class="betraege">' + [25, 50, 100, 150, 'Wunschbetrag'].map(function (b) { return '<span class="betrag">' + (typeof b === 'number' ? b + ' €' : b) + '</span>'; }).join('') + '</div>' +
-        '<a class="knopf" href="' + shop + '">Jetzt Gutschein kaufen</a>' +
-        '<p class="klein">Sicher online bezahlen · Gutschein kommt sofort per E-Mail und in der App</p>' +
-        '<div class="karte"><b>So geht’s</b><ol><li>Motiv und Betrag wählen, auf Wunsch einen Gruß dazuschreiben.</li><li>Kurz anmelden (dauert eine Minute) und sicher bezahlen.</li><li>Gutschein ausdrucken oder weiterleiten – eingelöst wird bei der Buchung oder vor Ort.</li></ol></div>' +
-        '<p class="klein">' + esc(h.name) + ' · Gutscheine über GuestFlow</p>';
+      var params = new URLSearchParams(location.search);
+      var kopf = '<div class="kopf">' + (h.logo_url ? '<img src="' + esc(h.logo_url) + '" alt="' + esc(h.name) + '">' : '') +
+        '<h1>Freude verschenken</h1><div class="grau">Ein Gutschein vom ' + esc(h.name) + ' – für eine Auszeit, ein gutes Essen oder einfach so.</div></div>';
+      if (params.get('danke') === '1') {
+        app.innerHTML = kopf + '<div class="karte" style="text-align:center"><div style="font-size:44px">🎁</div><b style="font-size:20px">Vielen Dank!</b><p>Ihr Gutschein ist bezahlt. In wenigen Minuten kommt er als PDF per E-Mail – zum Ausdrucken oder Weiterleiten.</p><p class="klein">Keine Mail? Bitte auch im Spam-Ordner nachsehen.</p></div>';
+        return;
+      }
+      var motive = [['weihnachten', '🎄', 'Weihnachten'], ['geburtstag', '🎂', 'Geburtstag'], ['hochzeit', '💍', 'Hochzeit'], ['danke', '💐', 'Danke'], ['ostern', '🐣', 'Ostern'], ['klassisch', '✦', 'Klassisch']];
+      var betraege = [25, 50, 100, 150];
+      app.innerHTML = kopf +
+        '<form id="form" class="karte" novalidate>' +
+        '<b>1. Motiv</b><div class="motive" id="motive">' + motive.map(function (m, i) { return '<button type="button" class="motiv" data-m="' + m[0] + '" aria-pressed="' + (i === 0) + '"><b>' + m[1] + '</b>' + esc(m[2]) + '</button>'; }).join('') + '</div>' +
+        '<b>2. Betrag</b><div class="betraege" id="betraege">' + betraege.map(function (b, i) { return '<button type="button" class="betrag" data-b="' + b + '" aria-pressed="' + (i === 1) + '">' + b + ' €</button>'; }).join('') +
+        '<input id="eigener" class="betrag" style="width:150px" inputmode="numeric" placeholder="anderer Betrag €"></div>' +
+        '<b>3. Für wen?</b><input id="empf" placeholder="Name der beschenkten Person" maxlength="80">' +
+        '<textarea id="nachr" placeholder="Persönlicher Gruß (freiwillig)" maxlength="300"></textarea>' +
+        '<b>4. Ihre Angaben</b><input id="kname" placeholder="Ihr Name" autocomplete="name" maxlength="80"><input id="kmail" type="email" placeholder="Ihre E-Mail – dorthin kommt der Gutschein" autocomplete="email" maxlength="120">' +
+        '<div id="fehler" class="fehler" role="alert"></div>' +
+        '<button class="knopf" id="kaufen" style="width:100%;border:0;cursor:pointer">Weiter zur Zahlung</button>' +
+        '<p class="klein">Sicher bezahlen mit Karte, Apple Pay, Google Pay u. a. · Gutschein sofort als PDF per E-Mail · gültig 3 Jahre</p>' +
+        '</form>' +
+        '<p class="klein">Lieber mit Konto in der App? <a href="' + '../gast/?hotel=' + encodeURIComponent(slug) + '#/gift-vouchers">Zum Gutschein-Shop</a> · ' + esc(h.name) + ' · Gutscheine über GuestFlow</p>';
+      var motiv = 'weihnachten', betrag = 50;
+      function wahl(gruppe, attr, set) {
+        document.querySelectorAll('#' + gruppe + ' [data-' + attr + ']').forEach(function (b) {
+          b.onclick = function () {
+            document.querySelectorAll('#' + gruppe + ' [data-' + attr + ']').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+            set(b.dataset[attr]);
+          };
+        });
+      }
+      wahl('motive', 'm', function (v) { motiv = v; });
+      wahl('betraege', 'b', function (v) { betrag = +v; document.getElementById('eigener').value = ''; });
+      document.getElementById('eigener').oninput = function (e) {
+        var v = parseInt(e.target.value, 10);
+        if (v) { betrag = v; document.querySelectorAll('#betraege [data-b]').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); }); }
+      };
+      document.getElementById('form').onsubmit = function (e) {
+        e.preventDefault();
+        var f = document.getElementById('fehler'), k = document.getElementById('kaufen');
+        f.textContent = ''; k.disabled = true; k.textContent = 'Einen Moment …';
+        fetch(URL_ + '/functions/v1/gutschein-kauf', { method: 'POST', headers: { apikey: KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hotel: slug, betrag: betrag, motiv: motiv, empfaenger: document.getElementById('empf').value,
+            nachricht: document.getElementById('nachr').value, kaeufer_name: document.getElementById('kname').value, kaeufer_email: document.getElementById('kmail').value }) })
+          .then(function (r) { return r.json(); })
+          .then(function (d) {
+            if (d.url) { location.href = d.url; return; }
+            f.textContent = d.error || 'Das hat nicht geklappt.';
+            k.disabled = false; k.textContent = 'Weiter zur Zahlung';
+          })
+          .catch(function () { f.textContent = 'Keine Verbindung. Bitte noch einmal versuchen.'; k.disabled = false; k.textContent = 'Weiter zur Zahlung'; });
+      };
     })
     .catch(function () { app.innerHTML = '<div class="karte">Die Seite konnte nicht geladen werden.</div>'; });
 })();
