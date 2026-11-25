@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GuestFlow – die digitale Gäste-App für Hotels | NovaWorks</title>
-  <meta name="description" content="GuestFlow ist die All-in-One-Plattform für Hotels: Gäste-App mit digitalem Check-in, Zimmerservice, Concierge-Chat und SOS-Knopf, dazu Admin- und Mitarbeiter-Dashboard. Von NovaWorks aus Warburg. 14 Tage kostenlos testen, danach 149 € im Monat.">
+  <meta name="description" content="GuestFlow ist die All-in-One-Plattform für Hotels: Gäste-App mit Check-in, Zimmerservice und Concierge-Chat, Dienstplan mit WhatsApp-Versand, Gutschein-Shop, Restaurant-Bewertung per QR und Admin-Dashboard. Von NovaWorks aus Warburg. 14 Tage kostenlos, danach 149 € im Monat.">
   <link rel="canonical" href="https://novaworks-it.de/guestflow/">
   <link rel="icon" href="../assets/guestflow-icon.png" type="image/png">
   <link rel="apple-touch-icon" href="../assets/guestflow-icon.png">
@@ -34,8 +34,18 @@
     .rolle ul{margin:0;padding-left:18px;color:#3d4b61;font-size:.95rem}
     .rolle li{margin:4px 0}
     @media(max-width:880px){.rollen{grid-template-columns:1fr}}
+    .gruppe{margin:34px 0 14px;font-size:1.15rem;letter-spacing:-.02em}
+    .tabelle-wrap{overflow-x:auto;margin-top:18px}
+    .vergleich{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden;font-size:.97rem}
+    .vergleich th,.vergleich td{padding:13px 16px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+    .vergleich thead th{background:#f7faff;font-size:.85rem;text-transform:uppercase;letter-spacing:.04em;color:#5b6478}
+    .vergleich td:last-child{font-weight:700;color:var(--blue-d)}
+    .vergleich tbody tr:last-child th,.vergleich tbody tr:last-child td{border-bottom:0}
+    .klein{font-size:.85rem;color:#5b6478;margin-top:12px}
+    @media(max-width:600px){.vergleich{font-size:.84rem}.vergleich th,.vergleich td{padding:10px 8px}.vergleich thead th{font-size:.7rem;letter-spacing:0}.vergleich th[scope=row]{width:36%}}
   </style>
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"GuestFlow","applicationCategory":"BusinessApplication","operatingSystem":"Android, iOS, Web","url":"https://novaworks-it.de/guestflow/","description":"Plattform für Hotels und Restaurants: Gäste-App mit digitalem Check-in, Zimmerservice, Concierge-Chat und SOS-Notruf sowie Admin- und Mitarbeiter-Dashboard.","publisher":{"@type":"Organization","name":"NovaWorks","url":"https://novaworks-it.de/"}}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"GuestFlow","applicationCategory":"BusinessApplication","operatingSystem":"Android, iOS, Web","offers":{"@type":"Offer","price":"149","priceCurrency":"EUR"},"url":"https://novaworks-it.de/guestflow/","description":"Plattform für Hotels und Restaurants: Gäste-App mit digitalem Check-in, Zimmerservice, Concierge-Chat und SOS-Notruf sowie Admin- und Mitarbeiter-Dashboard.","publisher":{"@type":"Organization","name":"NovaWorks","url":"https://novaworks-it.de/"}}</script>
+  <script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Müssen meine Gäste sich eine App installieren?", "acceptedAnswer": {"@type": "Answer", "text": "Die Gäste-App gibt es für Android und iPhone. Gäste laden sie einmal herunter und verbinden sie über den QR-Code im Zimmer mit deinem Hotel."}}, {"@type": "Question", "name": "Brauche ich eigene Technik oder Server?", "acceptedAnswer": {"@type": "Answer", "text": "Nein. Admin- und Mitarbeiter-Dashboard laufen im Browser auf jedem PC, Tablet oder Handy. Betrieb und Updates übernehmen wir, die Daten werden jede Nacht gesichert und 30 Tage aufbewahrt."}}, {"@type": "Question", "name": "Kann ich Funktionen ausblenden?", "acceptedAnswer": {"@type": "Answer", "text": "Ja. In den App-Einstellungen des Dashboards schaltest du jede Kachel der Gäste-App ein oder aus – zum Beispiel Spa, Parkplatz oder Zimmerservice."}}, {"@type": "Question", "name": "Passt GuestFlow auch für ein Restaurant ohne Hotel?", "acceptedAnswer": {"@type": "Answer", "text": "Speisekarte, Reservierungen, Bestellungen und Küchenübersicht funktionieren auch allein. Sprich uns an, dann stellen wir den passenden Umfang zusammen."}}, {"@type": "Question", "name": "Können Gäste Gutscheine kaufen, ohne die App zu installieren?", "acceptedAnswer": {"@type": "Answer", "text": "Ja. Über einen Link auf deiner Website kaufen Gäste den Gutschein im Browser, zahlen per Karte oder Apple Pay und bekommen ihn sofort als PDF per Mail. Das Geld geht direkt auf dein Stripe-Konto, GuestFlow nimmt keine Provision."}}, {"@type": "Question", "name": "Wie bekommt mein Team den Dienstplan?", "acceptedAnswer": {"@type": "Answer", "text": "Sobald du den Plan veröffentlichst, sieht jeder seine Schichten in der Team-App und bekommt eine Push-Nachricht. Wer möchte, erhält den Plan zusätzlich per WhatsApp über das WhatsApp-Business-Konto deines Hauses."}}, {"@type": "Question", "name": "Filtert GuestFlow schlechte Bewertungen heraus?", "acceptedAnswer": {"@type": "Answer", "text": "Nein. Jeder Gast bekommt nach der Bewertung den Link zu Google – egal wie viele Sterne er vergeben hat. So erlaubt es Google. Schlechte Bewertungen meldet GuestFlow aber sofort deinem Team, damit ihr noch vor Ort reagieren könnt."}}, {"@type": "Question", "name": "Funktioniert GuestFlow mit meinem Hotelsystem?", "acceptedAnswer": {"@type": "Answer", "text": "GuestFlow ergänzt dein bestehendes Hotelsystem und vergibt selbst keine Zimmer. Die Anbindung an Little Hotelier (SiteMinder) ist vorbereitet. Für andere Systeme sprich uns an."}}, {"@type": "Question", "name": "Was kostet GuestFlow?", "acceptedAnswer": {"@type": "Answer", "text": "149 € im Monat oder 1.490 € im Jahr je Haus, mit allen Funktionen und beliebig vielen Mitarbeitenden und Gästen. Das sind Endpreise (keine Umsatzsteuer nach § 19 UStG). Die ersten 14 Tage sind kostenlos und enden automatisch."}}, {"@type": "Question", "name": "Wie kündige ich?", "acceptedAnswer": {"@type": "Answer", "text": "Monatsabos sind monatlich kündbar, Jahresabos zum Ende des Jahres – direkt im Admin-Dashboard unter „Abo & Rechnungen“. Nach dem Ende bleiben deine Daten noch 30 Tage gespeichert."}}]}</script>
 </head>
 <body>
 <a class="skip" href="#inhalt">Zum Inhalt springen</a>
@@ -45,6 +55,7 @@
     <nav aria-label="GuestFlow">
       <a href="#apps">Drei Apps</a>
       <a href="#funktionen">Funktionen</a>
+      <a href="#mehr">Team &amp; Umsatz</a>
       <a href="#daten">Datenschutz</a>
       <a href="ratgeber/">Ratgeber</a>
       <a class="btn btn-primary" href="https://novaworks-it.de/guestflow/admin/#/registrieren">Kostenlos testen</a>
@@ -63,7 +74,7 @@
           <a class="btn btn-primary" href="https://novaworks-it.de/guestflow/admin/#/registrieren">14 Tage kostenlos testen <span aria-hidden="true">→</span></a>
           <a class="btn btn-ghost" href="#preise">Preise ansehen</a>
         </div>
-        <div class="trust"><span>Android, iPhone und Browser</span><span>4 Sprachen</span><span>Aus Warburg</span></div>
+        <div class="trust"><span>Android, iPhone und Browser</span><span>9 Sprachen</span><span>Aus Warburg</span></div>
       </div>
       <div class="hero-shot shot"><img src="img/gaeste-app.webp" alt="GuestFlow: Gäste-App auf zwei Smartphones" width="582" height="550"></div>
     </div>
@@ -83,12 +94,12 @@
         <div class="rolle">
           <h3>Admin-Dashboard</h3>
           <p class="wer">Für Hotelleitung &amp; Rezeption · im Browser</p>
-          <ul><li>Buchungen, Reservierungen, Bestellungen</li><li>Zimmer, Preise und Speisekarte pflegen</li><li>Housekeeping live verwalten</li><li>Bewertungen und Umsatz auswerten</li><li>Lager, Meldescheine, Mitarbeitende</li></ul>
+          <ul><li>Buchungen, Reservierungen, Bestellungen</li><li>Zimmer, Preise und Speisekarte pflegen</li><li>Housekeeping live verwalten</li><li>Bewertungen und Umsatz auswerten</li><li>Lager, Meldescheine, Mitarbeitende</li><li>Dienstplan, Urlaub und Stundenkonto</li></ul>
         </div>
         <div class="rolle">
           <h3>Mitarbeiter-Dashboard</h3>
           <p class="wer">Für Housekeeping, Küche &amp; Service</p>
-          <ul><li>Aufgabenliste und Zuweisungen</li><li>Housekeeping-Checklisten</li><li>Küchenübersicht in Echtzeit</li><li>Schichtübergabe digital</li><li>Chat mit Gästen</li></ul>
+          <ul><li>Aufgabenliste und Zuweisungen</li><li>Housekeeping-Checklisten</li><li>Küchenübersicht in Echtzeit</li><li>Schichtübergabe digital</li><li>Eigene Schichten und Stundenkonto</li><li>Inventur per Barcode</li><li>Chat mit Gästen</li></ul>
         </div>
       </div>
     </div>
@@ -111,8 +122,79 @@
         <div class="feature"><b>Bewertungen</b><span>Feedback noch während des Aufenthalts – mit Stimmungsauswertung.</span></div>
         <div class="feature"><b>Gutscheine &amp; Aktionen</b><span>Saisonale Angebote und Last-Minute-Deals selbst einstellen.</span></div>
         <div class="feature"><b>Housekeeping &amp; Wartung</b><span>Zimmerstatus live, Wartungstickets zuweisen und abhaken.</span></div>
-        <div class="feature"><b>Vier Sprachen</b><span>Deutsch, Englisch, Niederländisch und Russisch.</span></div>
+        <div class="feature"><b>Neun Sprachen</b><span>Deutsch, Englisch, Französisch, Italienisch, Spanisch, Niederländisch, Polnisch, Türkisch und Russisch.</span></div>
       </div>
+    </div>
+  </section>
+
+
+  <section class="white" id="mehr">
+    <div class="wrap">
+      <p class="kicker">Mehr als eine Gäste-App</p>
+      <h2>Team, Umsatz und Küche – im selben System.</h2>
+      <p class="intro">Statt fünf Einzel-Tools mit fünf Logins: Dienstplan, Gutscheine, Bewertungen und HACCP greifen auf dieselben Daten zu wie Buchungen und Bestellungen.</p>
+
+      <h3 class="gruppe">Team &amp; Personal</h3>
+      <div class="features">
+        <div class="feature"><b>Dienstplan mit WhatsApp-Versand</b><span>Woche planen oder kopieren, Besetzung prüfen, veröffentlichen – jeder bekommt seine Schichten aufs Handy, auf Wunsch per WhatsApp.</span></div>
+        <div class="feature"><b>Stundenkonto</b><span>Soll, Ist, Überstunden und Minusstunden je Mitarbeiter, Feiertage automatisch berücksichtigt.</span></div>
+        <div class="feature"><b>Urlaub mit Sperrzeiten</b><span>Anträge in der Team-App, Hinweis bei Engpässen und gesperrten Zeiträumen.</span></div>
+        <div class="feature"><b>Einarbeitung</b><span>Checklisten für neue Mitarbeitende, Fortschritt im Blick.</span></div>
+        <div class="feature"><b>Team-Push</b><span>Neue Bestellung, Notruf oder Dienstplan – das Team wird sofort benachrichtigt.</span></div>
+        <div class="feature"><b>Azubis mit AzubiHub</b><span>Berufsschultage und Jugendschutz im Dienstplan, Tätigkeiten wandern ins Berichtsheft.</span></div>
+      </div>
+
+      <h3 class="gruppe">Mehr Umsatz</h3>
+      <div class="features">
+        <div class="feature"><b>Gutschein-Shop ohne Konto</b><span>Gäste kaufen online, zahlen per Karte oder Apple Pay und bekommen den Gutschein als PDF per Mail.</span></div>
+        <div class="feature"><b>Pakete &amp; Arrangements</b><span>Wellness-Wochenende oder Radler-Paket direkt bei der Buchung dazu.</span></div>
+        <div class="feature"><b>Zimmer-Upgrades</b><span>Gäste sehen passende Upgrades in der App und buchen mit einem Tipp.</span></div>
+        <div class="feature"><b>Feiern &amp; Gruppen</b><span>Anmeldelink für Hochzeiten und Firmenfeiern – Zusagen, Menüwahl und Allergien kommen gesammelt an.</span></div>
+        <div class="feature"><b>Preisvorschläge</b><span>Vorschläge für Zimmerpreise nach Nachfrage, du entscheidest.</span></div>
+        <div class="feature"><b>Stammgast-Rabatt</b><span>Wer schon einmal da war, bekommt automatisch seinen Rabatt.</span></div>
+      </div>
+
+      <h3 class="gruppe">Restaurant &amp; Küche</h3>
+      <div class="features">
+        <div class="feature"><b>Bewertung per QR am Tisch</b><span>Gäste bewerten Essen und Service in 20 Sekunden. Bei schlechter Note erfährt das Team es sofort – und jeder Gast bekommt den Link zu Google.</span></div>
+        <div class="feature"><b>Tischrechnung per QR</b><span>Rechnung am Tisch ansehen und mit Karte bezahlen.</span></div>
+        <div class="feature"><b>HACCP digital</b><span>Temperaturen und Kontrollen täglich abhaken, lückenlos dokumentiert.</span></div>
+        <div class="feature"><b>Inventur &amp; Wareneingang</b><span>Artikel per Barcode zählen, Lieferungen buchen, Einkaufsvorschläge.</span></div>
+        <div class="feature"><b>Rezeptur-Kalkulation</b><span>Wareneinsatz und Preis je Gericht auf einen Blick.</span></div>
+        <div class="feature"><b>Antwort-Vorlagen</b><span>Auf Bewertungen in einer Minute freundlich antworten.</span></div>
+      </div>
+
+      <h3 class="gruppe">Verbindungen &amp; Sicherheit</h3>
+      <div class="features">
+        <div class="feature"><b>Hotelsystem</b><span>Anbindung an Little Hotelier (SiteMinder) ist vorbereitet – Buchungen von Booking.com &amp; Co. landen dann automatisch in GuestFlow.</span></div>
+        <div class="feature"><b>Buchhaltung mit Kontora</b><span>Feiern und Rechnungen wandern auf Wunsch direkt in die Buchhaltung.</span></div>
+        <div class="feature"><b>WhatsApp Business</b><span>Anreise-Infos und Dienstpläne über dein eigenes WhatsApp-Konto.</span></div>
+        <div class="feature"><b>Eigene Hotel-Website</b><span>Einfache Website aus den Daten in GuestFlow – Zimmer, Speisekarte, Angebote.</span></div>
+        <div class="feature"><b>Tägliche Datensicherung</b><span>Jede Nacht eine Sicherung, 30 Tage aufbewahrt.</span></div>
+        <div class="feature"><b>Systemcheck jeden Morgen</b><span>Wir prüfen automatisch, ob alles läuft – bevor es dir auffällt.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="vergleich">
+    <div class="wrap" style="max-width:920px">
+      <p class="kicker">Vergleich</p>
+      <h2>Ein System statt vieler Einzel-Tools.</h2>
+      <div class="tabelle-wrap">
+        <table class="vergleich">
+          <thead><tr><th scope="col"></th><th scope="col">Einzel-Tools</th><th scope="col">GuestFlow</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Gäste-App, Check-in, Zimmerservice</th><td>eigenes Abo</td><td>inklusive</td></tr>
+            <tr><th scope="row">Dienstplan &amp; Stundenkonto</th><td>eigenes Abo</td><td>inklusive</td></tr>
+            <tr><th scope="row">Gutschein-Shop</th><td>meist Provision je Verkauf</td><td>inklusive, keine Provision</td></tr>
+            <tr><th scope="row">Bewertungen &amp; HACCP</th><td>Papier oder weiteres Tool</td><td>inklusive</td></tr>
+            <tr><th scope="row">Logins für das Team</th><td>eins pro Tool</td><td>eins für alles</td></tr>
+            <tr><th scope="row">Daten</th><td>verteilt, doppelt gepflegt</td><td>an einem Ort, Server in der EU</td></tr>
+            <tr><th scope="row">Preis</th><td>mehrere Rechnungen</td><td>149 € im Monat, alles drin</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="klein">Zahlungsgebühren von Stripe fallen wie bei jedem Online-Zahlungsdienst an und gehen direkt an Stripe.</p>
     </div>
   </section>
 
@@ -190,9 +272,13 @@
       <p class="kicker">Häufige Fragen</p>
       <h2>Gut zu wissen</h2>
       <details><summary>Müssen meine Gäste sich eine App installieren?</summary><p>Die Gäste-App gibt es für Android und iPhone. Gäste laden sie einmal herunter und verbinden sie über den QR-Code im Zimmer mit deinem Hotel.</p></details>
-      <details><summary>Brauche ich eigene Technik oder Server?</summary><p>Nein. Admin- und Mitarbeiter-Dashboard laufen im Browser auf jedem PC, Tablet oder Handy. Betrieb, Updates und Datensicherung übernehmen wir.</p></details>
+      <details><summary>Brauche ich eigene Technik oder Server?</summary><p>Nein. Admin- und Mitarbeiter-Dashboard laufen im Browser auf jedem PC, Tablet oder Handy. Betrieb und Updates übernehmen wir, die Daten werden jede Nacht gesichert und 30 Tage aufbewahrt.</p></details>
       <details><summary>Kann ich Funktionen ausblenden?</summary><p>Ja. In den App-Einstellungen des Dashboards schaltest du jede Kachel der Gäste-App ein oder aus – zum Beispiel Spa, Parkplatz oder Zimmerservice.</p></details>
       <details><summary>Passt GuestFlow auch für ein Restaurant ohne Hotel?</summary><p>Speisekarte, Reservierungen, Bestellungen und Küchenübersicht funktionieren auch allein. Sprich uns an, dann stellen wir den passenden Umfang zusammen.</p></details>
+      <details><summary>Können Gäste Gutscheine kaufen, ohne die App zu installieren?</summary><p>Ja. Über einen Link auf deiner Website kaufen Gäste den Gutschein im Browser, zahlen per Karte oder Apple Pay und bekommen ihn sofort als PDF per Mail. Das Geld geht direkt auf dein Stripe-Konto, GuestFlow nimmt keine Provision.</p></details>
+      <details><summary>Wie bekommt mein Team den Dienstplan?</summary><p>Sobald du den Plan veröffentlichst, sieht jeder seine Schichten in der Team-App und bekommt eine Push-Nachricht. Wer möchte, erhält den Plan zusätzlich per WhatsApp über das WhatsApp-Business-Konto deines Hauses.</p></details>
+      <details><summary>Filtert GuestFlow schlechte Bewertungen heraus?</summary><p>Nein. Jeder Gast bekommt nach der Bewertung den Link zu Google – egal wie viele Sterne er vergeben hat. So erlaubt es Google. Schlechte Bewertungen meldet GuestFlow aber sofort deinem Team, damit ihr noch vor Ort reagieren könnt.</p></details>
+      <details><summary>Funktioniert GuestFlow mit meinem Hotelsystem?</summary><p>GuestFlow ergänzt dein bestehendes Hotelsystem und vergibt selbst keine Zimmer. Die Anbindung an Little Hotelier (SiteMinder) ist vorbereitet. Für andere Systeme sprich uns an.</p></details>
       <details><summary>Was kostet GuestFlow?</summary><p>149 € im Monat oder 1.490 € im Jahr je Haus, mit allen Funktionen und beliebig vielen Mitarbeitenden und Gästen. Das sind Endpreise (keine Umsatzsteuer nach § 19 UStG). Die ersten 14 Tage sind kostenlos und enden automatisch.</p></details>
       <details><summary>Wie kündige ich?</summary><p>Monatsabos sind monatlich kündbar, Jahresabos zum Ende des Jahres – direkt im Admin-Dashboard unter „Abo &amp; Rechnungen“. Nach dem Ende bleiben deine Daten noch 30 Tage gespeichert.</p></details>
     </div>
